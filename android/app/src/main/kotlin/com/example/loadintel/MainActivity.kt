@@ -1,4 +1,4 @@
-package com.example.loadintel
+package com.vitomein.loadintel
 
 import io.flutter.embedding.android.FlutterActivity
 
