@@ -75,8 +75,12 @@ class BackupExportScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
+    final location =
+        files.isNotEmpty ? files.first : 'App documents/exports';
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('PDF reports saved: ${files.length} files')),
+      SnackBar(
+        content: Text('PDF reports saved (${files.length}). $location'),
+      ),
     );
   }
 

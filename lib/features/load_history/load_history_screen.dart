@@ -27,7 +27,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
 
   String? _filterCartridge;
   String? _filterPowder;
-  String? _filterFirearmId;
+  double? _filterPowderCharge;
   double? _filterBulletWeight;
 
   @override
@@ -64,7 +64,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
       if (_filterPowder != null && recipe.powder != _filterPowder) {
         return false;
       }
-      if (_filterFirearmId != null && recipe.firearmId != _filterFirearmId) {
+      if (_filterPowderCharge != null && recipe.powderChargeGr != _filterPowderCharge) {
         return false;
       }
       if (_filterBulletWeight != null && recipe.bulletWeightGr != _filterBulletWeight) {
@@ -83,7 +83,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
       if (_filterPowder != null && recipe.powder != _filterPowder) {
         return false;
       }
-      if (_filterFirearmId != null && recipe.firearmId != _filterFirearmId) {
+      if (_filterPowderCharge != null && recipe.powderChargeGr != _filterPowderCharge) {
         return false;
       }
       if (_filterBulletWeight != null && recipe.bulletWeightGr != _filterBulletWeight) {
@@ -143,14 +143,14 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                 cartridges: _uniqueValues(data.newLoads, data.testedLoads, (r) => r.cartridge),
                 powders: _uniqueValues(data.newLoads, data.testedLoads, (r) => r.powder),
                 bulletWeights: _uniqueWeights(data.newLoads, data.testedLoads),
-                firearms: data.firearmsById,
+                powderCharges: _uniquePowderCharges(data.newLoads, data.testedLoads),
                 selectedCartridge: _filterCartridge,
                 selectedPowder: _filterPowder,
-                selectedFirearmId: _filterFirearmId,
+                selectedPowderCharge: _filterPowderCharge,
                 selectedBulletWeight: _filterBulletWeight,
                 onCartridgeChanged: (value) => setState(() => _filterCartridge = value),
                 onPowderChanged: (value) => setState(() => _filterPowder = value),
-                onFirearmChanged: (value) => setState(() => _filterFirearmId = value),
+                onPowderChargeChanged: (value) => setState(() => _filterPowderCharge = value),
                 onBulletWeightChanged: (value) =>
                     setState(() => _filterBulletWeight = value),
                 onMoreFilters: () async {
@@ -441,30 +441,30 @@ class _FilterRow extends StatelessWidget {
   const _FilterRow({
     required this.cartridges,
     required this.powders,
+    required this.powderCharges,
     required this.bulletWeights,
-    required this.firearms,
     required this.selectedCartridge,
     required this.selectedPowder,
-    required this.selectedFirearmId,
+    required this.selectedPowderCharge,
     required this.selectedBulletWeight,
     required this.onCartridgeChanged,
     required this.onPowderChanged,
-    required this.onFirearmChanged,
+    required this.onPowderChargeChanged,
     required this.onBulletWeightChanged,
     required this.onMoreFilters,
   });
 
   final List<String> cartridges;
   final List<String> powders;
+  final List<double> powderCharges;
   final List<double> bulletWeights;
-  final Map<String, Firearm> firearms;
   final String? selectedCartridge;
   final String? selectedPowder;
-  final String? selectedFirearmId;
+  final double? selectedPowderCharge;
   final double? selectedBulletWeight;
   final ValueChanged<String?> onCartridgeChanged;
   final ValueChanged<String?> onPowderChanged;
-  final ValueChanged<String?> onFirearmChanged;
+  final ValueChanged<double?> onPowderChargeChanged;
   final ValueChanged<double?> onBulletWeightChanged;
   final VoidCallback onMoreFilters;
 
@@ -499,14 +499,22 @@ class _FilterRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<String?>(
-                  value: selectedFirearmId,
-                  decoration: const InputDecoration(labelText: 'Firearm'),
-                  items: _dropdownItemsWithKeys(
-                    firearms,
-                    (firearm) => firearm.name,
-                  ),
-                  onChanged: onFirearmChanged,
+                child: DropdownButtonFormField<double?>(
+                  value: selectedPowderCharge,
+                  decoration: const InputDecoration(labelText: 'Powder Charge'),
+                  items: [
+                    const DropdownMenuItem<double?>(
+                      value: null,
+                      child: Text('Any'),
+                    ),
+                    ...powderCharges.map(
+                      (charge) => DropdownMenuItem<double?>(
+                        value: charge,
+                        child: Text(charge.toStringAsFixed(1)),
+                      ),
+                    ),
+                  ],
+                  onChanged: onPowderChargeChanged,
                 ),
               ),
               const SizedBox(width: 12),
@@ -560,23 +568,6 @@ class _FilterRow extends StatelessWidget {
     ];
   }
 
-  List<DropdownMenuItem<String?>> _dropdownItemsWithKeys(
-    Map<String, Firearm> firearms,
-    String Function(Firearm) label,
-  ) {
-    return [
-      const DropdownMenuItem<String?>(
-        value: null,
-        child: Text('Any'),
-      ),
-      ...firearms.entries.map(
-        (entry) => DropdownMenuItem<String?>(
-          value: entry.key,
-          child: Text(label(entry.value)),
-        ),
-      ),
-    ];
-  }
 }
 
 class _MoreFiltersSheet extends StatelessWidget {
@@ -645,6 +636,22 @@ List<double> _uniqueWeights(
     if (weight != null) {
       values.add(weight);
     }
+  }
+  final list = values.toList();
+  list.sort();
+  return list;
+}
+
+List<double> _uniquePowderCharges(
+  List<LoadRecipe> newLoads,
+  List<LoadWithBestResult> testedLoads,
+) {
+  final values = <double>{};
+  for (final recipe in newLoads) {
+    values.add(recipe.powderChargeGr);
+  }
+  for (final entry in testedLoads) {
+    values.add(entry.recipe.powderChargeGr);
   }
   final list = values.toList();
   list.sort();
