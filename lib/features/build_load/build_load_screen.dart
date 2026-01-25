@@ -1,10 +1,13 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:loadintel/core/utils/free_tier.dart';
 import 'package:loadintel/domain/models/firearm.dart';
+import 'package:loadintel/domain/models/inventory_item.dart';
 import 'package:loadintel/domain/models/load_recipe.dart';
 import 'package:loadintel/domain/repositories/firearm_repository.dart';
+import 'package:loadintel/domain/repositories/inventory_repository.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
-import 'package:loadintel/core/utils/free_tier.dart';
+import 'package:loadintel/features/inventory/inventory_screen.dart';
 import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -37,9 +40,14 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   late final TextEditingController _notesController;
 
   String? _selectedFirearmId;
+  String? _selectedBrass;
+  String? _selectedBullet;
+  String? _selectedPowder;
+  String? _selectedPrimer;
+
   bool _isDangerous = false;
   DateTime? _dangerConfirmedAt;
-  late Future<List<Firearm>> _firearmsFuture;
+  late Future<_BuildLoadData> _dataFuture;
 
   bool get _isEditing => widget.recipe != null && !widget.isDuplicate;
 
@@ -64,10 +72,15 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _notesController = TextEditingController(text: recipe?.notes ?? '');
 
     _selectedFirearmId = recipe?.firearmId;
+    _selectedBrass = recipe?.brass;
+    _selectedBullet = recipe?.bulletBrand;
+    _selectedPowder = recipe?.powder;
+    _selectedPrimer = recipe?.primer;
+
     _isDangerous = recipe?.isDangerous ?? false;
     _dangerConfirmedAt = recipe?.dangerConfirmedAt;
 
-    _firearmsFuture = _loadFirearms();
+    _dataFuture = _loadData();
   }
 
   @override
@@ -87,14 +100,27 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     super.dispose();
   }
 
-  Future<List<Firearm>> _loadFirearms() {
-    final repo = context.read<FirearmRepository>();
-    return repo.listFirearms();
+  Future<_BuildLoadData> _loadData() async {
+    final firearmRepo = context.read<FirearmRepository>();
+    final inventoryRepo = context.read<InventoryRepository>();
+    final firearms = await firearmRepo.listFirearms();
+    final items = await inventoryRepo.listItems();
+    final inventoryByType = <String, List<InventoryItem>>{};
+    for (final item in items) {
+      inventoryByType.putIfAbsent(item.type, () => []).add(item);
+    }
+    for (final list in inventoryByType.values) {
+      list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    }
+    return _BuildLoadData(
+      firearms: firearms,
+      inventoryByType: inventoryByType,
+    );
   }
 
-  Future<void> _refreshFirearms() async {
+  Future<void> _refreshData() async {
     setState(() {
-      _firearmsFuture = _loadFirearms();
+      _dataFuture = _loadData();
     });
   }
 
@@ -108,10 +134,132 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       return;
     }
     await repo.upsertFirearm(created);
-    await _refreshFirearms();
+    await _refreshData();
     setState(() {
       _selectedFirearmId = created.id;
     });
+  }
+
+  Future<void> _openInventory(String type) async {
+    final category = InventoryCategory.byType(type);
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => InventoryScreen(initialCategory: category.type),
+      ),
+    );
+    await _refreshData();
+  }
+
+  String _displayInventoryValue(String? value, List<InventoryItem> items) {
+    if (value == null || value.isEmpty) {
+      return '';
+    }
+    final exists = items.any((item) => item.name == value);
+    return exists ? value : '$value (missing)';
+  }
+
+  void _syncInventoryControllers(Map<String, List<InventoryItem>> inventoryByType) {
+    _bulletBrandController.text = _displayInventoryValue(
+      _selectedBullet,
+      inventoryByType['bullets'] ?? [],
+    );
+    _brassController.text = _displayInventoryValue(
+      _selectedBrass,
+      inventoryByType['brass'] ?? [],
+    );
+    _primerController.text = _displayInventoryValue(
+      _selectedPrimer,
+      inventoryByType['primers'] ?? [],
+    );
+    _powderController.text = _displayInventoryValue(
+      _selectedPowder,
+      inventoryByType['powder'] ?? [],
+    );
+  }
+
+  Future<String?> _pickInventoryItem({
+    required String title,
+    required List<InventoryItem> items,
+    required String type,
+    required bool allowClear,
+  }) async {
+    final result = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        String query = '';
+        return SafeArea(
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              final filtered = items
+                  .where(
+                    (item) => item.name.toLowerCase().contains(query.toLowerCase()),
+                  )
+                  .toList();
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    TextField(
+                      onChanged: (value) => setSheetState(() => query = value),
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search),
+                        hintText: 'Type to filter',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Flexible(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          if (allowClear)
+                            ListTile(
+                              title: const Text('Clear selection'),
+                              onTap: () => Navigator.of(context).pop(''),
+                            ),
+                          if (filtered.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: Text('No inventory items found.'),
+                            )
+                          else
+                            ...filtered.map(
+                              (item) => ListTile(
+                                title: Text(item.name),
+                                onTap: () => Navigator.of(context).pop(item.name),
+                              ),
+                            ),
+                          const Divider(),
+                          ListTile(
+                            leading: const Icon(Icons.add),
+                            title: const Text('Add new'),
+                            onTap: () async {
+                              Navigator.of(context).pop();
+                              await _openInventory(type);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+    if (result == null) {
+      return null;
+    }
+    if (result.isEmpty) {
+      return '';
+    }
+    return result;
   }
 
   Future<bool> _canCreateRecipe() async {
@@ -176,21 +324,26 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       return;
     }
 
+    if (_selectedPowder == null || _selectedPowder!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a powder.')),
+      );
+      return;
+    }
+
     final now = DateTime.now();
     final recipe = LoadRecipe(
       id: _isEditing ? widget.recipe!.id : _uuid.v4(),
       recipeName: _recipeNameController.text.trim(),
       cartridge: _cartridgeController.text.trim(),
-      bulletBrand: _bulletBrandController.text.trim().isEmpty
-          ? null
-          : _bulletBrandController.text.trim(),
+      bulletBrand: _selectedBullet,
       bulletWeightGr: double.tryParse(_bulletWeightController.text.trim()),
       bulletType: _bulletTypeController.text.trim().isEmpty
           ? null
           : _bulletTypeController.text.trim(),
-      brass: _brassController.text.trim().isEmpty ? null : _brassController.text.trim(),
-      primer: _primerController.text.trim().isEmpty ? null : _primerController.text.trim(),
-      powder: _powderController.text.trim(),
+      brass: _selectedBrass,
+      primer: _selectedPrimer,
+      powder: _selectedPowder!,
       powderChargeGr: double.parse(_powderChargeController.text.trim()),
       coal: double.tryParse(_coalController.text.trim()),
       seatingDepth: double.tryParse(_seatingDepthController.text.trim()),
@@ -238,10 +391,19 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
         title: Text(title),
       ),
       body: SafeArea(
-        child: FutureBuilder<List<Firearm>>(
-          future: _firearmsFuture,
+        child: FutureBuilder<_BuildLoadData>(
+          future: _dataFuture,
           builder: (context, snapshot) {
-            final firearms = snapshot.data ?? [];
+            final data = snapshot.data;
+            final firearms = data?.firearms ?? [];
+            final inventoryByType = data?.inventoryByType ?? {};
+            _syncInventoryControllers(inventoryByType);
+
+            final brassItems = inventoryByType['brass'] ?? [];
+            final bulletItems = inventoryByType['bullets'] ?? [];
+            final powderItems = inventoryByType['powder'] ?? [];
+            final primerItems = inventoryByType['primers'] ?? [];
+
             return ListView(
               padding: EdgeInsets.fromLTRB(
                 16,
@@ -249,171 +411,251 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                 16,
                 16 + MediaQuery.of(context).padding.bottom,
               ),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _recipeNameController,
-                          decoration: const InputDecoration(labelText: 'Recipe Name *'),
-                          textInputAction: TextInputAction.next,
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty ? 'Required' : null,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _cartridgeController,
-                          decoration: const InputDecoration(labelText: 'Cartridge *'),
-                          textInputAction: TextInputAction.next,
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty ? 'Required' : null,
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DropdownButtonFormField<String?>(
-                                value: firearms.any((firearm) => firearm.id == _selectedFirearmId)
-                                    ? _selectedFirearmId
-                                    : null,
-                                items: firearms
-                                    .map(
-                                      (firearm) => DropdownMenuItem<String?>(
-                                        value: firearm.id,
-                                        child: Text(firearm.name),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    _selectedFirearmId = value;
-                                  });
-                                },
-                                decoration: const InputDecoration(labelText: 'Firearm *'),
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _recipeNameController,
+                            decoration: const InputDecoration(labelText: 'Recipe Name *'),
+                            textInputAction: TextInputAction.next,
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty ? 'Required' : null,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _cartridgeController,
+                            decoration: const InputDecoration(labelText: 'Cartridge *'),
+                            textInputAction: TextInputAction.next,
+                            validator: (value) =>
+                                value == null || value.trim().isEmpty ? 'Required' : null,
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String?>(
+                                  value: firearms.any((firearm) => firearm.id == _selectedFirearmId)
+                                      ? _selectedFirearmId
+                                      : null,
+                                  items: firearms
+                                      .map(
+                                        (firearm) => DropdownMenuItem<String?>(
+                                          value: firearm.id,
+                                          child: Text(firearm.name),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedFirearmId = value;
+                                    });
+                                  },
+                                  decoration: const InputDecoration(labelText: 'Firearm *'),
+                                ),
                               ),
+                              const SizedBox(width: 12),
+                              OutlinedButton(
+                                onPressed: _addFirearm,
+                                child: const Text('Add'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _bulletBrandController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Bullet',
+                              suffixIcon: Icon(Icons.arrow_drop_down),
                             ),
-                            const SizedBox(width: 12),
-                            OutlinedButton(
-                              onPressed: _addFirearm,
-                              child: const Text('Add'),
+                            onTap: () async {
+                              final selected = await _pickInventoryItem(
+                                title: 'Select Bullet',
+                                items: bulletItems,
+                                type: 'bullets',
+                                allowClear: true,
+                              );
+                              if (selected == null) {
+                                return;
+                              }
+                              setState(() {
+                                _selectedBullet = selected.isEmpty ? null : selected;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _bulletWeightController,
+                            decoration: const InputDecoration(labelText: 'Bullet Weight (gr)'),
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            textInputAction: TextInputAction.next,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _bulletTypeController,
+                            decoration: const InputDecoration(labelText: 'Bullet Type'),
+                            textInputAction: TextInputAction.next,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _brassController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Brass',
+                              suffixIcon: Icon(Icons.arrow_drop_down),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _bulletBrandController,
-                          decoration: const InputDecoration(labelText: 'Bullet Brand'),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _bulletWeightController,
-                          decoration: const InputDecoration(labelText: 'Bullet Weight (gr)'),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _bulletTypeController,
-                          decoration: const InputDecoration(labelText: 'Bullet Type'),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _brassController,
-                          decoration: const InputDecoration(labelText: 'Brass'),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _primerController,
-                          decoration: const InputDecoration(labelText: 'Primer'),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _powderController,
-                          decoration: const InputDecoration(labelText: 'Powder *'),
-                          textInputAction: TextInputAction.next,
-                          validator: (value) =>
-                              value == null || value.trim().isEmpty ? 'Required' : null,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _powderChargeController,
-                          decoration: const InputDecoration(labelText: 'Powder Charge (gr) *'),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
-                          textInputAction: TextInputAction.next,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Required';
-                            }
-                            if (double.tryParse(value.trim()) == null) {
-                              return 'Invalid number';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _coalController,
-                          decoration: const InputDecoration(labelText: 'COAL'),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _seatingDepthController,
-                          decoration: const InputDecoration(labelText: 'Seating Depth'),
-                          keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
-                          textInputAction: TextInputAction.next,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _notesController,
-                          decoration: const InputDecoration(labelText: 'Notes'),
-                          maxLines: 3,
-                        ),
-                      ],
+                            onTap: () async {
+                              final selected = await _pickInventoryItem(
+                                title: 'Select Brass',
+                                items: brassItems,
+                                type: 'brass',
+                                allowClear: true,
+                              );
+                              if (selected == null) {
+                                return;
+                              }
+                              setState(() {
+                                _selectedBrass = selected.isEmpty ? null : selected;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _primerController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Primer',
+                              suffixIcon: Icon(Icons.arrow_drop_down),
+                            ),
+                            onTap: () async {
+                              final selected = await _pickInventoryItem(
+                                title: 'Select Primer',
+                                items: primerItems,
+                                type: 'primers',
+                                allowClear: true,
+                              );
+                              if (selected == null) {
+                                return;
+                              }
+                              setState(() {
+                                _selectedPrimer = selected.isEmpty ? null : selected;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _powderController,
+                            readOnly: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Powder *',
+                              suffixIcon: Icon(Icons.arrow_drop_down),
+                            ),
+                            validator: (_) =>
+                                _selectedPowder == null || _selectedPowder!.isEmpty
+                                    ? 'Required'
+                                    : null,
+                            onTap: () async {
+                              final selected = await _pickInventoryItem(
+                                title: 'Select Powder',
+                                items: powderItems,
+                                type: 'powder',
+                                allowClear: false,
+                              );
+                              if (selected == null) {
+                                return;
+                              }
+                              setState(() {
+                                _selectedPowder = selected.isEmpty ? null : selected;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _powderChargeController,
+                            decoration: const InputDecoration(labelText: 'Powder Charge (gr) *'),
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            textInputAction: TextInputAction.next,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Required';
+                              }
+                              if (double.tryParse(value.trim()) == null) {
+                                return 'Invalid number';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _coalController,
+                            decoration: const InputDecoration(labelText: 'COAL'),
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            textInputAction: TextInputAction.next,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _seatingDepthController,
+                            decoration: const InputDecoration(labelText: 'Seating Depth'),
+                            keyboardType:
+                                const TextInputType.numberWithOptions(decimal: true),
+                            textInputAction: TextInputAction.next,
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _notesController,
+                            decoration: const InputDecoration(labelText: 'Notes'),
+                            maxLines: 3,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _saveRecipe,
-                      child: const Text('Save'),
-                    ),
-                  ),
-                  if (_isEditing) ...[
-                    const SizedBox(width: 12),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: _duplicateRecipe,
-                        child: const Text('Duplicate Load'),
+                      child: ElevatedButton(
+                        onPressed: _saveRecipe,
+                        child: const Text('Save'),
                       ),
                     ),
+                    if (_isEditing) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _duplicateRecipe,
+                          child: const Text('Duplicate Load'),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
-              ),
-            ],
+                ),
+              ],
             );
           },
         ),
       ),
     );
   }
+}
+
+class _BuildLoadData {
+  const _BuildLoadData({
+    required this.firearms,
+    required this.inventoryByType,
+  });
+
+  final List<Firearm> firearms;
+  final Map<String, List<InventoryItem>> inventoryByType;
 }
 
 class _AddFirearmDialog extends StatefulWidget {
@@ -496,4 +738,3 @@ class _AddFirearmDialogState extends State<_AddFirearmDialog> {
     );
   }
 }
-

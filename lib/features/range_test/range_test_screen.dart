@@ -54,8 +54,11 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       recipe: recipe,
       firearmId: recipe.firearmId,
     );
+    entry.distanceYds = 100;
     _entries.add(entry);
-    _controllers[recipe.id] = RangeTestEntryController();
+    final controller = RangeTestEntryController();
+    controller.distanceController.text = '100';
+    _controllers[recipe.id] = controller;
   }
 
   void _removeEntry(String loadId) {
@@ -244,7 +247,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
               ),
               const SizedBox(height: 8),
               SizedBox(
-                height: 68,
+                height: 80,
                 child: _entries.isEmpty
                     ? const Center(child: Text('No loads selected.'))
                     : ListView.separated(
@@ -255,7 +258,11 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                           final entry = _entries[index];
                           final isActive = entry.recipe.id == _activeLoadId;
                           return InputChip(
-                            label: Text(entry.recipe.recipeName),
+                            label: Text(
+                              '${entry.recipe.recipeName} (${entry.recipe.powderChargeGr.toStringAsFixed(1)} gr)',
+                            ),
+                            labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                             selected: isActive,
                             onSelected: (_) {
                               setState(() {
@@ -494,16 +501,17 @@ class _LoadPickerSheetState extends State<_LoadPickerSheet> {
     final available = widget.loads
         .where((recipe) => !widget.existingIds.contains(recipe.id))
         .toList();
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 8,
-        bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 8,
+          bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           Text(
             'Add Loads',
             style: Theme.of(context).textTheme.titleLarge,
@@ -560,7 +568,8 @@ class _LoadPickerSheetState extends State<_LoadPickerSheet> {
               ),
             ],
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

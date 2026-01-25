@@ -1,5 +1,6 @@
 ﻿import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:loadintel/features/inventory/inventory_screen.dart';
 import 'package:loadintel/services/backup_service.dart';
 import 'package:loadintel/services/export_service.dart';
 import 'package:provider/provider.dart';
@@ -88,6 +89,18 @@ class BackupExportScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Card(
+            child: ListTile(
+              title: const Text('Inventory'),
+              subtitle: const Text('Manage brass, bullets, powder, and primers.'),
+              trailing: const Icon(Icons.inventory_2),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const InventoryScreen()),
+                );
+              },
+            ),
+          ),
           Card(
             child: ListTile(
               title: const Text('Export Backup'),
