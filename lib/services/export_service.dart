@@ -1,28 +1,39 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:loadintel/domain/models/load_recipe.dart';
 import 'package:loadintel/domain/models/range_result.dart';
 import 'package:loadintel/domain/models/target_photo.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
 import 'package:loadintel/domain/repositories/range_result_repository.dart';
+import 'package:loadintel/domain/repositories/settings_repository.dart';
 import 'package:loadintel/domain/repositories/target_photo_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:share_plus/share_plus.dart';
 
 class ExportService {
   ExportService(
     this._loadRepo,
     this._rangeRepo,
     this._photoRepo,
+    this._settingsRepo,
   );
+
+  static const MethodChannel _safChannel = MethodChannel(
+    'com.vitomein.loadintel/export',
+  );
+  static const String _androidSubdirName = 'Load Intel';
 
   final LoadRecipeRepository _loadRepo;
   final RangeResultRepository _rangeRepo;
   final TargetPhotoRepository _photoRepo;
+  final SettingsRepository _settingsRepo;
 
   Future<List<String>> exportCsv() async {
     final loads = await _loadRepo.listRecipes();
@@ -32,27 +43,48 @@ class ExportService {
       results.addAll(loadResults);
     }
 
-    final dir = await _exportDir();
-    final loadsPath = path.join(dir.path, 'loads.csv');
-    final resultsPath = path.join(dir.path, 'results.csv');
+    final stamp = _timestamp();
+    final files = <String>[];
+    final loadsName = 'loadintel_loads_$stamp.csv';
+    final resultsName = 'loadintel_results_$stamp.csv';
 
-    await File(loadsPath).writeAsString(_buildLoadsCsv(loads));
-    await File(resultsPath).writeAsString(_buildResultsCsv(results));
+    final loadsBytes = Uint8List.fromList(utf8.encode(_buildLoadsCsv(loads)));
+    final resultsBytes = Uint8List.fromList(utf8.encode(_buildResultsCsv(results)));
 
-    return [loadsPath, resultsPath];
+    final loadsLocation = await _writeExportFile(
+      fileName: loadsName,
+      mimeType: 'text/csv',
+      bytes: loadsBytes,
+    );
+    if (loadsLocation == null) {
+      return files;
+    }
+    files.add(loadsLocation);
+
+    final resultsLocation = await _writeExportFile(
+      fileName: resultsName,
+      mimeType: 'text/csv',
+      bytes: resultsBytes,
+    );
+    if (resultsLocation != null) {
+      files.add(resultsLocation);
+    }
+
+    await _shareIfNeeded(files, subject: 'Load Intel CSV Export');
+    return files;
   }
 
   Future<List<String>> exportPdfReports() async {
     final loads = await _loadRepo.listRecipes();
-    final dir = await _exportDir();
     final files = <String>[];
+    final stamp = _timestamp();
 
     for (final load in loads) {
       final bestResult = await _rangeRepo.getBestResultForLoad(load.id);
       final photos = bestResult == null
           ? <TargetPhoto>[]
           : await _photoRepo.listPhotosForResult(bestResult.id);
-      final filePath = path.join(dir.path, _reportFileName(load));
+      final fileName = _reportFileName(load, stamp);
       final doc = pw.Document();
       doc.addPage(
         pw.Page(
@@ -60,11 +92,120 @@ class ExportService {
           build: (context) => _buildReport(load, bestResult, photos),
         ),
       );
-      final file = File(filePath);
-      await file.writeAsBytes(await doc.save());
-      files.add(filePath);
+      final fileLocation = await _writeExportFile(
+        fileName: fileName,
+        mimeType: 'application/pdf',
+        bytes: await doc.save(),
+      );
+      if (fileLocation == null) {
+        break;
+      }
+      files.add(fileLocation);
     }
+
+    await _shareIfNeeded(files, subject: 'Load Intel PDF Reports');
     return files;
+  }
+
+  Future<String?> _writeExportFile({
+    required String fileName,
+    required String mimeType,
+    required Uint8List bytes,
+  }) async {
+    if (Platform.isAndroid) {
+      return _writeAndroidFile(
+        fileName: fileName,
+        mimeType: mimeType,
+        bytes: bytes,
+      );
+    }
+
+    final filePath = await _writeLocalExportFile(fileName, bytes);
+    debugPrint('Exported $fileName -> $filePath');
+    return filePath;
+  }
+
+  Future<String?> _writeAndroidFile({
+    required String fileName,
+    required String mimeType,
+    required Uint8List bytes,
+  }) async {
+    var treeUri = await _ensureAndroidTreeUri();
+    if (treeUri == null) {
+      return null;
+    }
+
+    try {
+      final location = await _safChannel.invokeMethod<String>(
+        'writeFile',
+        {
+          'treeUri': treeUri,
+          'subDir': _androidSubdirName,
+          'fileName': fileName,
+          'mimeType': mimeType,
+          'bytes': bytes,
+        },
+      );
+      if (location != null) {
+        debugPrint('Exported $fileName -> $location');
+      }
+      return location;
+    } on PlatformException {
+      await _settingsRepo.setString(SettingsKeys.exportFolderUri, '');
+      treeUri = await _pickAndroidTreeUri();
+      if (treeUri == null) {
+        return null;
+      }
+      final location = await _safChannel.invokeMethod<String>(
+        'writeFile',
+        {
+          'treeUri': treeUri,
+          'subDir': _androidSubdirName,
+          'fileName': fileName,
+          'mimeType': mimeType,
+          'bytes': bytes,
+        },
+      );
+      if (location != null) {
+        debugPrint('Exported $fileName -> $location');
+      }
+      return location;
+    }
+  }
+
+  Future<String?> _ensureAndroidTreeUri() async {
+    final existing = await _settingsRepo.getString(SettingsKeys.exportFolderUri);
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+    return _pickAndroidTreeUri();
+  }
+
+  Future<String?> _pickAndroidTreeUri() async {
+    final selected = await _safChannel.invokeMethod<String>('pickDirectory');
+    if (selected == null || selected.isEmpty) {
+      return null;
+    }
+    await _settingsRepo.setString(SettingsKeys.exportFolderUri, selected);
+    return selected;
+  }
+
+  Future<String> _writeLocalExportFile(String fileName, Uint8List bytes) async {
+    final directory = await _exportDir();
+    final filePath = path.join(directory.path, fileName);
+    await File(filePath).writeAsBytes(bytes, flush: true);
+    return filePath;
+  }
+
+  Future<void> _shareIfNeeded(
+    List<String> files, {
+    required String subject,
+  }) async {
+    if (!Platform.isIOS || files.isEmpty) {
+      return;
+    }
+    final xFiles = files.map(XFile.new).toList();
+    await Share.shareXFiles(xFiles, subject: subject);
   }
 
   pw.Widget _buildReport(
@@ -82,6 +223,17 @@ class ExportService {
         pw.Text('Cartridge: ${load.cartridge}'),
         pw.Text('Powder: ${load.powder} ${load.powderChargeGr} gr'),
         pw.Text('Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''}'),
+        if (load.bulletDiameter != null)
+          pw.Text('Bullet Diameter: ${load.bulletDiameter}'),
+        if (load.caseResize != null && load.caseResize!.isNotEmpty)
+          pw.Text('Case Resize: ${load.caseResize}'),
+        if (load.gasCheckMaterial != null && load.gasCheckMaterial!.isNotEmpty)
+          pw.Text('Gas Check Material: ${load.gasCheckMaterial}'),
+        if (load.gasCheckInstallMethod != null &&
+            load.gasCheckInstallMethod!.isNotEmpty)
+          pw.Text('Gas Check Install: ${load.gasCheckInstallMethod}'),
+        if (load.bulletCoating != null && load.bulletCoating!.isNotEmpty)
+          pw.Text('Bullet Coating: ${load.bulletCoating}'),
         pw.Text('Dangerous: ${load.isDangerous ? 'YES' : 'No'}'),
         pw.SizedBox(height: 12),
         pw.Text('Best Result', style: pw.TextStyle(fontSize: 16)),
@@ -116,7 +268,7 @@ class ExportService {
   String _buildLoadsCsv(List<LoadRecipe> loads) {
     final buffer = StringBuffer();
     buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletType,brass,primer,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
+      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
     );
     for (final load in loads) {
       buffer.writeln(
@@ -126,9 +278,14 @@ class ExportService {
           load.cartridge,
           load.bulletBrand,
           load.bulletWeightGr,
+          load.bulletDiameter,
           load.bulletType,
           load.brass,
           load.primer,
+          load.caseResize,
+          load.gasCheckMaterial,
+          load.gasCheckInstallMethod,
+          load.bulletCoating,
           load.powder,
           load.powderChargeGr,
           load.coal,
@@ -181,17 +338,25 @@ class ExportService {
     return text;
   }
 
-  String _reportFileName(LoadRecipe load) {
+  String _reportFileName(LoadRecipe load, String stamp) {
     final safeName = load.recipeName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
-    return 'report_${load.cartridge}_$safeName.pdf';
+    final safeCartridge = load.cartridge.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    return 'loadintel_${safeCartridge}_${safeName}_$stamp.pdf';
   }
 
   Future<Directory> _exportDir() async {
     final directory = await getApplicationDocumentsDirectory();
-    final exportDir = Directory(path.join(directory.path, 'exports'));
+    final exportDir = Directory(path.join(directory.path, 'Exports'));
     if (!exportDir.existsSync()) {
       await exportDir.create(recursive: true);
     }
     return exportDir;
   }
+
+  String _timestamp() {
+    final now = DateTime.now();
+    return '${now.year}-${_two(now.month)}-${_two(now.day)}_${_two(now.hour)}${_two(now.minute)}${_two(now.second)}';
+  }
+
+  String _two(int value) => value.toString().padLeft(2, '0');
 }

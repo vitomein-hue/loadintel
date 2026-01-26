@@ -32,6 +32,26 @@ class SettingsRepositorySqlite implements SettingsRepository {
   }
 
   @override
+  Future<void> setString(String key, String value) async {
+    final db = await _db.database;
+    await db.insert(
+      'settings',
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<String?> getString(String key) async {
+    final db = await _db.database;
+    final rows = await db.query('settings', where: 'key = ?', whereArgs: [key]);
+    if (rows.isEmpty) {
+      return null;
+    }
+    return rows.first['value'] as String?;
+  }
+
+  @override
   Future<void> setLifetimeUnlocked(bool value) async {
     await setBool(SettingsKeys.lifetimeUnlocked, value);
   }

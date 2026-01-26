@@ -44,16 +44,16 @@ class LoadIntelApp extends StatelessWidget {
         Provider<TargetPhotoRepository>(
           create: (_) => TargetPhotoRepositorySqlite(database),
         ),
-        ProxyProvider3<LoadRecipeRepository, RangeResultRepository,
-            TargetPhotoRepository, ExportService>(
-          update: (_, loadRepo, rangeRepo, photoRepo, previous) =>
-              previous ?? ExportService(loadRepo, rangeRepo, photoRepo),
-        ),
         Provider<InventoryRepository>(
           create: (_) => InventoryRepositorySqlite(database),
         ),
         Provider<SettingsRepository>(
           create: (_) => SettingsRepositorySqlite(database),
+        ),
+        ProxyProvider4<LoadRecipeRepository, RangeResultRepository,
+            TargetPhotoRepository, SettingsRepository, ExportService>(
+          update: (_, loadRepo, rangeRepo, photoRepo, settingsRepo, previous) =>
+              previous ?? ExportService(loadRepo, rangeRepo, photoRepo, settingsRepo),
         ),
         ProxyProvider<SettingsRepository, PurchaseService>(
           update: (_, settings, previous) {

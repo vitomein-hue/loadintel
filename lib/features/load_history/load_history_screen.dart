@@ -137,6 +137,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
           final newLoads = _applyRecipeFilters(data.newLoads);
           final testedLoads = _applyTestedFilters(data.testedLoads);
 
+          final bottomInset = MediaQuery.of(context).padding.bottom;
           return Column(
             children: [
               _FilterRow(
@@ -163,7 +164,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
               ),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
                   children: [
                     Text(
                       'New Loads',
@@ -296,6 +297,15 @@ class _TestedLoadTile extends StatelessWidget {
                 Text('Firearm: ${firearm?.name ?? 'Unknown'}'),
                 if (recipe.coal != null || recipe.seatingDepth != null)
                   Text('COAL: ${recipe.coal ?? '-'} | Seating: ${recipe.seatingDepth ?? '-'}'),
+                if (recipe.caseResize != null && recipe.caseResize!.isNotEmpty)
+                  Text('Case Resize: ${recipe.caseResize}'),
+                if (recipe.gasCheckMaterial != null && recipe.gasCheckMaterial!.isNotEmpty)
+                  Text('Gas Check Material: ${recipe.gasCheckMaterial}'),
+                if (recipe.gasCheckInstallMethod != null &&
+                    recipe.gasCheckInstallMethod!.isNotEmpty)
+                  Text('Gas Check Install: ${recipe.gasCheckInstallMethod}'),
+                if (recipe.bulletCoating != null && recipe.bulletCoating!.isNotEmpty)
+                  Text('Bullet Coating: ${recipe.bulletCoating}'),
                 if (bestResult != null)
                   Text(
                     'Best group: ${bestResult.groupSizeIn.toStringAsFixed(2)} in | '
@@ -669,6 +679,9 @@ String _bulletSummary(LoadRecipe recipe) {
   }
   if (recipe.bulletWeightGr != null) {
     parts.add('${recipe.bulletWeightGr!.toStringAsFixed(0)}gr');
+  }
+  if (recipe.bulletDiameter != null) {
+    parts.add('${recipe.bulletDiameter}');
   }
   if (recipe.bulletType != null && recipe.bulletType!.isNotEmpty) {
     parts.add(recipe.bulletType!);

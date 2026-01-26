@@ -5,9 +5,14 @@
     required this.cartridge,
     this.bulletBrand,
     this.bulletWeightGr,
+    this.bulletDiameter,
     this.bulletType,
     this.brass,
     this.primer,
+    this.caseResize,
+    this.gasCheckMaterial,
+    this.gasCheckInstallMethod,
+    this.bulletCoating,
     required this.powder,
     required this.powderChargeGr,
     this.coal,
@@ -25,9 +30,14 @@
   final String cartridge;
   final String? bulletBrand;
   final double? bulletWeightGr;
+  final double? bulletDiameter;
   final String? bulletType;
   final String? brass;
   final String? primer;
+  final String? caseResize;
+  final String? gasCheckMaterial;
+  final String? gasCheckInstallMethod;
+  final String? bulletCoating;
   final String powder;
   final double powderChargeGr;
   final double? coal;
@@ -45,9 +55,14 @@
     String? cartridge,
     String? bulletBrand,
     double? bulletWeightGr,
+    double? bulletDiameter,
     String? bulletType,
     String? brass,
     String? primer,
+    String? caseResize,
+    String? gasCheckMaterial,
+    String? gasCheckInstallMethod,
+    String? bulletCoating,
     String? powder,
     double? powderChargeGr,
     double? coal,
@@ -65,9 +80,14 @@
       cartridge: cartridge ?? this.cartridge,
       bulletBrand: bulletBrand ?? this.bulletBrand,
       bulletWeightGr: bulletWeightGr ?? this.bulletWeightGr,
+      bulletDiameter: bulletDiameter ?? this.bulletDiameter,
       bulletType: bulletType ?? this.bulletType,
       brass: brass ?? this.brass,
       primer: primer ?? this.primer,
+      caseResize: caseResize ?? this.caseResize,
+      gasCheckMaterial: gasCheckMaterial ?? this.gasCheckMaterial,
+      gasCheckInstallMethod: gasCheckInstallMethod ?? this.gasCheckInstallMethod,
+      bulletCoating: bulletCoating ?? this.bulletCoating,
       powder: powder ?? this.powder,
       powderChargeGr: powderChargeGr ?? this.powderChargeGr,
       coal: coal ?? this.coal,
@@ -92,9 +112,14 @@
       'cartridge': cartridge,
       'bulletBrand': bulletBrand,
       'bulletWeightGr': bulletWeightGr,
+      'bulletDiameter': bulletDiameter,
       'bulletType': bulletType,
       'brass': brass,
       'primer': primer,
+      'caseResize': caseResize,
+      'gasCheckMaterial': gasCheckMaterial,
+      'gasCheckInstallMethod': gasCheckInstallMethod,
+      'bulletCoating': bulletCoating,
       'powder': powder,
       'powderChargeGr': powderChargeGr,
       'coal': coal,
@@ -120,9 +145,14 @@
       cartridge: map['cartridge'] as String,
       bulletBrand: map['bulletBrand'] as String?,
       bulletWeightGr: (map['bulletWeightGr'] as num?)?.toDouble(),
+      bulletDiameter: (map['bulletDiameter'] as num?)?.toDouble(),
       bulletType: map['bulletType'] as String?,
       brass: map['brass'] as String?,
       primer: map['primer'] as String?,
+      caseResize: map['caseResize'] as String?,
+      gasCheckMaterial: map['gasCheckMaterial'] as String?,
+      gasCheckInstallMethod: map['gasCheckInstallMethod'] as String?,
+      bulletCoating: map['bulletCoating'] as String?,
       powder: map['powder'] as String,
       powderChargeGr: (map['powderChargeGr'] as num).toDouble(),
       coal: (map['coal'] as num?)?.toDouble(),

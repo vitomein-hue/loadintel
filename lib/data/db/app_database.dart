@@ -16,11 +16,12 @@ class AppDatabase {
     final fullPath = path.join(dbPath, 'loadintel.db');
     final db = await openDatabase(
       fullPath,
-      version: 1,
+      version: 3,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
       onCreate: _createSchema,
+      onUpgrade: _upgradeSchema,
     );
     _database = db;
     return db;
@@ -50,9 +51,14 @@ class AppDatabase {
         cartridge TEXT NOT NULL,
         bulletBrand TEXT,
         bulletWeightGr REAL,
+        bulletDiameter REAL,
         bulletType TEXT,
         brass TEXT,
         primer TEXT,
+        caseResize TEXT,
+        gasCheckMaterial TEXT,
+        gasCheckInstallMethod TEXT,
+        bulletCoating TEXT,
         powder TEXT NOT NULL,
         powderChargeGr REAL NOT NULL,
         coal REAL,
@@ -120,6 +126,18 @@ class AppDatabase {
         value TEXT
       )
     ''');
+  }
+
+  Future<void> _upgradeSchema(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN caseResize TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN gasCheckMaterial TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN gasCheckInstallMethod TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN bulletCoating TEXT');
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN bulletDiameter REAL');
+    }
   }
 }
 

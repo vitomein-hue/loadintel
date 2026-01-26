@@ -1,4 +1,8 @@
 ﻿import 'package:flutter/material.dart';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:loadintel/core/theme/app_colors.dart';
 import 'package:loadintel/core/utils/free_tier.dart';
 import 'package:loadintel/domain/models/firearm.dart';
 import 'package:loadintel/domain/models/inventory_item.dart';
@@ -23,6 +27,9 @@ class BuildLoadScreen extends StatefulWidget {
 }
 
 class _BuildLoadScreenState extends State<BuildLoadScreen> {
+  static const String _addNewOptionValue = '__add_new__';
+  static const String _customOptionPrefix = '__custom_option__::';
+
   final _formKey = GlobalKey<FormState>();
   final _uuid = const Uuid();
 
@@ -30,7 +37,12 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   late final TextEditingController _cartridgeController;
   late final TextEditingController _bulletBrandController;
   late final TextEditingController _bulletWeightController;
+  late final TextEditingController _bulletDiameterController;
   late final TextEditingController _bulletTypeController;
+  late final TextEditingController _caseResizeController;
+  late final TextEditingController _gasCheckMaterialController;
+  late final TextEditingController _gasCheckInstallMethodController;
+  late final TextEditingController _bulletCoatingController;
   late final TextEditingController _brassController;
   late final TextEditingController _primerController;
   late final TextEditingController _powderController;
@@ -44,6 +56,10 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   String? _selectedBullet;
   String? _selectedPowder;
   String? _selectedPrimer;
+  String? _selectedCaseResize;
+  String? _selectedGasCheckMaterial;
+  String? _selectedGasCheckInstallMethod;
+  String? _selectedBulletCoating;
 
   bool _isDangerous = false;
   DateTime? _dangerConfirmedAt;
@@ -60,7 +76,16 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _bulletBrandController = TextEditingController(text: recipe?.bulletBrand ?? '');
     _bulletWeightController =
         TextEditingController(text: recipe?.bulletWeightGr?.toString() ?? '');
+    _bulletDiameterController =
+        TextEditingController(text: recipe?.bulletDiameter?.toString() ?? '');
     _bulletTypeController = TextEditingController(text: recipe?.bulletType ?? '');
+    _caseResizeController = TextEditingController(text: recipe?.caseResize ?? '');
+    _gasCheckMaterialController =
+        TextEditingController(text: recipe?.gasCheckMaterial ?? '');
+    _gasCheckInstallMethodController =
+        TextEditingController(text: recipe?.gasCheckInstallMethod ?? '');
+    _bulletCoatingController =
+        TextEditingController(text: recipe?.bulletCoating ?? '');
     _brassController = TextEditingController(text: recipe?.brass ?? '');
     _primerController = TextEditingController(text: recipe?.primer ?? '');
     _powderController = TextEditingController(text: recipe?.powder ?? '');
@@ -76,6 +101,10 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _selectedBullet = recipe?.bulletBrand;
     _selectedPowder = recipe?.powder;
     _selectedPrimer = recipe?.primer;
+    _selectedCaseResize = recipe?.caseResize;
+    _selectedGasCheckMaterial = recipe?.gasCheckMaterial;
+    _selectedGasCheckInstallMethod = recipe?.gasCheckInstallMethod;
+    _selectedBulletCoating = recipe?.bulletCoating;
 
     _isDangerous = recipe?.isDangerous ?? false;
     _dangerConfirmedAt = recipe?.dangerConfirmedAt;
@@ -89,7 +118,12 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _cartridgeController.dispose();
     _bulletBrandController.dispose();
     _bulletWeightController.dispose();
+    _bulletDiameterController.dispose();
     _bulletTypeController.dispose();
+    _caseResizeController.dispose();
+    _gasCheckMaterialController.dispose();
+    _gasCheckInstallMethodController.dispose();
+    _bulletCoatingController.dispose();
     _brassController.dispose();
     _primerController.dispose();
     _powderController.dispose();
@@ -103,6 +137,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   Future<_BuildLoadData> _loadData() async {
     final firearmRepo = context.read<FirearmRepository>();
     final inventoryRepo = context.read<InventoryRepository>();
+    final settingsRepo = context.read<SettingsRepository>();
     final firearms = await firearmRepo.listFirearms();
     final items = await inventoryRepo.listItems();
     final inventoryByType = <String, List<InventoryItem>>{};
@@ -112,9 +147,21 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     for (final list in inventoryByType.values) {
       list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     }
+    final customCaseResize =
+        await _loadCustomOptions(settingsRepo, SettingsKeys.caseResizeOptions);
+    final customGasCheckMaterial =
+        await _loadCustomOptions(settingsRepo, SettingsKeys.gasCheckMaterialOptions);
+    final customGasCheckInstallMethod =
+        await _loadCustomOptions(settingsRepo, SettingsKeys.gasCheckInstallMethodOptions);
+    final customBulletCoating =
+        await _loadCustomOptions(settingsRepo, SettingsKeys.bulletCoatingOptions);
     return _BuildLoadData(
       firearms: firearms,
       inventoryByType: inventoryByType,
+      customCaseResize: customCaseResize,
+      customGasCheckMaterial: customGasCheckMaterial,
+      customGasCheckInstallMethod: customGasCheckInstallMethod,
+      customBulletCoating: customBulletCoating,
     );
   }
 
@@ -177,6 +224,154 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     );
   }
 
+  Future<List<String>> _loadCustomOptions(
+    SettingsRepository settingsRepo,
+    String key,
+  ) async {
+    final raw = await settingsRepo.getString(key);
+    if (raw == null || raw.trim().isEmpty) {
+      return [];
+    }
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list.whereType<String>().toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<String?> _pickCustomOption({
+    required String label,
+    required String prefsKey,
+    required List<String> predefinedOptions,
+    required List<String> customOptions,
+  }) async {
+    final options = <String>[...predefinedOptions, ...customOptions];
+    final controller = TextEditingController();
+    bool isAdding = false;
+    String? errorText;
+    final result = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: StatefulBuilder(
+            builder: (context, setSheetState) {
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  8,
+                  16,
+                  16 + MediaQuery.of(context).padding.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(label, style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    if (!isAdding)
+                      Flexible(
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: [
+                            ...options.map(
+                              (option) => ListTile(
+                                title: Text(option),
+                                onTap: () => Navigator.of(context).pop(option),
+                              ),
+                            ),
+                            const Divider(),
+                            ListTile(
+                              leading: const Icon(Icons.add),
+                              title: const Text('+ Add...'),
+                              onTap: () => setSheetState(() {
+                                isAdding = true;
+                                errorText = null;
+                                controller.clear();
+                              }),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Column(
+                        children: [
+                          TextField(
+                            controller: controller,
+                            decoration: InputDecoration(
+                              labelText: label,
+                              errorText: errorText,
+                            ),
+                            textInputAction: TextInputAction.done,
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  setSheetState(() {
+                                    isAdding = false;
+                                    errorText = null;
+                                  });
+                                },
+                                child: const Text('Cancel'),
+                              ),
+                              const Spacer(),
+                              ElevatedButton(
+                                onPressed: () {
+                                  final trimmed = controller.text.trim();
+                                  if (trimmed.isEmpty) {
+                                    setSheetState(() {
+                                      errorText = 'Enter a value';
+                                    });
+                                    return;
+                                  }
+                                  final existing = options.firstWhere(
+                                    (option) =>
+                                        option.toLowerCase() ==
+                                        trimmed.toLowerCase(),
+                                    orElse: () => '',
+                                  );
+                                  if (existing.isNotEmpty) {
+                                    Navigator.of(context).pop(existing);
+                                    return;
+                                  }
+                                  Navigator.of(context)
+                                      .pop('$_customOptionPrefix$trimmed');
+                                },
+                                child: const Text('Add'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+    controller.dispose();
+    if (!mounted || result == null) {
+      return null;
+    }
+    if (result.startsWith(_customOptionPrefix)) {
+      final trimmed = result.substring(_customOptionPrefix.length);
+      final updated = [...customOptions, trimmed];
+      await context.read<SettingsRepository>().setString(
+            prefsKey,
+            jsonEncode(updated),
+          );
+      debugPrint('Saved custom option [$prefsKey]: $trimmed');
+      await _refreshData();
+      return trimmed;
+    }
+    return result;
+  }
+
   Future<String?> _pickInventoryItem({
     required String title,
     required List<InventoryItem> items,
@@ -236,11 +431,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                           const Divider(),
                           ListTile(
                             leading: const Icon(Icons.add),
-                            title: const Text('Add new'),
-                            onTap: () async {
-                              Navigator.of(context).pop();
-                              await _openInventory(type);
-                            },
+                            title: const Text('+ Add...'),
+                            onTap: () => Navigator.of(context).pop(_addNewOptionValue),
                           ),
                         ],
                       ),
@@ -259,7 +451,95 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     if (result.isEmpty) {
       return '';
     }
+    if (result == _addNewOptionValue) {
+      return _addInventoryItem(type: type, items: items);
+    }
     return result;
+  }
+
+  Future<String?> _addInventoryItem({
+    required String type,
+    required List<InventoryItem> items,
+  }) async {
+    final label = _inventoryLabelForType(type);
+    final value = await _showAddInventoryDialog(label);
+    if (value == null || value.trim().isEmpty) {
+      return null;
+    }
+    final trimmed = value.trim();
+    InventoryItem? existing;
+    for (final item in items) {
+      if (item.name.toLowerCase() == trimmed.toLowerCase()) {
+        existing = item;
+        break;
+      }
+    }
+    if (existing != null) {
+      return existing.name;
+    }
+
+    final now = DateTime.now();
+    final item = InventoryItem(
+      id: _uuid.v4(),
+      type: type,
+      name: trimmed,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await context.read<InventoryRepository>().upsertItem(item);
+    debugPrint('Saved inventory item [$type]: $trimmed');
+    await _refreshData();
+    return trimmed;
+  }
+
+  Future<String?> _showAddInventoryDialog(String label) async {
+    final controller = TextEditingController();
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Add $label'),
+          content: TextField(
+            controller: controller,
+            decoration: InputDecoration(labelText: label),
+            textInputAction: TextInputAction.done,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final value = controller.text.trim();
+                if (value.isEmpty) {
+                  return;
+                }
+                Navigator.of(context).pop(value);
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  String _inventoryLabelForType(String type) {
+    switch (type) {
+      case 'bullets':
+        return 'Bullet';
+      case 'brass':
+        return 'Brass';
+      case 'primers':
+        return 'Primer';
+      case 'powder':
+        return 'Powder';
+      default:
+        return 'Item';
+    }
   }
 
   Future<bool> _canCreateRecipe() async {
@@ -338,11 +618,16 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       cartridge: _cartridgeController.text.trim(),
       bulletBrand: _selectedBullet,
       bulletWeightGr: double.tryParse(_bulletWeightController.text.trim()),
+      bulletDiameter: double.tryParse(_bulletDiameterController.text.trim()),
       bulletType: _bulletTypeController.text.trim().isEmpty
           ? null
           : _bulletTypeController.text.trim(),
       brass: _selectedBrass,
       primer: _selectedPrimer,
+      caseResize: _selectedCaseResize,
+      gasCheckMaterial: _selectedGasCheckMaterial,
+      gasCheckInstallMethod: _selectedGasCheckInstallMethod,
+      bulletCoating: _selectedBulletCoating,
       powder: _selectedPowder!,
       powderChargeGr: double.parse(_powderChargeController.text.trim()),
       coal: double.tryParse(_coalController.text.trim()),
@@ -355,6 +640,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       updatedAt: now,
     );
 
+    debugPrint('Saving load recipe ${recipe.id}');
     final repo = context.read<LoadRecipeRepository>();
     await repo.upsertRecipe(recipe);
 
@@ -403,6 +689,10 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
             final bulletItems = inventoryByType['bullets'] ?? [];
             final powderItems = inventoryByType['powder'] ?? [];
             final primerItems = inventoryByType['primers'] ?? [];
+            final customCaseResize = data?.customCaseResize ?? [];
+            final customGasCheckMaterial = data?.customGasCheckMaterial ?? [];
+            final customGasCheckInstallMethod = data?.customGasCheckInstallMethod ?? [];
+            final customBulletCoating = data?.customBulletCoating ?? [];
 
             return ListView(
               padding: EdgeInsets.fromLTRB(
@@ -487,6 +777,16 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
+                        controller: _bulletDiameterController,
+                        decoration: const InputDecoration(
+                          labelText: 'Bullet Diameter',
+                        ),
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
                         controller: _bulletWeightController,
                         decoration: const InputDecoration(labelText: 'Bullet Weight (gr)'),
                         keyboardType:
@@ -498,6 +798,102 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                         controller: _bulletTypeController,
                         decoration: const InputDecoration(labelText: 'Bullet Type'),
                         textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _caseResizeController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Case Resize',
+                          suffixIcon: Icon(Icons.arrow_drop_down),
+                        ),
+                        onTap: () async {
+                          final selected = await _pickCustomOption(
+                            label: 'Case Resize',
+                            prefsKey: SettingsKeys.caseResizeOptions,
+                            predefinedOptions: _caseResizeOptions,
+                            customOptions: customCaseResize,
+                          );
+                          if (selected == null) {
+                            return;
+                          }
+                          setState(() {
+                            _selectedCaseResize = selected;
+                            _caseResizeController.text = selected;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _gasCheckMaterialController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Gas Check Material',
+                          suffixIcon: Icon(Icons.arrow_drop_down),
+                        ),
+                        onTap: () async {
+                          final selected = await _pickCustomOption(
+                            label: 'Gas Check Material',
+                            prefsKey: SettingsKeys.gasCheckMaterialOptions,
+                            predefinedOptions: _gasCheckMaterialOptions,
+                            customOptions: customGasCheckMaterial,
+                          );
+                          if (selected == null) {
+                            return;
+                          }
+                          setState(() {
+                            _selectedGasCheckMaterial = selected;
+                            _gasCheckMaterialController.text = selected;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _gasCheckInstallMethodController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Gas Check Install Method',
+                          suffixIcon: Icon(Icons.arrow_drop_down),
+                        ),
+                        onTap: () async {
+                          final selected = await _pickCustomOption(
+                            label: 'Gas Check Install Method',
+                            prefsKey: SettingsKeys.gasCheckInstallMethodOptions,
+                            predefinedOptions: _gasCheckInstallMethodOptions,
+                            customOptions: customGasCheckInstallMethod,
+                          );
+                          if (selected == null) {
+                            return;
+                          }
+                          setState(() {
+                            _selectedGasCheckInstallMethod = selected;
+                            _gasCheckInstallMethodController.text = selected;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _bulletCoatingController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Bullet Coating',
+                          suffixIcon: Icon(Icons.arrow_drop_down),
+                        ),
+                        onTap: () async {
+                          final selected = await _pickCustomOption(
+                            label: 'Bullet Coating',
+                            prefsKey: SettingsKeys.bulletCoatingOptions,
+                            predefinedOptions: _bulletCoatingOptions,
+                            customOptions: customBulletCoating,
+                          );
+                          if (selected == null) {
+                            return;
+                          }
+                          setState(() {
+                            _selectedBulletCoating = selected;
+                            _bulletCoatingController.text = selected;
+                          });
+                        },
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -647,10 +1043,18 @@ class _BuildLoadData {
   const _BuildLoadData({
     required this.firearms,
     required this.inventoryByType,
+    required this.customCaseResize,
+    required this.customGasCheckMaterial,
+    required this.customGasCheckInstallMethod,
+    required this.customBulletCoating,
   });
 
   final List<Firearm> firearms;
   final Map<String, List<InventoryItem>> inventoryByType;
+  final List<String> customCaseResize;
+  final List<String> customGasCheckMaterial;
+  final List<String> customGasCheckInstallMethod;
+  final List<String> customBulletCoating;
 }
 
 class _AddFirearmDialog extends StatefulWidget {
@@ -690,6 +1094,11 @@ class _AddFirearmDialogState extends State<_AddFirearmDialog> {
             DropdownButtonFormField<FirearmType>(
               value: _type,
               decoration: const InputDecoration(labelText: 'Type'),
+              isExpanded: true,
+              dropdownColor: AppColors.card,
+              borderRadius: BorderRadius.circular(14),
+              iconEnabledColor: AppColors.secondary,
+              style: Theme.of(context).textTheme.bodyLarge,
               items: FirearmType.values
                   .map(
                     (type) => DropdownMenuItem(
@@ -733,3 +1142,55 @@ class _AddFirearmDialogState extends State<_AddFirearmDialog> {
     );
   }
 }
+
+const List<String> _caseResizeOptions = [
+  'No Resize',
+  'Neck Size Only',
+  'Partial Full-Length',
+  'Full-Length Resize',
+  'Small Base Resize',
+  'Base Die Resize',
+  'Body Die Only',
+  'Redding Competition / Bushing Die',
+];
+
+const List<String> _gasCheckMaterialOptions = [
+  'None (Plain Base)',
+  'Copper',
+  'Gilding Metal',
+  'Aluminum',
+  'Brass',
+  'Polymer / Hi-Tek',
+  'Paper Patch',
+  'Powder-Coat Base Only',
+  'Experimental / Custom',
+];
+
+const List<String> _gasCheckInstallMethodOptions = [
+  'None (Plain Base)',
+  'Pressed On (Sizing Die)',
+  'Crimped On',
+  'Swaged On',
+  'Push-Through Seated',
+  'Glued (Epoxy / Adhesive)',
+  'Baked On (Powder Coat or Hi-Tek)',
+  'Paper Patched',
+  'Experimental / Custom',
+];
+
+const List<String> _bulletCoatingOptions = [
+  'None (Bare Lead)',
+  'Wax / Grease Lube (Traditional)',
+  'Powder Coat',
+  'Hi-Tek Coating',
+  'Polymer Jacket (Nylon / Polymer Dip)',
+  'Moly Coated',
+  'Hex Boron Nitride (hBN)',
+  'Graphite Coated',
+  'Paper Patch',
+  'Electroplated (Thin Copper)',
+  'Full Metal Jacket (FMJ)',
+  'Jacketed Soft Point (JSP)',
+  'Jacketed Hollow Point (JHP)',
+  'Experimental / Custom',
+];
