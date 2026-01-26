@@ -89,6 +89,22 @@ class BackupExportScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Backup & Export'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const LegalDisclaimerScreen()),
+              );
+            },
+            child: Text(
+              'Legal',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -138,6 +154,70 @@ class BackupExportScreen extends StatelessWidget {
               onTap: () => _exportPdf(context),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class LegalDisclaimerScreen extends StatelessWidget {
+  const LegalDisclaimerScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Legal'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: const [
+          Text(
+            'Legal & Safety Disclaimer',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Load Intel is a data logging and reference tool only. It does not provide load data, '
+            'reloading recipes, or ballistic recommendations.',
+          ),
+          SizedBox(height: 12),
+          Text(
+            'All ammunition reloading involves risk. The user is solely responsible for verifying '
+            'the safety and suitability of all load data entered into this app. Always follow '
+            'published reloading manuals, component manufacturer guidelines, and safe reloading '
+            'practices.',
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Load Intel does not validate powder charges, bullet seating depth, pressure limits, '
+            'or firearm compatibility. Data stored in this app is entered by the user and may '
+            'contain errors.',
+          ),
+          SizedBox(height: 12),
+          Text('By using this app, you acknowledge that:'),
+          SizedBox(height: 8),
+          Text('You are responsible for the safe use of all firearms and ammunition.'),
+          SizedBox(height: 8),
+          Text(
+            'You understand that improper or unsafe reloading can result in injury, death, or '
+            'property damage.',
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Load Intel and its developers are not liable for any harm resulting from the use '
+            'or misuse of this application or any data stored within it.',
+          ),
+          SizedBox(height: 8),
+          Text(
+            'This app is not intended to replace professional training, manufacturer specifications, '
+            'or published reloading manuals.',
+          ),
+          SizedBox(height: 12),
+          Text('Use responsibly.'),
         ],
       ),
     );
