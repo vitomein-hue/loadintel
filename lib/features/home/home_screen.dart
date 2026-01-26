@@ -33,7 +33,7 @@ class HomeScreen extends StatelessWidget {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -67,7 +67,6 @@ class HomeScreen extends StatelessWidget {
                     );
                   },
                 ),
-                SizedBox(height: MediaQuery.of(context).padding.bottom),
               ],
             ),
           ),
