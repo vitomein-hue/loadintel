@@ -29,6 +29,7 @@ class BuildLoadScreen extends StatefulWidget {
 class _BuildLoadScreenState extends State<BuildLoadScreen> {
   static const String _addNewOptionValue = '__add_new__';
   static const String _customOptionPrefix = '__custom_option__::';
+  static const String _inventoryAddedPrefix = '__inventory_added__::';
 
   final _formKey = GlobalKey<FormState>();
   final _uuid = const Uuid();
@@ -378,12 +379,16 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     required String type,
     required bool allowClear,
   }) async {
+    final addController = TextEditingController();
+    String query = '';
+    bool isAdding = false;
+    String? errorText;
+    final label = _inventoryLabelForType(type);
     final result = await showModalBottomSheet<String?>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (context) {
-        String query = '';
         return SafeArea(
           child: StatefulBuilder(
             builder: (context, setSheetState) {
@@ -398,45 +403,113 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(title, style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 8),
-                    TextField(
-                      onChanged: (value) => setSheetState(() => query = value),
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        hintText: 'Type to filter',
+                    if (!isAdding) ...[
+                      const SizedBox(height: 8),
+                      TextField(
+                        onChanged: (value) => setSheetState(() => query = value),
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.search),
+                          hintText: 'Type to filter',
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Flexible(
-                      child: ListView(
-                        shrinkWrap: true,
-                        children: [
-                          if (allowClear)
-                            ListTile(
-                              title: const Text('Clear selection'),
-                              onTap: () => Navigator.of(context).pop(''),
-                            ),
-                          if (filtered.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: Text('No inventory items found.'),
-                            )
-                          else
-                            ...filtered.map(
-                              (item) => ListTile(
-                                title: Text(item.name),
-                                onTap: () => Navigator.of(context).pop(item.name),
+                      const SizedBox(height: 8),
+                      Flexible(
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: [
+                            if (allowClear)
+                              ListTile(
+                                title: const Text('Clear selection'),
+                                onTap: () => Navigator.of(context).pop(''),
                               ),
+                            if (filtered.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: Text('No inventory items found.'),
+                              )
+                            else
+                              ...filtered.map(
+                                (item) => ListTile(
+                                  title: Text(item.name),
+                                  onTap: () => Navigator.of(context).pop(item.name),
+                                ),
+                              ),
+                            const Divider(),
+                            ListTile(
+                              leading: const Icon(Icons.add),
+                              title: const Text('+ Add...'),
+                              onTap: () => setSheetState(() {
+                                isAdding = true;
+                                errorText = null;
+                                addController.clear();
+                              }),
                             ),
-                          const Divider(),
-                          ListTile(
-                            leading: const Icon(Icons.add),
-                            title: const Text('+ Add...'),
-                            onTap: () => Navigator.of(context).pop(_addNewOptionValue),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: addController,
+                        decoration: InputDecoration(
+                          labelText: label,
+                          errorText: errorText,
+                        ),
+                        textInputAction: TextInputAction.done,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setSheetState(() {
+                                isAdding = false;
+                                errorText = null;
+                              });
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          const Spacer(),
+                          ElevatedButton(
+                            onPressed: () async {
+                              final trimmed = addController.text.trim();
+                              if (trimmed.isEmpty) {
+                                setSheetState(() => errorText = 'Enter a value');
+                                return;
+                              }
+                              InventoryItem? existing;
+                              for (final item in items) {
+                                if (item.name.toLowerCase() ==
+                                    trimmed.toLowerCase()) {
+                                  existing = item;
+                                  break;
+                                }
+                              }
+                              if (existing != null) {
+                                Navigator.of(context).pop(existing.name);
+                                return;
+                              }
+                              final now = DateTime.now();
+                              final item = InventoryItem(
+                                id: _uuid.v4(),
+                                type: type,
+                                name: trimmed,
+                                createdAt: now,
+                                updatedAt: now,
+                              );
+                              await context.read<InventoryRepository>().upsertItem(item);
+                              debugPrint('Saved inventory item [$type]: $trimmed');
+                              if (!context.mounted) {
+                                return;
+                              }
+                              Navigator.of(context)
+                                  .pop('$_inventoryAddedPrefix$trimmed');
+                            },
+                            child: const Text('Add'),
                           ),
                         ],
                       ),
-                    ),
+                    ],
                   ],
                 ),
               );
@@ -445,86 +518,18 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
         );
       },
     );
+    addController.dispose();
     if (result == null) {
       return null;
     }
     if (result.isEmpty) {
       return '';
     }
-    if (result == _addNewOptionValue) {
-      return _addInventoryItem(type: type, items: items);
+    if (result.startsWith(_inventoryAddedPrefix)) {
+      await _refreshData();
+      return result.substring(_inventoryAddedPrefix.length);
     }
     return result;
-  }
-
-  Future<String?> _addInventoryItem({
-    required String type,
-    required List<InventoryItem> items,
-  }) async {
-    final label = _inventoryLabelForType(type);
-    final value = await _showAddInventoryDialog(label);
-    if (value == null || value.trim().isEmpty) {
-      return null;
-    }
-    final trimmed = value.trim();
-    InventoryItem? existing;
-    for (final item in items) {
-      if (item.name.toLowerCase() == trimmed.toLowerCase()) {
-        existing = item;
-        break;
-      }
-    }
-    if (existing != null) {
-      return existing.name;
-    }
-
-    final now = DateTime.now();
-    final item = InventoryItem(
-      id: _uuid.v4(),
-      type: type,
-      name: trimmed,
-      createdAt: now,
-      updatedAt: now,
-    );
-    await context.read<InventoryRepository>().upsertItem(item);
-    debugPrint('Saved inventory item [$type]: $trimmed');
-    await _refreshData();
-    return trimmed;
-  }
-
-  Future<String?> _showAddInventoryDialog(String label) async {
-    final controller = TextEditingController();
-    try {
-      return await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Add $label'),
-          content: TextField(
-            controller: controller,
-            decoration: InputDecoration(labelText: label),
-            textInputAction: TextInputAction.done,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final value = controller.text.trim();
-                if (value.isEmpty) {
-                  return;
-                }
-                Navigator.of(context).pop(value);
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      controller.dispose();
-    }
   }
 
   String _inventoryLabelForType(String type) {
@@ -1005,6 +1010,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       TextFormField(
                         controller: _notesController,
                         decoration: const InputDecoration(labelText: 'Notes'),
+                        textCapitalization: TextCapitalization.sentences,
                         maxLines: 3,
                       ),
                     ],
