@@ -175,24 +175,36 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                       const Text('No new loads yet.'),
                     for (final recipe in newLoads)
                       Card(
-                        child: CheckboxListTile(
-                          value: _selectedNewLoadIds.contains(recipe.id),
-                          onChanged: (value) => _toggleSelection(recipe.id, value),
-                          title: Text(recipe.recipeName),
-                          subtitle: Text(
-                            '${recipe.cartridge} - ${_powderSummary(recipe)}',
-                          ),
-                          secondary: recipe.isDangerous
-                              ? const Icon(Icons.flag, color: AppColors.danger)
-                              : null,
+                        child: Column(
+                          children: [
+                            CheckboxListTile(
+                              value: _selectedNewLoadIds.contains(recipe.id),
+                              onChanged: (value) => _toggleSelection(recipe.id, value),
+                              title: Text(recipe.recipeName),
+                              subtitle: Text(
+                                '${recipe.cartridge} - ${_powderSummary(recipe)}',
+                              ),
+                              secondary: recipe.isDangerous
+                                  ? const Icon(Icons.flag, color: AppColors.danger)
+                                  : null,
+                            ),
+                            if (recipe.notes != null && recipe.notes!.trim().isNotEmpty)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton(
+                                  onPressed: () => _showLoadNotes(
+                                    context,
+                                    recipe.recipeName,
+                                    recipeNotes: recipe.notes,
+                                    resultNotes: null,
+                                  ),
+                                  child: const Text('View Notes'),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     const SizedBox(height: 16),
-                    Text(
-                      'Tested Loads',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
                     if (testedLoads.isEmpty)
                       const Text('No tested loads yet.'),
                     _TestedLoadsGrouped(
@@ -377,6 +389,16 @@ class _TestedLoadTile extends StatelessWidget {
                       onPressed: onEditRecipe,
                       child: const Text('Clone Recipe'),
                     ),
+                    if (_hasNotes(recipe, bestResult?.notes))
+                      TextButton(
+                        onPressed: () => _showLoadNotes(
+                          context,
+                          recipe.recipeName,
+                          recipeNotes: recipe.notes,
+                          resultNotes: bestResult?.notes,
+                        ),
+                        child: const Text('View Notes'),
+                      ),
                     if (bestResult != null)
                       OutlinedButton(
                         onPressed: () {
@@ -399,6 +421,79 @@ class _TestedLoadTile extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _hasNotes(LoadRecipe recipe, String? resultNotes) {
+  final hasRecipeNotes = recipe.notes != null && recipe.notes!.trim().isNotEmpty;
+  final loadNotes = _extractTaggedNotes(resultNotes, 'Load');
+  final sessionNotes = _extractTaggedNotes(resultNotes, 'Session');
+  return hasRecipeNotes ||
+      (loadNotes != null && loadNotes.isNotEmpty) ||
+      (sessionNotes != null && sessionNotes.isNotEmpty);
+}
+
+String? _extractTaggedNotes(String? notes, String tag) {
+  if (notes == null || notes.trim().isEmpty) {
+    return null;
+  }
+  final lowerTag = '${tag.toLowerCase()}:';
+  for (final line in notes.split('\n')) {
+    final trimmed = line.trim();
+    if (trimmed.toLowerCase().startsWith(lowerTag)) {
+      return trimmed.substring(lowerTag.length).trim();
+    }
+  }
+  return null;
+}
+
+void _showLoadNotes(
+  BuildContext context,
+  String title, {
+  String? recipeNotes,
+  String? resultNotes,
+}) {
+  final recipeText = recipeNotes?.trim();
+  final loadNotes = _extractTaggedNotes(resultNotes, 'Load');
+  final sessionNotes = _extractTaggedNotes(resultNotes, 'Session');
+  showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Notes - $title'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (recipeText != null && recipeText.isNotEmpty) ...[
+            const Text('Recipe Notes:'),
+            const SizedBox(height: 4),
+            Text(recipeText),
+            const SizedBox(height: 12),
+          ],
+          if (loadNotes != null && loadNotes.isNotEmpty) ...[
+            const Text('Load Notes:'),
+            const SizedBox(height: 4),
+            Text(loadNotes),
+            const SizedBox(height: 12),
+          ],
+          if (sessionNotes != null && sessionNotes.isNotEmpty) ...[
+            const Text('Session Notes:'),
+            const SizedBox(height: 4),
+            Text(sessionNotes),
+          ],
+          if ((recipeText == null || recipeText.isEmpty) &&
+              (loadNotes == null || loadNotes.isEmpty) &&
+              (sessionNotes == null || sessionNotes.isEmpty))
+            const Text('No notes available.'),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _TestedLoadsGrouped extends StatelessWidget {

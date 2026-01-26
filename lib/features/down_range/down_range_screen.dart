@@ -218,7 +218,6 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
               entryState: activeState,
               sessionNotes: widget.sessionNotes,
               onAddCamera: () => _addPhoto(activeState, _photoService.pickFromCamera),
-              onAddGallery: () => _addPhoto(activeState, _photoService.pickFromGallery),
               onRemovePhoto: (path) {
                 setState(() {
                   activeState.photoPaths.remove(path);
@@ -237,7 +236,6 @@ class _DownRangeEntryCard extends StatelessWidget {
     required this.entryState,
     required this.sessionNotes,
     required this.onAddCamera,
-    required this.onAddGallery,
     required this.onRemovePhoto,
     required this.onSave,
   });
@@ -245,7 +243,6 @@ class _DownRangeEntryCard extends StatelessWidget {
   final _DownRangeEntryState entryState;
   final String sessionNotes;
   final VoidCallback onAddCamera;
-  final VoidCallback onAddGallery;
   final ValueChanged<String> onRemovePhoto;
   final VoidCallback? onSave;
 
@@ -283,11 +280,6 @@ class _DownRangeEntryCard extends StatelessWidget {
                   label: 'Camera',
                   icon: Icons.camera_alt,
                   onPressed: onAddCamera,
-                ),
-                _PhotoAddButton(
-                  label: 'Gallery',
-                  icon: Icons.photo_library,
-                  onPressed: onAddGallery,
                 ),
               ],
             ),

@@ -4,6 +4,7 @@ import 'package:loadintel/domain/models/firearm.dart';
 import 'package:loadintel/domain/models/load_recipe.dart';
 import 'package:loadintel/domain/repositories/firearm_repository.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
+import 'package:loadintel/features/build_load/build_load_screen.dart';
 import 'package:loadintel/features/down_range/down_range_screen.dart';
 import 'package:loadintel/features/range_test/models/range_test_entry.dart';
 import 'package:provider/provider.dart';
@@ -114,6 +115,11 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       builder: (context) => _LoadPickerSheet(
         existingIds: _entries.map((e) => e.recipe.id).toSet(),
         loads: available,
+        onBuildLoads: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const BuildLoadScreen()),
+          );
+        },
       ),
     );
 
@@ -310,6 +316,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: _sessionNotesController,
+                        textCapitalization: TextCapitalization.sentences,
                         maxLines: 4,
                         decoration: const InputDecoration(
                           hintText: 'Shared notes for this range test',
@@ -484,10 +491,12 @@ class _LoadPickerSheet extends StatefulWidget {
   const _LoadPickerSheet({
     required this.loads,
     required this.existingIds,
+    required this.onBuildLoads,
   });
 
   final List<LoadRecipe> loads;
   final Set<String> existingIds;
+  final VoidCallback onBuildLoads;
 
   @override
   State<_LoadPickerSheet> createState() => _LoadPickerSheetState();
@@ -512,9 +521,26 @@ class _LoadPickerSheetState extends State<_LoadPickerSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-          Text(
-            'Add Loads',
-            style: Theme.of(context).textTheme.titleLarge,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Add Loads',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              TextButton(
+                onPressed: _selectedIds.isEmpty
+                    ? null
+                    : () {
+                        final selected = available
+                            .where((recipe) => _selectedIds.contains(recipe.id))
+                            .toList();
+                        Navigator.of(context).pop(selected);
+                      },
+                child: const Text('Done'),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           if (available.isEmpty)
@@ -558,12 +584,10 @@ class _LoadPickerSheetState extends State<_LoadPickerSheet> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    final selected = available
-                        .where((recipe) => _selectedIds.contains(recipe.id))
-                        .toList();
-                    Navigator.of(context).pop(selected);
+                    Navigator.of(context).pop();
+                    widget.onBuildLoads();
                   },
-                  child: const Text('Add Selected'),
+                  child: const Text('Build Loads'),
                 ),
               ),
             ],
