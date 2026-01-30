@@ -12,6 +12,7 @@ import 'package:loadintel/domain/repositories/target_photo_repository.dart';
 import 'package:loadintel/features/build_load/build_load_screen.dart';
 import 'package:loadintel/features/load_history/edit_result_screen.dart';
 import 'package:loadintel/features/range_test/range_test_screen.dart';
+import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
 
 class LoadHistoryScreen extends StatefulWidget {
@@ -111,8 +112,59 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
     );
   }
 
+  Future<void> _deleteSelectedLoads() async {
+    if (_selectedNewLoadIds.isEmpty) {
+      return;
+    }
+
+    final selectionCount = _selectedNewLoadIds.length;
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete Loads'),
+            content: Text(
+              'Delete $selectionCount selected load${selectionCount == 1 ? '' : 's'}? '
+              'This cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.danger,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) {
+      return;
+    }
+
+    final repo = context.read<LoadRecipeRepository>();
+    final ids = List<String>.from(_selectedNewLoadIds);
+    for (final id in ids) {
+      await repo.deleteRecipe(id);
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _selectedNewLoadIds.clear();
+      _dataFuture = _loadData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isPro = context.watch<PurchaseService>().isProEntitled;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Load History'),
@@ -237,19 +289,58 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final data = await _dataFuture;
-                    final selected = data.newLoads
-                        .where((recipe) => _selectedNewLoadIds.contains(recipe.id))
-                        .toList();
-                    if (selected.isEmpty) {
-                      return;
-                    }
-                    _openRangeTest(selected);
-                  },
-                  child: const Text('Range Test'),
-                ),
+                child: isPro
+                    ? Row(
+                        children: [
+                          SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.danger,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: _deleteSelectedLoads,
+                              child: const Icon(Icons.delete),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                final data = await _dataFuture;
+                                final selected = data.newLoads
+                                    .where(
+                                      (recipe) => _selectedNewLoadIds.contains(recipe.id),
+                                    )
+                                    .toList();
+                                if (selected.isEmpty) {
+                                  return;
+                                }
+                                _openRangeTest(selected);
+                              },
+                              child: const Text('Range Test'),
+                            ),
+                          ),
+                        ],
+                      )
+                    : ElevatedButton(
+                        onPressed: () async {
+                          final data = await _dataFuture;
+                          final selected = data.newLoads
+                              .where((recipe) => _selectedNewLoadIds.contains(recipe.id))
+                              .toList();
+                          if (selected.isEmpty) {
+                            return;
+                          }
+                          _openRangeTest(selected);
+                        },
+                        child: const Text('Range Test'),
+                      ),
               ),
             ),
     );

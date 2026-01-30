@@ -1,5 +1,4 @@
 ﻿import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loadintel/features/inventory/inventory_screen.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
@@ -7,6 +6,7 @@ import 'package:loadintel/services/backup_service.dart';
 import 'package:loadintel/services/export_service.dart';
 import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class BackupExportScreen extends StatefulWidget {
   const BackupExportScreen({super.key});
@@ -51,9 +51,26 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Backup saved: $path')),
-    );
+    final box = context.findRenderObject() as RenderBox?;
+    try {
+      final result = await Share.shareXFiles(
+        [XFile(path)],
+        subject: 'Load Intel Backup',
+        sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+      );
+      if (result.status == ShareResultStatus.unavailable && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sharing is unavailable on this device.')),
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to share backup right now.')),
+      );
+    }
   }
 
   Future<void> _importBackup(BuildContext context) async {
@@ -92,6 +109,44 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Backup imported.')),
+    );
+  }
+
+  Future<void> _showBackupRestoreDialog() async {
+    final parentContext = context;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Backup/Restore'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _exportBackup(parentContext);
+            },
+            child: Row(
+              children: const [
+                Icon(Icons.file_download),
+                SizedBox(width: 12),
+                Text('Export Backup'),
+              ],
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _importBackup(parentContext);
+            },
+            child: Row(
+              children: const [
+                Icon(Icons.file_upload),
+                SizedBox(width: 12),
+                Text('Import Backup'),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -160,18 +215,10 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           ),
           Card(
             child: ListTile(
-              title: const Text('Export Backup'),
-              subtitle: const Text('Create a JSON backup of local data.'),
-              trailing: const Icon(Icons.file_download),
-              onTap: () => _exportBackup(context),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              title: const Text('Import Backup'),
-              subtitle: const Text('Replace local data with a backup file.'),
-              trailing: const Icon(Icons.file_upload),
-              onTap: () => _importBackup(context),
+              title: const Text('Backup/Restore'),
+              subtitle: const Text('Export or import a JSON backup.'),
+              trailing: const Icon(Icons.backup),
+              onTap: _showBackupRestoreDialog,
             ),
           ),
           const SizedBox(height: 16),
@@ -191,46 +238,6 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
               onTap: () => _exportPdf(context),
             ),
           ),
-          if (kDebugMode) ...[
-            const SizedBox(height: 16),
-            Card(
-              child: ListTile(
-                title: const Text('Pro gate (dev)'),
-                subtitle: const Text('Auto uses purchases; force on/off to test.'),
-                trailing: _overrideLoaded
-                    ? DropdownButtonHideUnderline(
-                        child: DropdownButton<ProEntitlementOverride>(
-                          value: _proOverride,
-                          onChanged: (value) {
-                            if (value == null) {
-                              return;
-                            }
-                            _setProOverride(value);
-                          },
-                          items: const [
-                            DropdownMenuItem(
-                              value: ProEntitlementOverride.auto,
-                              child: Text('Auto'),
-                            ),
-                            DropdownMenuItem(
-                              value: ProEntitlementOverride.forceOn,
-                              child: Text('Force On'),
-                            ),
-                            DropdownMenuItem(
-                              value: ProEntitlementOverride.forceOff,
-                              child: Text('Force Off'),
-                            ),
-                          ],
-                        ),
-                      )
-                    : const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-              ),
-            ),
-          ],
         ],
       ),
     );

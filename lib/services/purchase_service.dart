@@ -8,6 +8,7 @@ class PurchaseService extends ChangeNotifier {
   PurchaseService(this._settingsRepository);
 
   static const String proLifetimeProductId = 'loadintel_pro_lifetime';
+  static const ProEntitlementOverride _devOverride = ProEntitlementOverride.forceOn;
 
   final SettingsRepository _settingsRepository;
   final InAppPurchase _iap = InAppPurchase.instance;
@@ -41,6 +42,10 @@ class PurchaseService extends ChangeNotifier {
 
   Future<void> refreshEntitlement() async {
     if (kDebugMode) {
+      if (_devOverride != ProEntitlementOverride.auto) {
+        _setProEntitled(_devOverride == ProEntitlementOverride.forceOn);
+        return;
+      }
       final override = await _settingsRepository.getProEntitlementOverride();
       if (override == ProEntitlementOverride.forceOn) {
         _setProEntitled(true);

@@ -9,6 +9,7 @@ import 'package:loadintel/domain/repositories/firearm_repository.dart';
 import 'package:loadintel/domain/repositories/range_result_repository.dart';
 import 'package:loadintel/domain/repositories/target_photo_repository.dart';
 import 'package:loadintel/services/photo_service.dart';
+import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -283,10 +284,58 @@ class _EditResultScreenState extends State<EditResultScreen> {
     Navigator.of(context).pop();
   }
 
+  Future<void> _deleteResult() async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete Result'),
+            content: const Text(
+              'Delete this test result? This cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) {
+      return;
+    }
+
+    await context.read<RangeResultRepository>().deleteResult(widget.result.id);
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isPro = context.watch<PurchaseService>().isProEntitled;
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Result')),
+      appBar: AppBar(
+        title: const Text('Edit Result'),
+        actions: [
+          if (isPro)
+            IconButton(
+              onPressed: _deleteResult,
+              icon: const Icon(Icons.delete),
+              tooltip: 'Delete',
+            ),
+        ],
+      ),
       body: SafeArea(
         child: FutureBuilder<List<Firearm>>(
           future: _firearmsFuture,
