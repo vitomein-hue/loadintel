@@ -26,9 +26,11 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Container(
         decoration: const BoxDecoration(
+          color: Colors.black,
           image: DecorationImage(
-            image: AssetImage('assets/icon2.png'),
-            fit: BoxFit.cover,
+            image: AssetImage('assets/splash.png'),
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
           ),
         ),
         child: SafeArea(
