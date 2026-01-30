@@ -1,7 +1,7 @@
 ﻿bool canCreateRecipe({
   required int existingCount,
   required bool isUnlocked,
-  int limit = 10,
+  int limit = 6,
 }) {
   if (isUnlocked) {
     return true;

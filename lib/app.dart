@@ -55,15 +55,13 @@ class LoadIntelApp extends StatelessWidget {
           update: (_, loadRepo, rangeRepo, photoRepo, settingsRepo, previous) =>
               previous ?? ExportService(loadRepo, rangeRepo, photoRepo, settingsRepo),
         ),
-        ProxyProvider<SettingsRepository, PurchaseService>(
-          update: (_, settings, previous) {
-            final service = previous ?? PurchaseService(settings);
-            if (previous == null) {
-              service.init();
-            }
+        ChangeNotifierProxyProvider<SettingsRepository, PurchaseService>(
+          create: (context) {
+            final service = PurchaseService(context.read<SettingsRepository>());
+            service.init();
             return service;
           },
-          dispose: (_, service) => service.dispose(),
+          update: (_, __, previous) => previous!,
         ),
       ],
       child: MaterialApp(

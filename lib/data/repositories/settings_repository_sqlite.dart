@@ -52,6 +52,33 @@ class SettingsRepositorySqlite implements SettingsRepository {
   }
 
   @override
+  Future<void> setProEntitled(bool value) async {
+    await setBool(SettingsKeys.proEntitled, value);
+  }
+
+  @override
+  Future<bool> isProEntitled() async {
+    return (await getBool(SettingsKeys.proEntitled)) ?? false;
+  }
+
+  @override
+  Future<void> setProEntitlementOverride(ProEntitlementOverride value) async {
+    await setString(SettingsKeys.proEntitlementOverride, value.name);
+  }
+
+  @override
+  Future<ProEntitlementOverride> getProEntitlementOverride() async {
+    final raw = await getString(SettingsKeys.proEntitlementOverride);
+    if (raw == null || raw.isEmpty) {
+      return ProEntitlementOverride.auto;
+    }
+    return ProEntitlementOverride.values.firstWhere(
+      (entry) => entry.name == raw,
+      orElse: () => ProEntitlementOverride.auto,
+    );
+  }
+
+  @override
   Future<void> setLifetimeUnlocked(bool value) async {
     await setBool(SettingsKeys.lifetimeUnlocked, value);
   }

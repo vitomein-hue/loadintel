@@ -1,12 +1,49 @@
 ﻿import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loadintel/features/inventory/inventory_screen.dart';
+import 'package:loadintel/domain/repositories/settings_repository.dart';
 import 'package:loadintel/services/backup_service.dart';
 import 'package:loadintel/services/export_service.dart';
+import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
 
-class BackupExportScreen extends StatelessWidget {
+class BackupExportScreen extends StatefulWidget {
   const BackupExportScreen({super.key});
+
+  @override
+  State<BackupExportScreen> createState() => _BackupExportScreenState();
+}
+
+class _BackupExportScreenState extends State<BackupExportScreen> {
+  ProEntitlementOverride _proOverride = ProEntitlementOverride.auto;
+  bool _overrideLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProOverride();
+  }
+
+  Future<void> _loadProOverride() async {
+    final settings = context.read<SettingsRepository>();
+    final value = await settings.getProEntitlementOverride();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _proOverride = value;
+      _overrideLoaded = true;
+    });
+  }
+
+  Future<void> _setProOverride(ProEntitlementOverride value) async {
+    setState(() {
+      _proOverride = value;
+    });
+    await context.read<SettingsRepository>().setProEntitlementOverride(value);
+    await context.read<PurchaseService>().refreshEntitlement();
+  }
 
   Future<void> _exportBackup(BuildContext context) async {
     final service = context.read<BackupService>();
@@ -154,6 +191,46 @@ class BackupExportScreen extends StatelessWidget {
               onTap: () => _exportPdf(context),
             ),
           ),
+          if (kDebugMode) ...[
+            const SizedBox(height: 16),
+            Card(
+              child: ListTile(
+                title: const Text('Pro gate (dev)'),
+                subtitle: const Text('Auto uses purchases; force on/off to test.'),
+                trailing: _overrideLoaded
+                    ? DropdownButtonHideUnderline(
+                        child: DropdownButton<ProEntitlementOverride>(
+                          value: _proOverride,
+                          onChanged: (value) {
+                            if (value == null) {
+                              return;
+                            }
+                            _setProOverride(value);
+                          },
+                          items: const [
+                            DropdownMenuItem(
+                              value: ProEntitlementOverride.auto,
+                              child: Text('Auto'),
+                            ),
+                            DropdownMenuItem(
+                              value: ProEntitlementOverride.forceOn,
+                              child: Text('Force On'),
+                            ),
+                            DropdownMenuItem(
+                              value: ProEntitlementOverride.forceOff,
+                              child: Text('Force Off'),
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -12,6 +12,7 @@ import 'package:loadintel/domain/repositories/inventory_repository.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
 import 'package:loadintel/features/inventory/inventory_screen.dart';
+import 'package:loadintel/features/paywall/paywall.dart';
 import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -549,44 +550,11 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
 
   Future<bool> _canCreateRecipe() async {
     final loadRepo = context.read<LoadRecipeRepository>();
-    final settingsRepo = context.read<SettingsRepository>();
-    final unlocked = await settingsRepo.isLifetimeUnlocked();
+    final purchaseService = context.read<PurchaseService>();
+    await purchaseService.refreshEntitlement();
+    final unlocked = purchaseService.isProEntitled;
     final count = await loadRepo.countRecipes();
     return canCreateRecipe(existingCount: count, isUnlocked: unlocked);
-  }
-
-  Future<void> _showUpgradeModal() async {
-    final purchaseService = context.read<PurchaseService>();
-    final priceLabel = purchaseService.lifetimeProduct?.price ?? 'Lifetime';
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Upgrade Required'),
-        content: const Text(
-          'Free tier is limited to 10 load recipes. Unlock lifetime access to add more.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              purchaseService.restore();
-              Navigator.of(context).pop();
-            },
-            child: const Text('Restore'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Not Now'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              purchaseService.buyLifetime();
-              Navigator.of(context).pop();
-            },
-            child: Text('Upgrade $priceLabel'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _saveRecipe() async {
@@ -597,7 +565,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     if (!_isEditing) {
       final canCreate = await _canCreateRecipe();
       if (!canCreate) {
-        await _showUpgradeModal();
+        await Paywall.show(context);
         return;
       }
     }
