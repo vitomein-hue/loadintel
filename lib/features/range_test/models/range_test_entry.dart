@@ -14,6 +14,8 @@ class RangeTestLoadEntry {
   double? avgFps;
   double? sdFps;
   double? esFps;
+  bool isDangerous = false;
+  String? dangerReason;
 }
 
 enum FpsEntryMode { manual, shots }

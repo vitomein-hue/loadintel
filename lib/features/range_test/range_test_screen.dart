@@ -205,6 +205,20 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
     });
   }
 
+  void _toggleDangerous(RangeTestLoadEntry entry, bool? selected) {
+    setState(() {
+      entry.isDangerous = selected ?? false;
+      if (!entry.isDangerous) {
+        entry.dangerReason = null;
+        _controllers[entry.recipe.id]?.dangerReasonController.clear();
+      }
+    });
+  }
+
+  void _updateDangerReason(RangeTestLoadEntry entry, String value) {
+    entry.dangerReason = value.trim().isEmpty ? null : value;
+  }
+
   bool _isBenchComplete(RangeTestLoadEntry entry) {
     if (entry.firearmId == null || entry.firearmId!.isEmpty) {
       return false;
@@ -322,6 +336,32 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                           hintText: 'Shared notes for this range test',
                         ),
                       ),
+                      if (activeEntry != null) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Checkbox(
+                              value: activeEntry.isDangerous,
+                              onChanged: (value) => _toggleDangerous(activeEntry, value),
+                            ),
+                            const Expanded(child: Text('Label load as dangerous')),
+                          ],
+                        ),
+                        if (activeEntry.isDangerous) ...[
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller:
+                                _controllers[activeEntry.recipe.id]!.dangerReasonController,
+                            textCapitalization: TextCapitalization.sentences,
+                            maxLines: 2,
+                            decoration: const InputDecoration(
+                              labelText: 'Why is it dangerous?',
+                              hintText: 'Pressure signs, heavy bolt lift, etc.',
+                            ),
+                            onChanged: (value) => _updateDangerReason(activeEntry, value),
+                          ),
+                        ],
+                      ],
                     ],
                   ),
                 ),
@@ -530,15 +570,11 @@ class _LoadPickerSheetState extends State<_LoadPickerSheet> {
                 ),
               ),
               TextButton(
-                onPressed: _selectedIds.isEmpty
-                    ? null
-                    : () {
-                        final selected = available
-                            .where((recipe) => _selectedIds.contains(recipe.id))
-                            .toList();
-                        Navigator.of(context).pop(selected);
-                      },
-                child: const Text('Done'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  widget.onBuildLoads();
+                },
+                child: const Text('Build Loads'),
               ),
             ],
           ),
@@ -583,11 +619,15 @@ class _LoadPickerSheetState extends State<_LoadPickerSheet> {
               ),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    widget.onBuildLoads();
-                  },
-                  child: const Text('Build Loads'),
+                  onPressed: _selectedIds.isEmpty
+                      ? null
+                      : () {
+                          final selected = available
+                              .where((recipe) => _selectedIds.contains(recipe.id))
+                              .toList();
+                          Navigator.of(context).pop(selected);
+                        },
+                  child: const Text('Done'),
                 ),
               ),
             ],
@@ -605,13 +645,15 @@ class RangeTestEntryController {
         avgController = TextEditingController(),
         sdController = TextEditingController(),
         esController = TextEditingController(),
-        shotControllers = [TextEditingController()];
+        shotControllers = [TextEditingController()],
+        dangerReasonController = TextEditingController();
 
   final TextEditingController distanceController;
   final TextEditingController avgController;
   final TextEditingController sdController;
   final TextEditingController esController;
   final List<TextEditingController> shotControllers;
+  final TextEditingController dangerReasonController;
 
   void addShotController() {
     shotControllers.add(TextEditingController());
@@ -634,6 +676,7 @@ class RangeTestEntryController {
     avgController.dispose();
     sdController.dispose();
     esController.dispose();
+    dangerReasonController.dispose();
     for (final controller in shotControllers) {
       controller.dispose();
     }

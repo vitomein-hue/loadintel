@@ -25,11 +25,27 @@ class LoadHistoryScreen extends StatefulWidget {
 class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
   late Future<_LoadHistoryData> _dataFuture;
   final Set<String> _selectedNewLoadIds = {};
+  bool _filtersExpanded = false;
 
   String? _filterCartridge;
   String? _filterPowder;
   double? _filterPowderCharge;
   double? _filterBulletWeight;
+  String? _filterRecipeName;
+  String? _filterFirearmId;
+  String? _filterBulletBrand;
+  double? _filterBulletDiameter;
+  String? _filterBulletType;
+  String? _filterBrass;
+  String? _filterPrimer;
+  String? _filterCaseResize;
+  String? _filterGasCheckMaterial;
+  String? _filterGasCheckInstallMethod;
+  String? _filterBulletCoating;
+  double? _filterCoal;
+  double? _filterSeatingDepth;
+  String? _filterNotesQuery;
+  bool? _filterIsDangerous;
 
   @override
   void initState() {
@@ -62,6 +78,43 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
       if (_filterCartridge != null && recipe.cartridge != _filterCartridge) {
         return false;
       }
+      if (_filterRecipeName != null && recipe.recipeName != _filterRecipeName) {
+        return false;
+      }
+      if (_filterFirearmId != null && recipe.firearmId != _filterFirearmId) {
+        return false;
+      }
+      if (_filterBulletBrand != null && recipe.bulletBrand != _filterBulletBrand) {
+        return false;
+      }
+      if (_filterBulletDiameter != null &&
+          recipe.bulletDiameter != _filterBulletDiameter) {
+        return false;
+      }
+      if (_filterBulletType != null && recipe.bulletType != _filterBulletType) {
+        return false;
+      }
+      if (_filterBrass != null && recipe.brass != _filterBrass) {
+        return false;
+      }
+      if (_filterPrimer != null && recipe.primer != _filterPrimer) {
+        return false;
+      }
+      if (_filterCaseResize != null && recipe.caseResize != _filterCaseResize) {
+        return false;
+      }
+      if (_filterGasCheckMaterial != null &&
+          recipe.gasCheckMaterial != _filterGasCheckMaterial) {
+        return false;
+      }
+      if (_filterGasCheckInstallMethod != null &&
+          recipe.gasCheckInstallMethod != _filterGasCheckInstallMethod) {
+        return false;
+      }
+      if (_filterBulletCoating != null &&
+          recipe.bulletCoating != _filterBulletCoating) {
+        return false;
+      }
       if (_filterPowder != null && recipe.powder != _filterPowder) {
         return false;
       }
@@ -70,6 +123,22 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
       }
       if (_filterBulletWeight != null && recipe.bulletWeightGr != _filterBulletWeight) {
         return false;
+      }
+      if (_filterCoal != null && recipe.coal != _filterCoal) {
+        return false;
+      }
+      if (_filterSeatingDepth != null && recipe.seatingDepth != _filterSeatingDepth) {
+        return false;
+      }
+      if (_filterIsDangerous != null && recipe.isDangerous != _filterIsDangerous) {
+        return false;
+      }
+      final notesQuery = _filterNotesQuery?.trim();
+      if (notesQuery != null && notesQuery.isNotEmpty) {
+        final notes = recipe.notes ?? '';
+        if (!notes.toLowerCase().contains(notesQuery.toLowerCase())) {
+          return false;
+        }
       }
       return true;
     }).toList();
@@ -81,6 +150,43 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
       if (_filterCartridge != null && recipe.cartridge != _filterCartridge) {
         return false;
       }
+      if (_filterRecipeName != null && recipe.recipeName != _filterRecipeName) {
+        return false;
+      }
+      if (_filterFirearmId != null && recipe.firearmId != _filterFirearmId) {
+        return false;
+      }
+      if (_filterBulletBrand != null && recipe.bulletBrand != _filterBulletBrand) {
+        return false;
+      }
+      if (_filterBulletDiameter != null &&
+          recipe.bulletDiameter != _filterBulletDiameter) {
+        return false;
+      }
+      if (_filterBulletType != null && recipe.bulletType != _filterBulletType) {
+        return false;
+      }
+      if (_filterBrass != null && recipe.brass != _filterBrass) {
+        return false;
+      }
+      if (_filterPrimer != null && recipe.primer != _filterPrimer) {
+        return false;
+      }
+      if (_filterCaseResize != null && recipe.caseResize != _filterCaseResize) {
+        return false;
+      }
+      if (_filterGasCheckMaterial != null &&
+          recipe.gasCheckMaterial != _filterGasCheckMaterial) {
+        return false;
+      }
+      if (_filterGasCheckInstallMethod != null &&
+          recipe.gasCheckInstallMethod != _filterGasCheckInstallMethod) {
+        return false;
+      }
+      if (_filterBulletCoating != null &&
+          recipe.bulletCoating != _filterBulletCoating) {
+        return false;
+      }
       if (_filterPowder != null && recipe.powder != _filterPowder) {
         return false;
       }
@@ -89,6 +195,22 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
       }
       if (_filterBulletWeight != null && recipe.bulletWeightGr != _filterBulletWeight) {
         return false;
+      }
+      if (_filterCoal != null && recipe.coal != _filterCoal) {
+        return false;
+      }
+      if (_filterSeatingDepth != null && recipe.seatingDepth != _filterSeatingDepth) {
+        return false;
+      }
+      if (_filterIsDangerous != null && recipe.isDangerous != _filterIsDangerous) {
+        return false;
+      }
+      final notesQuery = _filterNotesQuery?.trim();
+      if (notesQuery != null && notesQuery.isNotEmpty) {
+        final notes = recipe.notes ?? '';
+        if (!notes.toLowerCase().contains(notesQuery.toLowerCase())) {
+          return false;
+        }
       }
       return true;
     }).toList();
@@ -189,30 +311,147 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
           final newLoads = _applyRecipeFilters(data.newLoads);
           final testedLoads = _applyTestedFilters(data.testedLoads);
 
+          final firearms = data.firearmsById.values.toList()
+            ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
           final bottomInset = MediaQuery.of(context).padding.bottom;
           return Column(
             children: [
-              _FilterRow(
-                cartridges: _uniqueValues(data.newLoads, data.testedLoads, (r) => r.cartridge),
-                powders: _uniqueValues(data.newLoads, data.testedLoads, (r) => r.powder),
-                bulletWeights: _uniqueWeights(data.newLoads, data.testedLoads),
-                powderCharges: _uniquePowderCharges(data.newLoads, data.testedLoads),
-                selectedCartridge: _filterCartridge,
-                selectedPowder: _filterPowder,
-                selectedPowderCharge: _filterPowderCharge,
-                selectedBulletWeight: _filterBulletWeight,
-                onCartridgeChanged: (value) => setState(() => _filterCartridge = value),
-                onPowderChanged: (value) => setState(() => _filterPowder = value),
-                onPowderChargeChanged: (value) => setState(() => _filterPowderCharge = value),
-                onBulletWeightChanged: (value) =>
-                    setState(() => _filterBulletWeight = value),
-                onMoreFilters: () async {
-                  await showModalBottomSheet<void>(
-                    context: context,
-                    showDragHandle: true,
-                    builder: (context) => const _MoreFiltersSheet(),
-                  );
-                },
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => setState(() => _filtersExpanded = !_filtersExpanded),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.tune),
+                        const SizedBox(width: 8),
+                        const Text('Filter loads'),
+                        const SizedBox(width: 4),
+                        Icon(_filtersExpanded ? Icons.expand_less : Icons.expand_more),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 200),
+                crossFadeState: _filtersExpanded
+                    ? CrossFadeState.showFirst
+                    : CrossFadeState.showSecond,
+                firstChild: _FilterRow(
+                  cartridges:
+                      _uniqueValues(data.newLoads, data.testedLoads, (r) => r.cartridge),
+                  powders: _uniqueValues(data.newLoads, data.testedLoads, (r) => r.powder),
+                  bulletWeights: _uniqueWeights(data.newLoads, data.testedLoads),
+                  powderCharges: _uniquePowderCharges(data.newLoads, data.testedLoads),
+                  selectedCartridge: _filterCartridge,
+                  selectedPowder: _filterPowder,
+                  selectedPowderCharge: _filterPowderCharge,
+                  selectedBulletWeight: _filterBulletWeight,
+                  onCartridgeChanged: (value) => setState(() => _filterCartridge = value),
+                  onPowderChanged: (value) => setState(() => _filterPowder = value),
+                  onPowderChargeChanged: (value) =>
+                      setState(() => _filterPowderCharge = value),
+                  onBulletWeightChanged: (value) =>
+                      setState(() => _filterBulletWeight = value),
+                  onMoreFilters: () async {
+                    await showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      showDragHandle: true,
+                      builder: (context) => _MoreFiltersSheet(
+                        recipeNames:
+                            _uniqueValues(data.newLoads, data.testedLoads, (r) => r.recipeName),
+                        firearms: firearms,
+                        bulletBrands:
+                            _uniqueOptionalValues(data.newLoads, data.testedLoads, (r) => r.bulletBrand),
+                        bulletDiameters: _uniqueOptionalDoubles(
+                          data.newLoads,
+                          data.testedLoads,
+                          (r) => r.bulletDiameter,
+                        ),
+                        bulletTypes:
+                            _uniqueOptionalValues(data.newLoads, data.testedLoads, (r) => r.bulletType),
+                        brass: _uniqueOptionalValues(data.newLoads, data.testedLoads, (r) => r.brass),
+                        primers:
+                            _uniqueOptionalValues(data.newLoads, data.testedLoads, (r) => r.primer),
+                        caseResize:
+                            _uniqueOptionalValues(data.newLoads, data.testedLoads, (r) => r.caseResize),
+                        gasCheckMaterials: _uniqueOptionalValues(
+                          data.newLoads,
+                          data.testedLoads,
+                          (r) => r.gasCheckMaterial,
+                        ),
+                        gasCheckInstallMethods: _uniqueOptionalValues(
+                          data.newLoads,
+                          data.testedLoads,
+                          (r) => r.gasCheckInstallMethod,
+                        ),
+                        bulletCoatings: _uniqueOptionalValues(
+                          data.newLoads,
+                          data.testedLoads,
+                          (r) => r.bulletCoating,
+                        ),
+                        coalValues: _uniqueOptionalDoubles(
+                          data.newLoads,
+                          data.testedLoads,
+                          (r) => r.coal,
+                        ),
+                        seatingDepthValues: _uniqueOptionalDoubles(
+                          data.newLoads,
+                          data.testedLoads,
+                          (r) => r.seatingDepth,
+                        ),
+                        selectedRecipeName: _filterRecipeName,
+                        selectedFirearmId: _filterFirearmId,
+                        selectedBulletBrand: _filterBulletBrand,
+                        selectedBulletDiameter: _filterBulletDiameter,
+                        selectedBulletType: _filterBulletType,
+                        selectedBrass: _filterBrass,
+                        selectedPrimer: _filterPrimer,
+                        selectedCaseResize: _filterCaseResize,
+                        selectedGasCheckMaterial: _filterGasCheckMaterial,
+                        selectedGasCheckInstallMethod: _filterGasCheckInstallMethod,
+                        selectedBulletCoating: _filterBulletCoating,
+                        selectedCoal: _filterCoal,
+                        selectedSeatingDepth: _filterSeatingDepth,
+                        selectedIsDangerous: _filterIsDangerous,
+                        notesQuery: _filterNotesQuery ?? '',
+                        onRecipeNameChanged: (value) =>
+                            setState(() => _filterRecipeName = value),
+                        onFirearmChanged: (value) =>
+                            setState(() => _filterFirearmId = value),
+                        onBulletBrandChanged: (value) =>
+                            setState(() => _filterBulletBrand = value),
+                        onBulletDiameterChanged: (value) =>
+                            setState(() => _filterBulletDiameter = value),
+                        onBulletTypeChanged: (value) =>
+                            setState(() => _filterBulletType = value),
+                        onBrassChanged: (value) => setState(() => _filterBrass = value),
+                        onPrimerChanged: (value) => setState(() => _filterPrimer = value),
+                        onCaseResizeChanged: (value) =>
+                            setState(() => _filterCaseResize = value),
+                        onGasCheckMaterialChanged: (value) =>
+                            setState(() => _filterGasCheckMaterial = value),
+                        onGasCheckInstallMethodChanged: (value) =>
+                            setState(() => _filterGasCheckInstallMethod = value),
+                        onBulletCoatingChanged: (value) =>
+                            setState(() => _filterBulletCoating = value),
+                        onCoalChanged: (value) => setState(() => _filterCoal = value),
+                        onSeatingDepthChanged: (value) =>
+                            setState(() => _filterSeatingDepth = value),
+                        onNotesQueryChanged: (value) =>
+                            setState(() => _filterNotesQuery = value),
+                        onIsDangerousChanged: (value) =>
+                            setState(() => _filterIsDangerous = value),
+                      ),
+                    );
+                  },
+                ),
+                secondChild: const SizedBox.shrink(),
               ),
               Expanded(
                 child: ListView(
@@ -240,7 +479,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                                   ? const Icon(Icons.flag, color: AppColors.danger)
                                   : null,
                             ),
-                            if (recipe.notes != null && recipe.notes!.trim().isNotEmpty)
+                            if (_hasNotes(recipe, null, isDangerous: recipe.isDangerous))
                               Align(
                                 alignment: Alignment.centerLeft,
                                 child: TextButton(
@@ -249,6 +488,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                                     recipe.recipeName,
                                     recipeNotes: recipe.notes,
                                     resultNotes: null,
+                                    isDangerous: recipe.isDangerous,
                                   ),
                                   child: const Text('View Notes'),
                                 ),
@@ -257,26 +497,32 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                         ),
                       ),
                     const SizedBox(height: 16),
-                    if (testedLoads.isEmpty)
-                      const Text('No tested loads yet.'),
-                    _TestedLoadsGrouped(
-                      entries: testedLoads,
-                      firearmsById: data.firearmsById,
-                      photoRepo: context.read<TargetPhotoRepository>(),
-                      onEditRecipe: (recipe) {
-                        Navigator.of(context)
-                            .push(
-                              MaterialPageRoute(
-                                builder: (_) => BuildLoadScreen(
-                                  recipe: recipe,
-                                  isDuplicate: true,
-                                ),
-                              ),
-                            )
-                            .then((_) => _refresh());
-                      },
-                      onRefresh: _refresh,
+                    Text(
+                      'Tested Loads',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
+                    const SizedBox(height: 8),
+                    if (testedLoads.isEmpty)
+                      const Text('No tested loads yet.')
+                    else
+                      _TestedLoadsGrouped(
+                        entries: testedLoads,
+                        firearmsById: data.firearmsById,
+                        photoRepo: context.read<TargetPhotoRepository>(),
+                        onEditRecipe: (recipe) {
+                          Navigator.of(context)
+                              .push(
+                                MaterialPageRoute(
+                                  builder: (_) => BuildLoadScreen(
+                                    recipe: recipe,
+                                    isDuplicate: true,
+                                  ),
+                                ),
+                              )
+                              .then((_) => _refresh());
+                        },
+                        onRefresh: _refresh,
+                      ),
                   ],
                 ),
               ),
@@ -384,13 +630,18 @@ class _TestedLoadTile extends StatelessWidget {
     final firearmName = firearm?.name ?? 'Unknown';
     return Card(
       child: ExpansionTile(
-        title: Text('${recipe.cartridge} - ${recipe.recipeName}'),
+        title: Row(
+          children: [
+            Expanded(child: Text('${recipe.cartridge} - ${recipe.recipeName}')),
+            if (recipe.isDangerous) ...[
+              const SizedBox(width: 8),
+              const _CautionBadge(),
+            ],
+          ],
+        ),
         subtitle: Text(
           '${_bulletSummary(recipe)} | ${_powderSummary(recipe)} | Best $bestGroupLabel | $firearmName',
         ),
-        leading: recipe.isDangerous
-            ? const Icon(Icons.flag, color: AppColors.danger)
-            : null,
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
@@ -399,10 +650,13 @@ class _TestedLoadTile extends StatelessWidget {
               children: [
                 Text('Firearm: ${firearm?.name ?? 'Unknown'}'),
                 if (recipe.coal != null || recipe.seatingDepth != null)
-                  Text('COAL: ${recipe.coal ?? '-'} | Seating: ${recipe.seatingDepth ?? '-'}'),
+                  Text(
+                    'COAL: ${recipe.coal ?? '-'} | Seating: ${recipe.seatingDepth ?? '-'}',
+                  ),
                 if (recipe.caseResize != null && recipe.caseResize!.isNotEmpty)
                   Text('Case Resize: ${recipe.caseResize}'),
-                if (recipe.gasCheckMaterial != null && recipe.gasCheckMaterial!.isNotEmpty)
+                if (recipe.gasCheckMaterial != null &&
+                    recipe.gasCheckMaterial!.isNotEmpty)
                   Text('Gas Check Material: ${recipe.gasCheckMaterial}'),
                 if (recipe.gasCheckInstallMethod != null &&
                     recipe.gasCheckInstallMethod!.isNotEmpty)
@@ -419,17 +673,6 @@ class _TestedLoadTile extends StatelessWidget {
                     'AVG: ${bestResult.avgFps?.toStringAsFixed(1) ?? '-'} | '
                     'SD: ${bestResult.sdFps?.toStringAsFixed(1) ?? '-'} | '
                     'ES: ${bestResult.esFps?.toStringAsFixed(1) ?? '-'}',
-                  ),
-                if (recipe.isDangerous)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Text(
-                      'DANGEROUS!',
-                      style: TextStyle(
-                        color: AppColors.danger,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
                 if (bestResult != null)
                   FutureBuilder<List<TargetPhoto>>(
@@ -480,13 +723,14 @@ class _TestedLoadTile extends StatelessWidget {
                       onPressed: onEditRecipe,
                       child: const Text('Clone Recipe'),
                     ),
-                    if (_hasNotes(recipe, bestResult?.notes))
+                    if (_hasNotes(recipe, bestResult?.notes, isDangerous: recipe.isDangerous))
                       TextButton(
                         onPressed: () => _showLoadNotes(
                           context,
                           recipe.recipeName,
                           recipeNotes: recipe.notes,
                           resultNotes: bestResult?.notes,
+                          isDangerous: recipe.isDangerous,
                         ),
                         child: const Text('View Notes'),
                       ),
@@ -514,13 +758,43 @@ class _TestedLoadTile extends StatelessWidget {
   }
 }
 
-bool _hasNotes(LoadRecipe recipe, String? resultNotes) {
+class _CautionBadge extends StatelessWidget {
+  const _CautionBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withOpacity(0.1),
+        border: Border.all(color: AppColors.danger),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        'Caution',
+        style: TextStyle(
+          color: AppColors.danger,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}
+
+bool _hasNotes(
+  LoadRecipe recipe,
+  String? resultNotes, {
+  required bool isDangerous,
+}) {
   final hasRecipeNotes = recipe.notes != null && recipe.notes!.trim().isNotEmpty;
   final loadNotes = _extractTaggedNotes(resultNotes, 'Load');
   final sessionNotes = _extractTaggedNotes(resultNotes, 'Session');
+  final dangerNotes = _extractTaggedNotes(resultNotes, 'Danger');
   return hasRecipeNotes ||
       (loadNotes != null && loadNotes.isNotEmpty) ||
-      (sessionNotes != null && sessionNotes.isNotEmpty);
+      (sessionNotes != null && sessionNotes.isNotEmpty) ||
+      (dangerNotes != null && dangerNotes.isNotEmpty) ||
+      isDangerous;
 }
 
 String? _extractTaggedNotes(String? notes, String tag) {
@@ -542,10 +816,12 @@ void _showLoadNotes(
   String title, {
   String? recipeNotes,
   String? resultNotes,
+  required bool isDangerous,
 }) {
   final recipeText = recipeNotes?.trim();
   final loadNotes = _extractTaggedNotes(resultNotes, 'Load');
   final sessionNotes = _extractTaggedNotes(resultNotes, 'Session');
+  final dangerNotes = _extractTaggedNotes(resultNotes, 'Danger');
   showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
@@ -566,6 +842,17 @@ void _showLoadNotes(
             Text(loadNotes),
             const SizedBox(height: 12),
           ],
+          if (dangerNotes != null && dangerNotes.isNotEmpty) ...[
+            const Text('Danger:'),
+            const SizedBox(height: 4),
+            Text(dangerNotes),
+            const SizedBox(height: 12),
+          ] else if (isDangerous) ...[
+            const Text('Danger:'),
+            const SizedBox(height: 4),
+            const Text('Marked dangerous.'),
+            const SizedBox(height: 12),
+          ],
           if (sessionNotes != null && sessionNotes.isNotEmpty) ...[
             const Text('Session Notes:'),
             const SizedBox(height: 4),
@@ -573,7 +860,9 @@ void _showLoadNotes(
           ],
           if ((recipeText == null || recipeText.isEmpty) &&
               (loadNotes == null || loadNotes.isEmpty) &&
-              (sessionNotes == null || sessionNotes.isEmpty))
+              (sessionNotes == null || sessionNotes.isEmpty) &&
+              (dangerNotes == null || dangerNotes.isEmpty) &&
+              !isDangerous)
             const Text('No notes available.'),
         ],
       ),
@@ -604,21 +893,8 @@ class _TestedLoadsGrouped extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String? currentCartridge;
     final widgets = <Widget>[];
     for (final entry in entries) {
-      if (currentCartridge != entry.recipe.cartridge) {
-        currentCartridge = entry.recipe.cartridge;
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 4),
-            child: Text(
-              currentCartridge!,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-        );
-      }
       widgets.add(
         _TestedLoadTile(
           entry: entry,
@@ -767,26 +1043,238 @@ class _FilterRow extends StatelessWidget {
 }
 
 class _MoreFiltersSheet extends StatelessWidget {
-  const _MoreFiltersSheet();
+  const _MoreFiltersSheet({
+    required this.recipeNames,
+    required this.firearms,
+    required this.bulletBrands,
+    required this.bulletDiameters,
+    required this.bulletTypes,
+    required this.brass,
+    required this.primers,
+    required this.caseResize,
+    required this.gasCheckMaterials,
+    required this.gasCheckInstallMethods,
+    required this.bulletCoatings,
+    required this.coalValues,
+    required this.seatingDepthValues,
+    required this.selectedRecipeName,
+    required this.selectedFirearmId,
+    required this.selectedBulletBrand,
+    required this.selectedBulletDiameter,
+    required this.selectedBulletType,
+    required this.selectedBrass,
+    required this.selectedPrimer,
+    required this.selectedCaseResize,
+    required this.selectedGasCheckMaterial,
+    required this.selectedGasCheckInstallMethod,
+    required this.selectedBulletCoating,
+    required this.selectedCoal,
+    required this.selectedSeatingDepth,
+    required this.selectedIsDangerous,
+    required this.notesQuery,
+    required this.onRecipeNameChanged,
+    required this.onFirearmChanged,
+    required this.onBulletBrandChanged,
+    required this.onBulletDiameterChanged,
+    required this.onBulletTypeChanged,
+    required this.onBrassChanged,
+    required this.onPrimerChanged,
+    required this.onCaseResizeChanged,
+    required this.onGasCheckMaterialChanged,
+    required this.onGasCheckInstallMethodChanged,
+    required this.onBulletCoatingChanged,
+    required this.onCoalChanged,
+    required this.onSeatingDepthChanged,
+    required this.onNotesQueryChanged,
+    required this.onIsDangerousChanged,
+  });
+
+  final List<String> recipeNames;
+  final List<Firearm> firearms;
+  final List<String> bulletBrands;
+  final List<double> bulletDiameters;
+  final List<String> bulletTypes;
+  final List<String> brass;
+  final List<String> primers;
+  final List<String> caseResize;
+  final List<String> gasCheckMaterials;
+  final List<String> gasCheckInstallMethods;
+  final List<String> bulletCoatings;
+  final List<double> coalValues;
+  final List<double> seatingDepthValues;
+  final String? selectedRecipeName;
+  final String? selectedFirearmId;
+  final String? selectedBulletBrand;
+  final double? selectedBulletDiameter;
+  final String? selectedBulletType;
+  final String? selectedBrass;
+  final String? selectedPrimer;
+  final String? selectedCaseResize;
+  final String? selectedGasCheckMaterial;
+  final String? selectedGasCheckInstallMethod;
+  final String? selectedBulletCoating;
+  final double? selectedCoal;
+  final double? selectedSeatingDepth;
+  final bool? selectedIsDangerous;
+  final String notesQuery;
+  final ValueChanged<String?> onRecipeNameChanged;
+  final ValueChanged<String?> onFirearmChanged;
+  final ValueChanged<String?> onBulletBrandChanged;
+  final ValueChanged<double?> onBulletDiameterChanged;
+  final ValueChanged<String?> onBulletTypeChanged;
+  final ValueChanged<String?> onBrassChanged;
+  final ValueChanged<String?> onPrimerChanged;
+  final ValueChanged<String?> onCaseResizeChanged;
+  final ValueChanged<String?> onGasCheckMaterialChanged;
+  final ValueChanged<String?> onGasCheckInstallMethodChanged;
+  final ValueChanged<String?> onBulletCoatingChanged;
+  final ValueChanged<double?> onCoalChanged;
+  final ValueChanged<double?> onSeatingDepthChanged;
+  final ValueChanged<String> onNotesQueryChanged;
+  final ValueChanged<bool?> onIsDangerousChanged;
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
+      child: ListView(
+        shrinkWrap: true,
         children: [
           Text(
             'More Filters',
             style: Theme.of(context).textTheme.titleLarge,
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Additional filters for bullet brand, primer, brass, danger flag, '
-            'and result metrics will be added here.',
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedRecipeName,
+            decoration: const InputDecoration(labelText: 'Recipe Name'),
+            items: _stringItems(recipeNames),
+            onChanged: onRecipeNameChanged,
           ),
           const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedFirearmId,
+            decoration: const InputDecoration(labelText: 'Firearm'),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Any'),
+              ),
+              ...firearms.map(
+                (firearm) => DropdownMenuItem<String?>(
+                  value: firearm.id,
+                  child: Text(firearm.name),
+                ),
+              ),
+            ],
+            onChanged: onFirearmChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedBulletBrand,
+            decoration: const InputDecoration(labelText: 'Bullet'),
+            items: _stringItems(bulletBrands),
+            onChanged: onBulletBrandChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<double?>(
+            value: selectedBulletDiameter,
+            decoration: const InputDecoration(labelText: 'Bullet Diameter'),
+            items: _doubleItems(bulletDiameters, decimals: 3),
+            onChanged: onBulletDiameterChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedBulletType,
+            decoration: const InputDecoration(labelText: 'Bullet Type'),
+            items: _stringItems(bulletTypes),
+            onChanged: onBulletTypeChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedCaseResize,
+            decoration: const InputDecoration(labelText: 'Case Resize'),
+            items: _stringItems(caseResize),
+            onChanged: onCaseResizeChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedGasCheckMaterial,
+            decoration: const InputDecoration(labelText: 'Gas Check Material'),
+            items: _stringItems(gasCheckMaterials),
+            onChanged: onGasCheckMaterialChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedGasCheckInstallMethod,
+            decoration: const InputDecoration(labelText: 'Gas Check Install Method'),
+            items: _stringItems(gasCheckInstallMethods),
+            onChanged: onGasCheckInstallMethodChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedBulletCoating,
+            decoration: const InputDecoration(labelText: 'Bullet Coating'),
+            items: _stringItems(bulletCoatings),
+            onChanged: onBulletCoatingChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedBrass,
+            decoration: const InputDecoration(labelText: 'Brass'),
+            items: _stringItems(brass),
+            onChanged: onBrassChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String?>(
+            value: selectedPrimer,
+            decoration: const InputDecoration(labelText: 'Primer'),
+            items: _stringItems(primers),
+            onChanged: onPrimerChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<double?>(
+            value: selectedCoal,
+            decoration: const InputDecoration(labelText: 'COAL'),
+            items: _doubleItems(coalValues, decimals: 3),
+            onChanged: onCoalChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<double?>(
+            value: selectedSeatingDepth,
+            decoration: const InputDecoration(labelText: 'Seating Depth'),
+            items: _doubleItems(seatingDepthValues, decimals: 3),
+            onChanged: onSeatingDepthChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<bool?>(
+            value: selectedIsDangerous,
+            decoration: const InputDecoration(labelText: 'Dangerous'),
+            items: const [
+              DropdownMenuItem<bool?>(
+                value: null,
+                child: Text('Any'),
+              ),
+              DropdownMenuItem<bool?>(
+                value: true,
+                child: Text('Yes'),
+              ),
+              DropdownMenuItem<bool?>(
+                value: false,
+                child: Text('No'),
+              ),
+            ],
+            onChanged: onIsDangerousChanged,
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            initialValue: notesQuery,
+            decoration: const InputDecoration(labelText: 'Notes contains'),
+            textCapitalization: TextCapitalization.sentences,
+            onChanged: onNotesQueryChanged,
+          ),
+          const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
@@ -797,6 +1285,39 @@ class _MoreFiltersSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<DropdownMenuItem<String?>> _stringItems(List<String> values) {
+    return [
+      const DropdownMenuItem<String?>(
+        value: null,
+        child: Text('Any'),
+      ),
+      ...values.map(
+        (value) => DropdownMenuItem<String?>(
+          value: value,
+          child: Text(value),
+        ),
+      ),
+    ];
+  }
+
+  List<DropdownMenuItem<double?>> _doubleItems(
+    List<double> values, {
+    required int decimals,
+  }) {
+    return [
+      const DropdownMenuItem<double?>(
+        value: null,
+        child: Text('Any'),
+      ),
+      ...values.map(
+        (value) => DropdownMenuItem<double?>(
+          value: value,
+          child: Text(_formatDouble(value, decimals: decimals)),
+        ),
+      ),
+    ];
   }
 }
 
@@ -852,6 +1373,57 @@ List<double> _uniquePowderCharges(
   final list = values.toList();
   list.sort();
   return list;
+}
+
+List<String> _uniqueOptionalValues(
+  List<LoadRecipe> newLoads,
+  List<LoadWithBestResult> testedLoads,
+  String? Function(LoadRecipe) selector,
+) {
+  final values = <String>{};
+  for (final recipe in newLoads) {
+    final value = selector(recipe);
+    if (value != null && value.trim().isNotEmpty) {
+      values.add(value);
+    }
+  }
+  for (final entry in testedLoads) {
+    final value = selector(entry.recipe);
+    if (value != null && value.trim().isNotEmpty) {
+      values.add(value);
+    }
+  }
+  final list = values.toList();
+  list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  return list;
+}
+
+List<double> _uniqueOptionalDoubles(
+  List<LoadRecipe> newLoads,
+  List<LoadWithBestResult> testedLoads,
+  double? Function(LoadRecipe) selector,
+) {
+  final values = <double>{};
+  for (final recipe in newLoads) {
+    final value = selector(recipe);
+    if (value != null) {
+      values.add(value);
+    }
+  }
+  for (final entry in testedLoads) {
+    final value = selector(entry.recipe);
+    if (value != null) {
+      values.add(value);
+    }
+  }
+  final list = values.toList();
+  list.sort();
+  return list;
+}
+
+String _formatDouble(double value, {required int decimals}) {
+  final fixed = value.toStringAsFixed(decimals);
+  return fixed.replaceFirst(RegExp(r'\.?0+$'), '');
 }
 
 String _powderSummary(LoadRecipe recipe) {

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:loadintel/domain/models/range_result.dart';
 import 'package:loadintel/domain/models/target_photo.dart';
+import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
 import 'package:loadintel/domain/repositories/range_result_repository.dart';
 import 'package:loadintel/domain/repositories/target_photo_repository.dart';
 import 'package:loadintel/features/load_history/load_history_screen.dart';
@@ -90,9 +91,19 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
     }
 
     final now = DateTime.now();
+    if (bench.isDangerous && !bench.recipe.isDangerous) {
+      final updatedRecipe = bench.recipe.copyWith(
+        isDangerous: true,
+        dangerConfirmedAt: now,
+        updatedAt: now,
+      );
+      await context.read<LoadRecipeRepository>().upsertRecipe(updatedRecipe);
+    }
     final notes = _composeNotes(
       sessionNotes: widget.sessionNotes,
       loadNotes: entry.loadNotesController.text.trim(),
+      isDangerous: bench.isDangerous,
+      dangerReason: bench.dangerReason,
     );
 
     final result = RangeResult(
@@ -157,13 +168,24 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
     }
   }
 
-  String? _composeNotes({required String sessionNotes, required String loadNotes}) {
+  String? _composeNotes({
+    required String sessionNotes,
+    required String loadNotes,
+    required bool isDangerous,
+    required String? dangerReason,
+  }) {
     final parts = <String>[];
     if (sessionNotes.isNotEmpty) {
       parts.add('Session: $sessionNotes');
     }
     if (loadNotes.isNotEmpty) {
       parts.add('Load: $loadNotes');
+    }
+    final dangerText = dangerReason?.trim() ?? '';
+    if (dangerText.isNotEmpty) {
+      parts.add('Danger: $dangerText');
+    } else if (isDangerous) {
+      parts.add('Danger: Marked dangerous.');
     }
     if (parts.isEmpty) {
       return null;
