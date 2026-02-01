@@ -46,6 +46,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   late final TextEditingController _gasCheckInstallMethodController;
   late final TextEditingController _bulletCoatingController;
   late final TextEditingController _brassController;
+  late final TextEditingController _annealingTimeController;
   late final TextEditingController _primerController;
   late final TextEditingController _powderController;
   late final TextEditingController _powderChargeController;
@@ -89,6 +90,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _bulletCoatingController =
         TextEditingController(text: recipe?.bulletCoating ?? '');
     _brassController = TextEditingController(text: recipe?.brass ?? '');
+    _annealingTimeController =
+        TextEditingController(text: recipe?.annealingTimeSec?.toString() ?? '');
     _primerController = TextEditingController(text: recipe?.primer ?? '');
     _powderController = TextEditingController(text: recipe?.powder ?? '');
     _powderChargeController =
@@ -127,6 +130,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _gasCheckInstallMethodController.dispose();
     _bulletCoatingController.dispose();
     _brassController.dispose();
+    _annealingTimeController.dispose();
     _primerController.dispose();
     _powderController.dispose();
     _powderChargeController.dispose();
@@ -596,6 +600,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
           ? null
           : _bulletTypeController.text.trim(),
       brass: _selectedBrass,
+      annealingTimeSec: double.tryParse(_annealingTimeController.text.trim()),
       primer: _selectedPrimer,
       caseResize: _selectedCaseResize,
       gasCheckMaterial: _selectedGasCheckMaterial,
@@ -889,6 +894,26 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                           setState(() {
                             _selectedBrass = selected.isEmpty ? null : selected;
                           });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _annealingTimeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Annealing time',
+                          suffixText: 'sec',
+                        ),
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
+                          if (double.tryParse(value.trim()) == null) {
+                            return 'Invalid number';
+                          }
+                          return null;
                         },
                       ),
                       const SizedBox(height: 12),

@@ -8,6 +8,7 @@
     this.bulletDiameter,
     this.bulletType,
     this.brass,
+    this.annealingTimeSec,
     this.primer,
     this.caseResize,
     this.gasCheckMaterial,
@@ -33,6 +34,7 @@
   final double? bulletDiameter;
   final String? bulletType;
   final String? brass;
+  final double? annealingTimeSec;
   final String? primer;
   final String? caseResize;
   final String? gasCheckMaterial;
@@ -58,6 +60,7 @@
     double? bulletDiameter,
     String? bulletType,
     String? brass,
+    double? annealingTimeSec,
     String? primer,
     String? caseResize,
     String? gasCheckMaterial,
@@ -83,6 +86,7 @@
       bulletDiameter: bulletDiameter ?? this.bulletDiameter,
       bulletType: bulletType ?? this.bulletType,
       brass: brass ?? this.brass,
+      annealingTimeSec: annealingTimeSec ?? this.annealingTimeSec,
       primer: primer ?? this.primer,
       caseResize: caseResize ?? this.caseResize,
       gasCheckMaterial: gasCheckMaterial ?? this.gasCheckMaterial,
@@ -115,6 +119,7 @@
       'bulletDiameter': bulletDiameter,
       'bulletType': bulletType,
       'brass': brass,
+      'annealingTimeSec': annealingTimeSec,
       'primer': primer,
       'caseResize': caseResize,
       'gasCheckMaterial': gasCheckMaterial,
@@ -148,6 +153,7 @@
       bulletDiameter: (map['bulletDiameter'] as num?)?.toDouble(),
       bulletType: map['bulletType'] as String?,
       brass: map['brass'] as String?,
+      annealingTimeSec: (map['annealingTimeSec'] as num?)?.toDouble(),
       primer: map['primer'] as String?,
       caseResize: map['caseResize'] as String?,
       gasCheckMaterial: map['gasCheckMaterial'] as String?,

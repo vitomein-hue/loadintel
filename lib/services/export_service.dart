@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:excel/excel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:loadintel/domain/models/load_recipe.dart';
@@ -78,6 +79,7 @@ class ExportService {
     final loads = await _loadRepo.listRecipes();
     final files = <String>[];
     final stamp = _timestamp();
+    final brandImage = await _loadBrandImage();
 
     for (final load in loads) {
       final bestResult = await _rangeRepo.getBestResultForLoad(load.id);
@@ -89,7 +91,7 @@ class ExportService {
       doc.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.letter,
-          build: (context) => _buildReport(load, bestResult, photos),
+          build: (context) => _buildReport(load, bestResult, photos, brandImage),
         ),
       );
       final fileLocation = await _writeExportFile(
@@ -105,6 +107,61 @@ class ExportService {
 
     await _shareIfNeeded(files, subject: 'Load Intel PDF Reports');
     return files;
+  }
+
+  Future<XFile> exportSingleLoadCsv(LoadRecipe load) async {
+    final results = await _rangeRepo.listResultsByLoad(load.id);
+    final csvBytes =
+        Uint8List.fromList(utf8.encode(_buildSingleLoadCsv(load, results)));
+    final fileName = _singleLoadFileName(load.id, 'csv');
+    final filePath = await _writeTempExportFile(fileName, csvBytes);
+    return XFile(filePath, mimeType: 'text/csv', name: fileName);
+  }
+
+  Future<XFile> exportSingleLoadXlsx(LoadRecipe load) async {
+    final results = await _rangeRepo.listResultsByLoad(load.id);
+    final bytes = _buildSingleLoadXlsx(load, results);
+    final fileName = _singleLoadFileName(load.id, 'xlsx');
+    final filePath = await _writeTempExportFile(fileName, bytes);
+    return XFile(
+      filePath,
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      name: fileName,
+    );
+  }
+
+  Future<XFile> exportSingleLoadPdf(LoadRecipe load) async {
+    final bestResult = await _rangeRepo.getBestResultForLoad(load.id);
+    final photos = bestResult == null
+        ? <TargetPhoto>[]
+        : await _photoRepo.listPhotosForResult(bestResult.id);
+    final brandImage = await _loadBrandImage();
+    final doc = pw.Document();
+    doc.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.letter,
+        build: (context) => _buildReport(load, bestResult, photos, brandImage),
+      ),
+    );
+    final fileName = _singleLoadFileName(load.id, 'pdf');
+    final filePath = await _writeTempExportFile(fileName, await doc.save());
+    return XFile(filePath, mimeType: 'application/pdf', name: fileName);
+  }
+
+  Future<XFile> exportSingleLoadTxt(LoadRecipe load) async {
+    final results = await _rangeRepo.listResultsByLoad(load.id);
+    final bestResult = await _rangeRepo.getBestResultForLoad(load.id);
+    final text = _buildSingleLoadTxt(load, bestResult, results);
+    final bytes = Uint8List.fromList(utf8.encode(text));
+    final fileName = _singleLoadFileName(load.id, 'txt');
+    final filePath = await _writeTempExportFile(fileName, bytes);
+    return XFile(filePath, mimeType: 'text/plain', name: fileName);
+  }
+
+  Future<XFile> saveSingleLoadPng(LoadRecipe load, Uint8List pngBytes) async {
+    final fileName = _singleLoadFileName(load.id, 'png');
+    final filePath = await _writeTempExportFile(fileName, pngBytes);
+    return XFile(filePath, mimeType: 'image/png', name: fileName);
   }
 
   Future<String?> _writeExportFile({
@@ -197,6 +254,13 @@ class ExportService {
     return filePath;
   }
 
+  Future<String> _writeTempExportFile(String fileName, Uint8List bytes) async {
+    final directory = await getTemporaryDirectory();
+    final filePath = path.join(directory.path, fileName);
+    await File(filePath).writeAsBytes(bytes, flush: true);
+    return filePath;
+  }
+
   Future<void> _shareIfNeeded(
     List<String> files, {
     required String subject,
@@ -212,6 +276,7 @@ class ExportService {
     LoadRecipe load,
     RangeResult? best,
     List<TargetPhoto> photos,
+    pw.ImageProvider brandImage,
   ) {
     final photoBytes = photos.isNotEmpty ? _safeReadBytes(photos.first) : null;
     return pw.Column(
@@ -222,6 +287,8 @@ class ExportService {
         pw.Text('Recipe: ${load.recipeName}'),
         pw.Text('Cartridge: ${load.cartridge}'),
         pw.Text('Powder: ${load.powder} ${load.powderChargeGr} gr'),
+        if (load.annealingTimeSec != null)
+          pw.Text('Annealing Time: ${load.annealingTimeSec} sec'),
         pw.Text('Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''}'),
         if (load.bulletDiameter != null)
           pw.Text('Bullet Diameter: ${load.bulletDiameter}'),
@@ -252,8 +319,33 @@ class ExportService {
           pw.SizedBox(height: 8),
           pw.Image(pw.MemoryImage(photoBytes), width: 240, height: 240),
         ],
+        pw.Spacer(),
+        _buildPdfFooter(brandImage),
       ],
     );
+  }
+
+  pw.Widget _buildPdfFooter(pw.ImageProvider brandImage) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(top: 16, right: 20, bottom: 12),
+      child: pw.Align(
+        alignment: pw.Alignment.bottomRight,
+        child: pw.Opacity(
+          opacity: 0.7,
+          child: pw.Image(
+            brandImage,
+            width: 72,
+            height: 20,
+            fit: pw.BoxFit.contain,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<pw.ImageProvider> _loadBrandImage() async {
+    final data = await rootBundle.load('assets/brand.png');
+    return pw.MemoryImage(data.buffer.asUint8List());
   }
 
   Uint8List? _safeReadBytes(TargetPhoto photo) {
@@ -268,7 +360,7 @@ class ExportService {
   String _buildLoadsCsv(List<LoadRecipe> loads) {
     final buffer = StringBuffer();
     buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
+      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
     );
     for (final load in loads) {
       buffer.writeln(
@@ -281,6 +373,7 @@ class ExportService {
           load.bulletDiameter,
           load.bulletType,
           load.brass,
+          load.annealingTimeSec,
           load.primer,
           load.caseResize,
           load.gasCheckMaterial,
@@ -338,10 +431,186 @@ class ExportService {
     return text;
   }
 
+  String _buildSingleLoadCsv(LoadRecipe load, List<RangeResult> results) {
+    final buffer = StringBuffer();
+    buffer.writeln('Load');
+    buffer.writeln(
+      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
+    );
+    buffer.writeln(
+      [
+        load.id,
+        load.recipeName,
+        load.cartridge,
+        load.bulletBrand,
+        load.bulletWeightGr,
+        load.bulletDiameter,
+        load.bulletType,
+        load.brass,
+        load.annealingTimeSec,
+        load.primer,
+        load.caseResize,
+        load.gasCheckMaterial,
+        load.gasCheckInstallMethod,
+        load.bulletCoating,
+        load.powder,
+        load.powderChargeGr,
+        load.coal,
+        load.seatingDepth,
+        load.notes,
+        load.firearmId,
+        load.isDangerous ? 1 : 0,
+        load.dangerConfirmedAt?.toIso8601String(),
+        load.createdAt.toIso8601String(),
+        load.updatedAt.toIso8601String(),
+      ].map(_csvEscape).join(','),
+    );
+    buffer.writeln();
+    buffer.writeln('Results');
+    buffer.writeln(
+      'id,loadId,testedAt,firearmId,distanceYds,fpsShots,avgFps,sdFps,esFps,groupSizeIn,notes,createdAt,updatedAt',
+    );
+    for (final result in results) {
+      buffer.writeln(
+        [
+          result.id,
+          result.loadId,
+          result.testedAt.toIso8601String(),
+          result.firearmId,
+          result.distanceYds,
+          jsonEncode(result.fpsShots),
+          result.avgFps,
+          result.sdFps,
+          result.esFps,
+          result.groupSizeIn,
+          result.notes,
+          result.createdAt.toIso8601String(),
+          result.updatedAt.toIso8601String(),
+        ].map(_csvEscape).join(','),
+      );
+    }
+    return buffer.toString();
+  }
+
+  Uint8List _buildSingleLoadXlsx(LoadRecipe load, List<RangeResult> results) {
+    final excel = Excel.createExcel();
+    final loadSheet = excel['Load'];
+    loadSheet.appendRow([
+      TextCellValue('Field'),
+      TextCellValue('Value'),
+    ]);
+    void addRow(String field, Object? value) {
+      loadSheet.appendRow([
+        TextCellValue(field),
+        TextCellValue(value?.toString() ?? ''),
+      ]);
+    }
+
+    addRow('Recipe', load.recipeName);
+    addRow('Cartridge', load.cartridge);
+    addRow('Bullet Brand', load.bulletBrand);
+    addRow('Bullet Weight (gr)', load.bulletWeightGr);
+    addRow('Bullet Diameter', load.bulletDiameter);
+    addRow('Bullet Type', load.bulletType);
+    addRow('Powder', load.powder);
+    addRow('Powder Charge (gr)', load.powderChargeGr);
+    addRow('Brass', load.brass);
+    addRow('Annealing Time (sec)', load.annealingTimeSec);
+    addRow('Primer', load.primer);
+    addRow('COAL', load.coal);
+    addRow('Seating Depth', load.seatingDepth);
+    addRow('Case Resize', load.caseResize);
+    addRow('Gas Check Material', load.gasCheckMaterial);
+    addRow('Gas Check Install', load.gasCheckInstallMethod);
+    addRow('Bullet Coating', load.bulletCoating);
+    addRow('Notes', load.notes);
+    addRow('Dangerous', load.isDangerous ? 'YES' : 'No');
+
+    if (results.isNotEmpty) {
+      final chronoSheet = excel['Chrono'];
+      chronoSheet.appendRow([
+        TextCellValue('Tested At'),
+        TextCellValue('Distance (yds)'),
+        TextCellValue('AVG'),
+        TextCellValue('SD'),
+        TextCellValue('ES'),
+        TextCellValue('Group Size (in)'),
+        TextCellValue('Shots'),
+        TextCellValue('Notes'),
+      ]);
+      for (final result in results) {
+        chronoSheet.appendRow([
+          TextCellValue(result.testedAt.toIso8601String()),
+          TextCellValue(result.distanceYds.toString()),
+          TextCellValue(result.avgFps?.toString() ?? ''),
+          TextCellValue(result.sdFps?.toString() ?? ''),
+          TextCellValue(result.esFps?.toString() ?? ''),
+          TextCellValue(result.groupSizeIn.toString()),
+          TextCellValue(result.fpsShots?.join(', ') ?? ''),
+          TextCellValue(result.notes ?? ''),
+        ]);
+      }
+    }
+
+    final bytes = excel.encode();
+    if (bytes == null) {
+      throw StateError('Unable to generate XLSX.');
+    }
+    return Uint8List.fromList(bytes);
+  }
+
+  String _buildSingleLoadTxt(
+    LoadRecipe load,
+    RangeResult? best,
+    List<RangeResult> results,
+  ) {
+    final buffer = StringBuffer();
+    buffer.writeln('Load Intel - Load Card');
+    buffer.writeln('Recipe: ${load.recipeName}');
+    buffer.writeln('Cartridge: ${load.cartridge}');
+    buffer.writeln('Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''} ${load.bulletType ?? ''}');
+    buffer.writeln('Powder: ${load.powder} ${load.powderChargeGr} gr');
+    buffer.writeln('Brass: ${load.brass ?? '-'}');
+    buffer.writeln('Annealing Time: ${load.annealingTimeSec ?? '-'} sec');
+    buffer.writeln('Primer: ${load.primer ?? '-'}');
+    buffer.writeln('COAL: ${load.coal ?? '-'}');
+    buffer.writeln('Seating Depth: ${load.seatingDepth ?? '-'}');
+    buffer.writeln('Dangerous: ${load.isDangerous ? 'YES' : 'No'}');
+    if (load.notes != null && load.notes!.trim().isNotEmpty) {
+      buffer.writeln('Notes: ${load.notes}');
+    }
+    buffer.writeln();
+    if (best == null) {
+      buffer.writeln('Best Result: No results yet.');
+    } else {
+      buffer.writeln('Best Result');
+      buffer.writeln('Tested At: ${best.testedAt.toLocal()}');
+      buffer.writeln('Group Size: ${best.groupSizeIn} in');
+      buffer.writeln('AVG: ${best.avgFps ?? '-'}');
+      buffer.writeln('SD: ${best.sdFps ?? '-'}');
+      buffer.writeln('ES: ${best.esFps ?? '-'}');
+    }
+    if (results.isNotEmpty) {
+      buffer.writeln();
+      buffer.writeln('Results (${results.length})');
+      for (final result in results) {
+        buffer.writeln(
+          '- ${result.testedAt.toLocal().toString().split(' ').first}: '
+          'Group ${result.groupSizeIn} in, AVG ${result.avgFps ?? '-'}, SD ${result.sdFps ?? '-'}, ES ${result.esFps ?? '-'}',
+        );
+      }
+    }
+    return buffer.toString();
+  }
+
   String _reportFileName(LoadRecipe load, String stamp) {
     final safeName = load.recipeName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
     final safeCartridge = load.cartridge.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
     return 'loadintel_${safeCartridge}_${safeName}_$stamp.pdf';
+  }
+
+  String _singleLoadFileName(String loadId, String extension) {
+    return 'loadintel_${loadId}_${_timestampCompact()}.$extension';
   }
 
   Future<Directory> _exportDir() async {
@@ -356,6 +625,11 @@ class ExportService {
   String _timestamp() {
     final now = DateTime.now();
     return '${now.year}-${_two(now.month)}-${_two(now.day)}_${_two(now.hour)}${_two(now.minute)}${_two(now.second)}';
+  }
+
+  String _timestampCompact() {
+    final now = DateTime.now();
+    return '${now.year}${_two(now.month)}${_two(now.day)}_${_two(now.hour)}${_two(now.minute)}${_two(now.second)}';
   }
 
   String _two(int value) => value.toString().padLeft(2, '0');

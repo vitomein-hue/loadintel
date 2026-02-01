@@ -1,12 +1,24 @@
 ﻿import 'package:file_picker/file_picker.dart';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:loadintel/domain/models/load_with_best_result.dart';
+import 'package:loadintel/domain/models/target_photo.dart';
+import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
+import 'package:loadintel/domain/repositories/range_result_repository.dart';
 import 'package:loadintel/features/inventory/inventory_screen.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
+import 'package:loadintel/domain/repositories/target_photo_repository.dart';
+import 'package:loadintel/features/backup_export/share_load_card.dart';
 import 'package:loadintel/services/backup_service.dart';
 import 'package:loadintel/services/export_service.dart';
 import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+
+enum _ShareExportFormat { csv, xlsx, pdf, txt, png }
 
 class BackupExportScreen extends StatefulWidget {
   const BackupExportScreen({super.key});
@@ -18,6 +30,7 @@ class BackupExportScreen extends StatefulWidget {
 class _BackupExportScreenState extends State<BackupExportScreen> {
   ProEntitlementOverride _proOverride = ProEntitlementOverride.auto;
   bool _overrideLoaded = false;
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -150,37 +163,379 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     );
   }
 
-  Future<void> _exportCsv(BuildContext context) async {
-    final service = context.read<ExportService>();
-    final files = await service.exportCsv();
-    if (!context.mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('CSV exported: ${files.join(', ')}')),
+  Future<void> _showShareLoadDataSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                const Text(
+                  'Share load data',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                if (_isExporting) ...[
+                  const SizedBox(height: 12),
+                  const LinearProgressIndicator(),
+                ],
+                const SizedBox(height: 8),
+                _ShareOptionTile(
+                  label: 'Export CSV',
+                  icon: Icons.table_view,
+                  enabled: !_isExporting,
+                  onTap: () => _handleShareExport(
+                    sheetContext,
+                    setSheetState,
+                    _ShareExportFormat.csv,
+                  ),
+                ),
+                _ShareOptionTile(
+                  label: 'Export XLSX',
+                  icon: Icons.grid_on,
+                  enabled: !_isExporting,
+                  onTap: () => _handleShareExport(
+                    sheetContext,
+                    setSheetState,
+                    _ShareExportFormat.xlsx,
+                  ),
+                ),
+                _ShareOptionTile(
+                  label: 'Export PDF',
+                  icon: Icons.picture_as_pdf,
+                  enabled: !_isExporting,
+                  onTap: () => _handleShareExport(
+                    sheetContext,
+                    setSheetState,
+                    _ShareExportFormat.pdf,
+                  ),
+                ),
+                _ShareOptionTile(
+                  label: 'Export TXT',
+                  icon: Icons.text_snippet,
+                  enabled: !_isExporting,
+                  onTap: () => _handleShareExport(
+                    sheetContext,
+                    setSheetState,
+                    _ShareExportFormat.txt,
+                  ),
+                ),
+                _ShareOptionTile(
+                  label: 'Export PNG',
+                  icon: Icons.image,
+                  enabled: !_isExporting,
+                  onTap: () => _handleShareExport(
+                    sheetContext,
+                    setSheetState,
+                    _ShareExportFormat.png,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  Future<void> _exportPdf(BuildContext context) async {
-    final service = context.read<ExportService>();
-    final files = await service.exportPdfReports();
-    if (!context.mounted) {
+  Future<void> _handleShareExport(
+    BuildContext sheetContext,
+    StateSetter setSheetState,
+    _ShareExportFormat format,
+  ) async {
+    if (_isExporting) {
       return;
     }
-    final location =
-        files.isNotEmpty ? files.first : 'App documents/exports';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('PDF reports saved (${files.length}). $location'),
+    final selected = await _pickTestedLoad(sheetContext);
+    if (selected == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _isExporting = true;
+    });
+    setSheetState(() {});
+    try {
+      final exportService = context.read<ExportService>();
+      final xFile = await _exportSingleLoad(
+        exportService: exportService,
+        selected: selected,
+        format: format,
+      );
+      if (!mounted) {
+        return;
+      }
+      final box = context.findRenderObject() as RenderBox?;
+      await Share.shareXFiles(
+        [xFile],
+        subject: 'Load Intel ${_formatLabel(format)} Export',
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export ready to share')),
+      );
+    } catch (error) {
+      debugPrint('Export failed: $error');
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export failed. Please try again.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExporting = false;
+        });
+        setSheetState(() {});
+      }
+      if (sheetContext.mounted) {
+        Navigator.of(sheetContext).pop();
+      }
+    }
+  }
+
+  Future<XFile> _exportSingleLoad({
+    required ExportService exportService,
+    required LoadWithBestResult selected,
+    required _ShareExportFormat format,
+  }) async {
+    switch (format) {
+      case _ShareExportFormat.csv:
+        return exportService.exportSingleLoadCsv(selected.recipe);
+      case _ShareExportFormat.xlsx:
+        return exportService.exportSingleLoadXlsx(selected.recipe);
+      case _ShareExportFormat.pdf:
+        return exportService.exportSingleLoadPdf(selected.recipe);
+      case _ShareExportFormat.txt:
+        return exportService.exportSingleLoadTxt(selected.recipe);
+      case _ShareExportFormat.png:
+        final pngBytes = await _buildShareCardPng(selected);
+        return exportService.saveSingleLoadPng(selected.recipe, pngBytes);
+    }
+  }
+
+  Future<Uint8List> _buildShareCardPng(LoadWithBestResult selected) async {
+    final results = await context
+        .read<RangeResultRepository>()
+        .listResultsByLoad(selected.recipe.id);
+    final photoResult =
+        results.isNotEmpty ? results.first : selected.bestResult;
+    final photos = photoResult == null
+        ? <TargetPhoto>[]
+        : await context
+            .read<TargetPhotoRepository>()
+            .listPhotosForResult(photoResult.id);
+    final card = ShareLoadCard(
+      load: selected.recipe,
+      bestResult: selected.bestResult,
+      photos: photos,
+    );
+    return _captureWidgetPng(
+      context: context,
+      child: card,
+      size: ShareLoadCard.cardSize,
+    );
+  }
+
+  Future<Uint8List> _captureWidgetPng({
+    required BuildContext context,
+    required Widget child,
+    required Size size,
+  }) async {
+    final overlay = Overlay.of(context);
+    if (overlay == null) {
+      throw StateError('No overlay available for capture.');
+    }
+    final boundaryKey = GlobalKey();
+    final entry = OverlayEntry(
+      builder: (_) => Positioned(
+        left: 0,
+        top: 0,
+        width: size.width,
+        height: size.height,
+        child: IgnorePointer(
+          child: Opacity(
+            opacity: 0,
+            child: RepaintBoundary(
+              key: boundaryKey,
+              child: SizedBox(
+                width: size.width,
+                height: size.height,
+                child: Material(
+                  color: Colors.transparent,
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
+    overlay.insert(entry);
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      final boundary =
+          boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        throw StateError('Unable to capture share card.');
+      }
+      final image = await boundary.toImage(pixelRatio: 3);
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      if (data == null) {
+        throw StateError('Unable to encode share card.');
+      }
+      return data.buffer.asUint8List();
+    } finally {
+      entry.remove();
+    }
+  }
+
+  Future<LoadWithBestResult?> _pickTestedLoad(BuildContext context) async {
+    final loads = await context.read<LoadRecipeRepository>().listTestedLoads();
+    if (loads.isEmpty) {
+      if (!mounted) {
+        return null;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No tested loads available.')),
+      );
+      return null;
+    }
+    return showDialog<LoadWithBestResult>(
+      context: context,
+      builder: (dialogContext) {
+        var query = '';
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            final filtered = _filterLoads(loads, query);
+            return AlertDialog(
+              title: const Text('Select load'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      decoration: const InputDecoration(
+                        labelText: 'Search',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          query = value.trim();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Flexible(
+                      child: filtered.isEmpty
+                          ? const Center(child: Text('No matches.'))
+                          : ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) => const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final entry = filtered[index];
+                                return ListTile(
+                                  title: Text(_loadTitle(entry)),
+                                  subtitle: Text(_loadSubtitle(entry)),
+                                  onTap: () => Navigator.of(dialogContext).pop(entry),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<LoadWithBestResult> _filterLoads(
+    List<LoadWithBestResult> loads,
+    String query,
+  ) {
+    if (query.isEmpty) {
+      return loads;
+    }
+    final lower = query.toLowerCase();
+    return loads.where((entry) {
+      final recipe = entry.recipe;
+      final haystack = [
+        recipe.recipeName,
+        recipe.cartridge,
+        recipe.powder,
+        recipe.bulletBrand,
+        recipe.bulletType,
+        recipe.brass,
+        recipe.primer,
+      ].whereType<String>().join(' ').toLowerCase();
+      return haystack.contains(lower);
+    }).toList();
+  }
+
+  String _loadTitle(LoadWithBestResult entry) {
+    final recipe = entry.recipe;
+    return '${recipe.cartridge} - ${recipe.recipeName}';
+  }
+
+  String _loadSubtitle(LoadWithBestResult entry) {
+    final recipe = entry.recipe;
+    final bulletParts = <String>[
+      if (recipe.bulletBrand != null && recipe.bulletBrand!.isNotEmpty)
+        recipe.bulletBrand!,
+      if (recipe.bulletWeightGr != null) '${recipe.bulletWeightGr} gr',
+      if (recipe.bulletType != null && recipe.bulletType!.isNotEmpty)
+        recipe.bulletType!,
+    ];
+    final bullet = bulletParts.isEmpty ? '-' : bulletParts.join(' ');
+    final powder = '${recipe.powder} ${recipe.powderChargeGr} gr';
+    final best = entry.bestResult;
+    final bestGroup = best == null ? '-' : '${best.groupSizeIn.toStringAsFixed(2)} in';
+    final testedAt =
+        best == null ? '-' : best.testedAt.toLocal().toString().split(' ').first;
+    return '$bullet | $powder | Best $bestGroup | $testedAt';
+  }
+
+  String _formatLabel(_ShareExportFormat format) {
+    switch (format) {
+      case _ShareExportFormat.csv:
+        return 'CSV';
+      case _ShareExportFormat.xlsx:
+        return 'XLSX';
+      case _ShareExportFormat.pdf:
+        return 'PDF';
+      case _ShareExportFormat.txt:
+        return 'TXT';
+      case _ShareExportFormat.png:
+        return 'PNG';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Backup & Export'),
+        title: const Text('Settings'),
         actions: [
           TextButton(
             onPressed: () {
@@ -224,22 +579,39 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           const SizedBox(height: 16),
           Card(
             child: ListTile(
-              title: const Text('Export CSV'),
-              subtitle: const Text('Generate loads.csv and results.csv.'),
-              trailing: const Icon(Icons.table_view),
-              onTap: () => _exportCsv(context),
-            ),
-          ),
-          Card(
-            child: ListTile(
-              title: const Text('Export PDF Reports'),
-              subtitle: const Text('Generate per-load PDF reports.'),
-              trailing: const Icon(Icons.picture_as_pdf),
-              onTap: () => _exportPdf(context),
+              title: const Text('Share load data'),
+              subtitle: const Text('Export and share a tested load.'),
+              trailing: const Icon(Icons.share),
+              onTap: _showShareLoadDataSheet,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ShareOptionTile extends StatelessWidget {
+  const _ShareOptionTile({
+    required this.label,
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      enabled: enabled,
+      title: Text(label),
+      leading: Icon(icon),
+      trailing: enabled ? const Icon(Icons.chevron_right) : null,
+      onTap: enabled ? onTap : null,
     );
   }
 }

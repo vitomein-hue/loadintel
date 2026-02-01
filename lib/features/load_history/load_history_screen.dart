@@ -653,6 +653,8 @@ class _TestedLoadTile extends StatelessWidget {
                   Text(
                     'COAL: ${recipe.coal ?? '-'} | Seating: ${recipe.seatingDepth ?? '-'}',
                   ),
+                if (recipe.annealingTimeSec != null)
+                  Text('Annealing Time: ${recipe.annealingTimeSec} sec'),
                 if (recipe.caseResize != null && recipe.caseResize!.isNotEmpty)
                   Text('Case Resize: ${recipe.caseResize}'),
                 if (recipe.gasCheckMaterial != null &&
