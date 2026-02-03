@@ -16,7 +16,7 @@ class AppDatabase {
     final fullPath = path.join(dbPath, 'loadintel.db');
     final db = await openDatabase(
       fullPath,
-      version: 4,
+      version: 5,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -54,6 +54,7 @@ class AppDatabase {
         bulletDiameter REAL,
         bulletType TEXT,
         brass TEXT,
+        brassTrimLength REAL,
         annealingTimeSec REAL,
         primer TEXT,
         caseResize TEXT,
@@ -141,6 +142,9 @@ class AppDatabase {
     }
     if (oldVersion < 4) {
       await db.execute('ALTER TABLE load_recipes ADD COLUMN annealingTimeSec REAL');
+    }
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN brassTrimLength REAL');
     }
   }
 }

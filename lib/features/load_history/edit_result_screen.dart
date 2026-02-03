@@ -6,8 +6,10 @@ import 'package:loadintel/domain/models/firearm.dart';
 import 'package:loadintel/domain/models/range_result.dart';
 import 'package:loadintel/domain/models/target_photo.dart';
 import 'package:loadintel/domain/repositories/firearm_repository.dart';
+import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
 import 'package:loadintel/domain/repositories/range_result_repository.dart';
 import 'package:loadintel/domain/repositories/target_photo_repository.dart';
+import 'package:loadintel/features/build_load/build_load_screen.dart';
 import 'package:loadintel/services/photo_service.dart';
 import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
@@ -284,6 +286,23 @@ class _EditResultScreenState extends State<EditResultScreen> {
     Navigator.of(context).pop();
   }
 
+  Future<void> _editLoad() async {
+    final loadRepo = context.read<LoadRecipeRepository>();
+    final recipe = await loadRepo.getRecipe(widget.result.loadId);
+    if (!mounted) {
+      return;
+    }
+    if (recipe == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Load recipe not found.')),
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => BuildLoadScreen(recipe: recipe)),
+    );
+  }
+
   Future<void> _deleteResult() async {
     final confirmed = await showDialog<bool>(
           context: context,
@@ -348,6 +367,18 @@ class _EditResultScreenState extends State<EditResultScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _editLoad,
+                          icon: const Icon(Icons.edit),
+                          label: const Text('Edit Load'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),

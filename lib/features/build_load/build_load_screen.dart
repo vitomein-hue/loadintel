@@ -46,6 +46,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   late final TextEditingController _gasCheckInstallMethodController;
   late final TextEditingController _bulletCoatingController;
   late final TextEditingController _brassController;
+  late final TextEditingController _brassTrimLengthController;
   late final TextEditingController _annealingTimeController;
   late final TextEditingController _primerController;
   late final TextEditingController _powderController;
@@ -90,6 +91,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _bulletCoatingController =
         TextEditingController(text: recipe?.bulletCoating ?? '');
     _brassController = TextEditingController(text: recipe?.brass ?? '');
+    _brassTrimLengthController =
+        TextEditingController(text: recipe?.brassTrimLength?.toString() ?? '');
     _annealingTimeController =
         TextEditingController(text: recipe?.annealingTimeSec?.toString() ?? '');
     _primerController = TextEditingController(text: recipe?.primer ?? '');
@@ -130,6 +133,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _gasCheckInstallMethodController.dispose();
     _bulletCoatingController.dispose();
     _brassController.dispose();
+    _brassTrimLengthController.dispose();
     _annealingTimeController.dispose();
     _primerController.dispose();
     _powderController.dispose();
@@ -600,6 +604,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
           ? null
           : _bulletTypeController.text.trim(),
       brass: _selectedBrass,
+      brassTrimLength: double.tryParse(_brassTrimLengthController.text.trim()),
       annealingTimeSec: double.tryParse(_annealingTimeController.text.trim()),
       primer: _selectedPrimer,
       caseResize: _selectedCaseResize,
@@ -894,6 +899,26 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                           setState(() {
                             _selectedBrass = selected.isEmpty ? null : selected;
                           });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _brassTrimLengthController,
+                        decoration: const InputDecoration(
+                          labelText: 'Brass Trim Length',
+                          helperText: 'Final case length after trimming',
+                        ),
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
+                          if (double.tryParse(value.trim()) == null) {
+                            return 'Invalid number';
+                          }
+                          return null;
                         },
                       ),
                       const SizedBox(height: 12),

@@ -896,7 +896,34 @@ class _TestedLoadsGrouped extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final widgets = <Widget>[];
+    String? currentCartridge;
     for (final entry in entries) {
+      if (currentCartridge != entry.recipe.cartridge) {
+        currentCartridge = entry.recipe.cartridge;
+        if (widgets.isNotEmpty) {
+          widgets.add(const SizedBox(height: 12));
+        }
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                Text(
+                  currentCartridge,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(color: AppColors.secondary),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Divider(height: 1),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
       widgets.add(
         _TestedLoadTile(
           entry: entry,

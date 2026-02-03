@@ -8,7 +8,32 @@ class PurchaseService extends ChangeNotifier {
   PurchaseService(this._settingsRepository);
 
   static const String proLifetimeProductId = 'loadintel_pro_lifetime';
-  static const ProEntitlementOverride _devOverride = ProEntitlementOverride.forceOn;
+  static const String _devOverrideRaw =
+      String.fromEnvironment('PRO_OVERRIDE', defaultValue: 'auto');
+  static final ProEntitlementOverride _devOverride =
+      _parseDevOverride(_devOverrideRaw);
+
+  static ProEntitlementOverride _parseDevOverride(String raw) {
+    final value = raw.trim().toLowerCase();
+    switch (value) {
+      case 'forceon':
+      case 'force_on':
+      case 'force-on':
+      case 'on':
+      case 'true':
+      case '1':
+        return ProEntitlementOverride.forceOn;
+      case 'forceoff':
+      case 'force_off':
+      case 'force-off':
+      case 'off':
+      case 'false':
+      case '0':
+        return ProEntitlementOverride.forceOff;
+      default:
+        return ProEntitlementOverride.auto;
+    }
+  }
 
   final SettingsRepository _settingsRepository;
   final InAppPurchase _iap = InAppPurchase.instance;

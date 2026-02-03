@@ -65,6 +65,10 @@ class ShareLoadCard extends StatelessWidget {
                 _infoRow('Primer', load.primer ?? '-'),
                 _infoRow('Brass', load.brass ?? '-'),
                 _infoRow(
+                  'Brass Trim Length',
+                  load.brassTrimLength?.toString() ?? '-',
+                ),
+                _infoRow(
                   'Annealing time',
                   load.annealingTimeSec == null
                       ? '-'

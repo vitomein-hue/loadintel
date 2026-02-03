@@ -360,7 +360,7 @@ class ExportService {
   String _buildLoadsCsv(List<LoadRecipe> loads) {
     final buffer = StringBuffer();
     buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
+      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
     );
     for (final load in loads) {
       buffer.writeln(
@@ -373,6 +373,7 @@ class ExportService {
           load.bulletDiameter,
           load.bulletType,
           load.brass,
+          load.brassTrimLength,
           load.annealingTimeSec,
           load.primer,
           load.caseResize,
@@ -435,7 +436,7 @@ class ExportService {
     final buffer = StringBuffer();
     buffer.writeln('Load');
     buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
+      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
     );
     buffer.writeln(
       [
@@ -447,6 +448,7 @@ class ExportService {
         load.bulletDiameter,
         load.bulletType,
         load.brass,
+        load.brassTrimLength,
         load.annealingTimeSec,
         load.primer,
         load.caseResize,
@@ -515,6 +517,7 @@ class ExportService {
     addRow('Powder', load.powder);
     addRow('Powder Charge (gr)', load.powderChargeGr);
     addRow('Brass', load.brass);
+    addRow('Brass Trim Length', load.brassTrimLength);
     addRow('Annealing Time (sec)', load.annealingTimeSec);
     addRow('Primer', load.primer);
     addRow('COAL', load.coal);
@@ -571,6 +574,7 @@ class ExportService {
     buffer.writeln('Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''} ${load.bulletType ?? ''}');
     buffer.writeln('Powder: ${load.powder} ${load.powderChargeGr} gr');
     buffer.writeln('Brass: ${load.brass ?? '-'}');
+    buffer.writeln('Brass Trim Length: ${load.brassTrimLength ?? '-'}');
     buffer.writeln('Annealing Time: ${load.annealingTimeSec ?? '-'} sec');
     buffer.writeln('Primer: ${load.primer ?? '-'}');
     buffer.writeln('COAL: ${load.coal ?? '-'}');

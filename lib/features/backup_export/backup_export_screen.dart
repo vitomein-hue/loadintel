@@ -2,6 +2,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:loadintel/domain/models/load_with_best_result.dart';
@@ -56,6 +57,17 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     });
     await context.read<SettingsRepository>().setProEntitlementOverride(value);
     await context.read<PurchaseService>().refreshEntitlement();
+  }
+
+  String _proOverrideLabel(ProEntitlementOverride value) {
+    switch (value) {
+      case ProEntitlementOverride.auto:
+        return 'Auto (use entitlement)';
+      case ProEntitlementOverride.forceOn:
+        return 'Force On (Pro)';
+      case ProEntitlementOverride.forceOff:
+        return 'Force Off (Free)';
+    }
   }
 
   Future<void> _exportBackup(BuildContext context) async {
@@ -585,6 +597,51 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
               onTap: _showShareLoadDataSheet,
             ),
           ),
+          if (kDebugMode) ...[
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Developer',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<ProEntitlementOverride>(
+                      value: _proOverride,
+                      decoration: const InputDecoration(
+                        labelText: 'Pro entitlement (debug)',
+                      ),
+                      items: ProEntitlementOverride.values
+                          .map(
+                            (value) => DropdownMenuItem(
+                              value: value,
+                              child: Text(_proOverrideLabel(value)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: _overrideLoaded
+                          ? (value) {
+                              if (value == null) {
+                                return;
+                              }
+                              _setProOverride(value);
+                            }
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Debug builds only. PRO_OVERRIDE dart-define overrides this.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
