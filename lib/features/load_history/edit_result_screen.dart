@@ -11,7 +11,6 @@ import 'package:loadintel/domain/repositories/range_result_repository.dart';
 import 'package:loadintel/domain/repositories/target_photo_repository.dart';
 import 'package:loadintel/features/build_load/build_load_screen.dart';
 import 'package:loadintel/services/photo_service.dart';
-import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -342,17 +341,15 @@ class _EditResultScreenState extends State<EditResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isPro = context.watch<PurchaseService>().isProEntitled;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Result'),
         actions: [
-          if (isPro)
-            IconButton(
-              onPressed: _deleteResult,
-              icon: const Icon(Icons.delete),
-              tooltip: 'Delete',
-            ),
+          IconButton(
+            onPressed: _deleteResult,
+            icon: const Icon(Icons.delete),
+            tooltip: 'Delete',
+          ),
         ],
       ),
       body: SafeArea(

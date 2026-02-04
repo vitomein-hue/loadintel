@@ -12,7 +12,6 @@ import 'package:loadintel/domain/repositories/target_photo_repository.dart';
 import 'package:loadintel/features/build_load/build_load_screen.dart';
 import 'package:loadintel/features/load_history/edit_result_screen.dart';
 import 'package:loadintel/features/range_test/range_test_screen.dart';
-import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
 
 class LoadHistoryScreen extends StatefulWidget {
@@ -286,7 +285,6 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isPro = context.watch<PurchaseService>().isProEntitled;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Load History'),
@@ -535,50 +533,33 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: isPro
-                    ? Row(
-                        children: [
-                          SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.danger,
-                                foregroundColor: Colors.white,
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              onPressed: _deleteSelectedLoads,
-                              child: const Icon(Icons.delete),
-                            ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                final data = await _dataFuture;
-                                final selected = data.newLoads
-                                    .where(
-                                      (recipe) => _selectedNewLoadIds.contains(recipe.id),
-                                    )
-                                    .toList();
-                                if (selected.isEmpty) {
-                                  return;
-                                }
-                                _openRangeTest(selected);
-                              },
-                              child: const Text('Range Test'),
-                            ),
-                          ),
-                        ],
-                      )
-                    : ElevatedButton(
+                        ),
+                        onPressed: _deleteSelectedLoads,
+                        child: const Icon(Icons.delete),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
                         onPressed: () async {
                           final data = await _dataFuture;
                           final selected = data.newLoads
-                              .where((recipe) => _selectedNewLoadIds.contains(recipe.id))
+                              .where(
+                                (recipe) => _selectedNewLoadIds.contains(recipe.id),
+                              )
                               .toList();
                           if (selected.isEmpty) {
                             return;
@@ -587,6 +568,9 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                         },
                         child: const Text('Range Test'),
                       ),
+                    ),
+                  ],
+                ),
               ),
             ),
     );

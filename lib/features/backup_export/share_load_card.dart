@@ -9,9 +9,7 @@ import 'package:loadintel/domain/models/target_photo.dart';
 class ShareLoadCard extends StatelessWidget {
   const ShareLoadCard({
     super.key,
-    required this.load,
-    required this.bestResult,
-    required this.photos,
+    required this.content,
   });
 
   static const Size cardSize = Size(1080, 1350);
@@ -19,14 +17,11 @@ class ShareLoadCard extends StatelessWidget {
   static const double _brandWidth = 140;
   static const double _brandHeight = 36;
 
-  final LoadRecipe load;
-  final RangeResult? bestResult;
-  final List<TargetPhoto> photos;
+  final ReportContent content;
 
   @override
   Widget build(BuildContext context) {
-    final thumbnailPhotos = photos.take(2).toList();
-    final notes = _combinedNotes(load.notes, bestResult?.notes);
+    final photoPath = content.photoPath;
     return Container(
       width: cardSize.width,
       height: cardSize.height,
@@ -44,78 +39,41 @@ class ShareLoadCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  load.recipeName,
+                  content.title,
                   style: const TextStyle(
-                    fontSize: 40,
+                    fontSize: 28,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: 12),
+                ...content.loadLines.map(
+                  (line) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(line, style: const TextStyle(fontSize: 18)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _sectionTitle(content.bestTitle),
                 const SizedBox(height: 8),
-                Text(
-                  load.cartridge,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.secondary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                _infoRow('Bullet', _bulletSummary(load)),
-                _infoRow('Powder', '${load.powder} ${load.powderChargeGr} gr'),
-                _infoRow('Primer', load.primer ?? '-'),
-                _infoRow('Brass', load.brass ?? '-'),
-                _infoRow(
-                  'Brass Trim Length',
-                  load.brassTrimLength?.toString() ?? '-',
-                ),
-                _infoRow(
-                  'Annealing time',
-                  load.annealingTimeSec == null
-                      ? '-'
-                      : '${load.annealingTimeSec} sec',
-                ),
-                _infoRow('COAL', load.coal?.toString() ?? '-'),
-                _infoRow('Seating Depth', load.seatingDepth?.toString() ?? '-'),
-                if (bestResult != null) ...[
-                  const SizedBox(height: 18),
-                  _sectionTitle('Performance'),
-                  const SizedBox(height: 8),
-                  _infoRow(
-                    'Tested',
-                    bestResult!.testedAt.toLocal().toString().split(' ').first,
-                  ),
-                  _infoRow(
-                    'Group Size',
-                    '${bestResult!.groupSizeIn.toStringAsFixed(2)} in',
-                  ),
-                  _infoRow('AVG', _formatMaybe(bestResult!.avgFps)),
-                  _infoRow('SD', _formatMaybe(bestResult!.sdFps)),
-                  _infoRow('ES', _formatMaybe(bestResult!.esFps)),
-                ],
-                if (thumbnailPhotos.isNotEmpty) ...[
-                  const SizedBox(height: 18),
-                  _sectionTitle('Targets'),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: thumbnailPhotos
-                        .map((photo) => Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: _photoThumb(photo),
-                            ))
-                        .toList(),
-                  ),
-                ],
-                if (notes.isNotEmpty) ...[
-                  const SizedBox(height: 18),
-                  _sectionTitle('Notes'),
-                  const SizedBox(height: 8),
+                if (content.bestLines.isEmpty)
                   Text(
-                    notes,
-                    maxLines: 5,
-                    overflow: TextOverflow.ellipsis,
+                    content.bestEmptyMessage,
                     style: const TextStyle(fontSize: 18),
+                  )
+                else
+                  ...content.bestLines.map(
+                    (line) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text(line, style: const TextStyle(fontSize: 18)),
+                    ),
                   ),
+                if (photoPath != null) ...[
+                  const SizedBox(height: 12),
+                  _sectionTitle('Target Photo'),
+                  const SizedBox(height: 8),
+                  _photoThumb(photoPath),
                 ],
+                const Spacer(),
               ],
             ),
           ),
@@ -148,46 +106,17 @@ class ShareLoadCard extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 180,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.secondary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 18),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _photoThumb(TargetPhoto photo) {
-    final pathValue = photo.thumbPath ?? photo.galleryPath;
+  Widget _photoThumb(String pathValue) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: Image.file(
         File(pathValue),
-        width: 160,
-        height: 160,
+        width: 240,
+        height: 240,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => Container(
-          width: 160,
-          height: 160,
+          width: 240,
+          height: 240,
           color: AppColors.card,
           alignment: Alignment.center,
           child: const Icon(Icons.image_not_supported),
@@ -195,38 +124,77 @@ class ShareLoadCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  String _bulletSummary(LoadRecipe load) {
-    final parts = <String>[];
-    if (load.bulletBrand != null && load.bulletBrand!.isNotEmpty) {
-      parts.add(load.bulletBrand!);
-    }
-    if (load.bulletWeightGr != null) {
-      parts.add('${load.bulletWeightGr} gr');
-    }
-    if (load.bulletType != null && load.bulletType!.isNotEmpty) {
-      parts.add(load.bulletType!);
-    }
-    return parts.isEmpty ? '-' : parts.join(' ');
+class ReportContent {
+  const ReportContent({
+    required this.title,
+    required this.loadLines,
+    required this.bestTitle,
+    required this.bestLines,
+    required this.bestEmptyMessage,
+    required this.photoPath,
+  });
+
+  final String title;
+  final List<String> loadLines;
+  final String bestTitle;
+  final List<String> bestLines;
+  final String bestEmptyMessage;
+  final String? photoPath;
+}
+
+ReportContent buildReportContent({
+  required LoadRecipe load,
+  required RangeResult? bestResult,
+  required List<TargetPhoto> photos,
+}) {
+  final loadLines = <String>[
+    'Recipe: ${load.recipeName}',
+    'Cartridge: ${load.cartridge}',
+    'Powder: ${load.powder} ${load.powderChargeGr} gr',
+  ];
+  if (load.annealingTimeSec != null) {
+    loadLines.add('Annealing Time: ${load.annealingTimeSec} sec');
+  }
+  loadLines.add('Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''}');
+  if (load.bulletDiameter != null) {
+    loadLines.add('Bullet Diameter: ${load.bulletDiameter}');
+  }
+  if (load.caseResize != null && load.caseResize!.isNotEmpty) {
+    loadLines.add('Case Resize: ${load.caseResize}');
+  }
+  if (load.gasCheckMaterial != null && load.gasCheckMaterial!.isNotEmpty) {
+    loadLines.add('Gas Check Material: ${load.gasCheckMaterial}');
+  }
+  if (load.gasCheckInstallMethod != null &&
+      load.gasCheckInstallMethod!.isNotEmpty) {
+    loadLines.add('Gas Check Install: ${load.gasCheckInstallMethod}');
+  }
+  if (load.bulletCoating != null && load.bulletCoating!.isNotEmpty) {
+    loadLines.add('Bullet Coating: ${load.bulletCoating}');
+  }
+  loadLines.add('Dangerous: ${load.isDangerous ? 'YES' : 'No'}');
+
+  final bestLines = <String>[];
+  if (bestResult != null) {
+    bestLines.add('Group Size: ${bestResult.groupSizeIn} in');
+    bestLines.add('Tested At: ${bestResult.testedAt.toLocal()}');
+    bestLines.add('AVG: ${bestResult.avgFps ?? '-'}');
+    bestLines.add('SD: ${bestResult.sdFps ?? '-'}');
+    bestLines.add('ES: ${bestResult.esFps ?? '-'}');
   }
 
-  String _combinedNotes(String? loadNotes, String? resultNotes) {
-    final parts = <String>[];
-    final trimmedLoad = loadNotes?.trim();
-    if (trimmedLoad != null && trimmedLoad.isNotEmpty) {
-      parts.add(trimmedLoad);
-    }
-    final trimmedResult = resultNotes?.trim();
-    if (trimmedResult != null && trimmedResult.isNotEmpty) {
-      parts.add(trimmedResult);
-    }
-    return parts.join('\n');
-  }
+  final photoPath = photos.isNotEmpty
+      ? (photos.first.thumbPath ?? photos.first.galleryPath)
+      : null;
 
-  String _formatMaybe(double? value) {
-    if (value == null) {
-      return '-';
-    }
-    return value.toStringAsFixed(1);
-  }
+  return ReportContent(
+    title: 'Load Intel Report',
+    loadLines: loadLines,
+    bestTitle: 'Best Result',
+    bestLines: bestLines,
+    bestEmptyMessage: 'No results yet.',
+    photoPath: photoPath,
+  );
 }

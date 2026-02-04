@@ -1,18 +1,10 @@
 ﻿import 'package:file_picker/file_picker.dart';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:loadintel/domain/models/load_with_best_result.dart';
-import 'package:loadintel/domain/models/target_photo.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
-import 'package:loadintel/domain/repositories/range_result_repository.dart';
 import 'package:loadintel/features/inventory/inventory_screen.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
-import 'package:loadintel/domain/repositories/target_photo_repository.dart';
-import 'package:loadintel/features/backup_export/share_load_card.dart';
 import 'package:loadintel/services/backup_service.dart';
 import 'package:loadintel/services/export_service.dart';
 import 'package:loadintel/services/purchase_service.dart';
@@ -273,6 +265,7 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     try {
       final exportService = context.read<ExportService>();
       final xFile = await _exportSingleLoad(
+        context: context,
         exportService: exportService,
         selected: selected,
         format: format,
@@ -316,6 +309,7 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
   }
 
   Future<XFile> _exportSingleLoad({
+    required BuildContext context,
     required ExportService exportService,
     required LoadWithBestResult selected,
     required _ShareExportFormat format,
@@ -330,85 +324,10 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       case _ShareExportFormat.txt:
         return exportService.exportSingleLoadTxt(selected.recipe);
       case _ShareExportFormat.png:
-        final pngBytes = await _buildShareCardPng(selected);
-        return exportService.saveSingleLoadPng(selected.recipe, pngBytes);
-    }
-  }
-
-  Future<Uint8List> _buildShareCardPng(LoadWithBestResult selected) async {
-    final results = await context
-        .read<RangeResultRepository>()
-        .listResultsByLoad(selected.recipe.id);
-    final photoResult =
-        results.isNotEmpty ? results.first : selected.bestResult;
-    final photos = photoResult == null
-        ? <TargetPhoto>[]
-        : await context
-            .read<TargetPhotoRepository>()
-            .listPhotosForResult(photoResult.id);
-    final card = ShareLoadCard(
-      load: selected.recipe,
-      bestResult: selected.bestResult,
-      photos: photos,
-    );
-    return _captureWidgetPng(
-      context: context,
-      child: card,
-      size: ShareLoadCard.cardSize,
-    );
-  }
-
-  Future<Uint8List> _captureWidgetPng({
-    required BuildContext context,
-    required Widget child,
-    required Size size,
-  }) async {
-    final overlay = Overlay.of(context);
-    if (overlay == null) {
-      throw StateError('No overlay available for capture.');
-    }
-    final boundaryKey = GlobalKey();
-    final entry = OverlayEntry(
-      builder: (_) => Positioned(
-        left: 0,
-        top: 0,
-        width: size.width,
-        height: size.height,
-        child: IgnorePointer(
-          child: Opacity(
-            opacity: 0,
-            child: RepaintBoundary(
-              key: boundaryKey,
-              child: SizedBox(
-                width: size.width,
-                height: size.height,
-                child: Material(
-                  color: Colors.transparent,
-                  child: child,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    overlay.insert(entry);
-    try {
-      await WidgetsBinding.instance.endOfFrame;
-      final boundary =
-          boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) {
-        throw StateError('Unable to capture share card.');
-      }
-      final image = await boundary.toImage(pixelRatio: 3);
-      final data = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      if (data == null) {
-        throw StateError('Unable to encode share card.');
-      }
-      return data.buffer.asUint8List();
-    } finally {
-      entry.remove();
+        return exportService.saveSingleLoadPng(
+          context: context,
+          load: selected.recipe,
+        );
     }
   }
 

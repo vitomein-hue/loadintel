@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:excel/excel.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/material.dart';
 import 'package:loadintel/domain/models/load_recipe.dart';
 import 'package:loadintel/domain/models/range_result.dart';
 import 'package:loadintel/domain/models/target_photo.dart';
@@ -12,6 +15,7 @@ import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
 import 'package:loadintel/domain/repositories/range_result_repository.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
 import 'package:loadintel/domain/repositories/target_photo_repository.dart';
+import 'package:loadintel/features/backup_export/share_load_card.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -49,8 +53,8 @@ class ExportService {
     final loadsName = 'loadintel_loads_$stamp.csv';
     final resultsName = 'loadintel_results_$stamp.csv';
 
-    final loadsBytes = Uint8List.fromList(utf8.encode(_buildLoadsCsv(loads)));
-    final resultsBytes = Uint8List.fromList(utf8.encode(_buildResultsCsv(results)));
+    final loadsBytes = _encodeCsvForExcel(_buildLoadsCsv(loads));
+    final resultsBytes = _encodeCsvForExcel(_buildResultsCsv(results));
 
     final loadsLocation = await _writeExportFile(
       fileName: loadsName,
@@ -111,10 +115,21 @@ class ExportService {
 
   Future<XFile> exportSingleLoadCsv(LoadRecipe load) async {
     final results = await _rangeRepo.listResultsByLoad(load.id);
-    final csvBytes =
-        Uint8List.fromList(utf8.encode(_buildSingleLoadCsv(load, results)));
+    final csvText = _buildSingleLoadCsv(load, results);
+    final csvBytes = _encodeCsvForExcel(csvText);
     final fileName = _singleLoadFileName(load.id, 'csv');
-    final filePath = await _writeTempExportFile(fileName, csvBytes);
+    final directory = await getTemporaryDirectory();
+    final filePath = path.join(directory.path, fileName);
+    // TEMP DEBUG CSV: capture exact CSV before writing.
+    if (kDebugMode) {
+      await _debugCsvExport(
+        csvText: csvText,
+        exportPath: filePath,
+        delimiter: ',',
+        encodingLabel: 'utf8',
+      );
+    }
+    await File(filePath).writeAsBytes(csvBytes, flush: true);
     return XFile(filePath, mimeType: 'text/csv', name: fileName);
   }
 
@@ -158,7 +173,25 @@ class ExportService {
     return XFile(filePath, mimeType: 'text/plain', name: fileName);
   }
 
-  Future<XFile> saveSingleLoadPng(LoadRecipe load, Uint8List pngBytes) async {
+  Future<XFile> saveSingleLoadPng({
+    required BuildContext context,
+    required LoadRecipe load,
+  }) async {
+    final bestResult = await _rangeRepo.getBestResultForLoad(load.id);
+    final photos = bestResult == null
+        ? <TargetPhoto>[]
+        : await _photoRepo.listPhotosForResult(bestResult.id);
+    final content = buildReportContent(
+      load: load,
+      bestResult: bestResult,
+      photos: photos,
+    );
+    final card = ShareLoadCard(content: content);
+    final pngBytes = await _captureWidgetPng(
+      context: context,
+      child: card,
+      size: ShareLoadCard.cardSize,
+    );
     final fileName = _singleLoadFileName(load.id, 'png');
     final filePath = await _writeTempExportFile(fileName, pngBytes);
     return XFile(filePath, mimeType: 'image/png', name: fileName);
@@ -272,47 +305,85 @@ class ExportService {
     await Share.shareXFiles(xFiles, subject: subject);
   }
 
+  Future<Uint8List> _captureWidgetPng({
+    required BuildContext context,
+    required Widget child,
+    required Size size,
+  }) async {
+    final overlay = Overlay.of(context);
+    if (overlay == null) {
+      throw StateError('No overlay available for capture.');
+    }
+    final boundaryKey = GlobalKey();
+    final entry = OverlayEntry(
+      builder: (_) => Positioned(
+        left: 0,
+        top: 0,
+        width: size.width,
+        height: size.height,
+        child: IgnorePointer(
+          child: Opacity(
+            opacity: 0,
+            child: RepaintBoundary(
+              key: boundaryKey,
+              child: SizedBox(
+                width: size.width,
+                height: size.height,
+                child: Material(
+                  color: Colors.transparent,
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      final boundary =
+          boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        throw StateError('Unable to capture report.');
+      }
+      final image = await boundary.toImage(pixelRatio: 3);
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      if (data == null) {
+        throw StateError('Unable to encode report.');
+      }
+      return data.buffer.asUint8List();
+    } finally {
+      entry.remove();
+    }
+  }
+
   pw.Widget _buildReport(
     LoadRecipe load,
     RangeResult? best,
     List<TargetPhoto> photos,
     pw.ImageProvider brandImage,
   ) {
-    final photoBytes = photos.isNotEmpty ? _safeReadBytes(photos.first) : null;
+    final content = buildReportContent(
+      load: load,
+      bestResult: best,
+      photos: photos,
+    );
+    final photoBytes =
+        content.photoPath == null ? null : _safeReadBytesFromPath(content.photoPath!);
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text('Load Intel Report', style: pw.TextStyle(fontSize: 20)),
+        pw.Text(content.title, style: pw.TextStyle(fontSize: 20)),
         pw.SizedBox(height: 8),
-        pw.Text('Recipe: ${load.recipeName}'),
-        pw.Text('Cartridge: ${load.cartridge}'),
-        pw.Text('Powder: ${load.powder} ${load.powderChargeGr} gr'),
-        if (load.annealingTimeSec != null)
-          pw.Text('Annealing Time: ${load.annealingTimeSec} sec'),
-        pw.Text('Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''}'),
-        if (load.bulletDiameter != null)
-          pw.Text('Bullet Diameter: ${load.bulletDiameter}'),
-        if (load.caseResize != null && load.caseResize!.isNotEmpty)
-          pw.Text('Case Resize: ${load.caseResize}'),
-        if (load.gasCheckMaterial != null && load.gasCheckMaterial!.isNotEmpty)
-          pw.Text('Gas Check Material: ${load.gasCheckMaterial}'),
-        if (load.gasCheckInstallMethod != null &&
-            load.gasCheckInstallMethod!.isNotEmpty)
-          pw.Text('Gas Check Install: ${load.gasCheckInstallMethod}'),
-        if (load.bulletCoating != null && load.bulletCoating!.isNotEmpty)
-          pw.Text('Bullet Coating: ${load.bulletCoating}'),
-        pw.Text('Dangerous: ${load.isDangerous ? 'YES' : 'No'}'),
+        ...content.loadLines.map(pw.Text.new),
         pw.SizedBox(height: 12),
-        pw.Text('Best Result', style: pw.TextStyle(fontSize: 16)),
-        if (best == null)
-          pw.Text('No results yet.')
-        else ...[
-          pw.Text('Group Size: ${best.groupSizeIn} in'),
-          pw.Text('Tested At: ${best.testedAt.toLocal()}'),
-          pw.Text('AVG: ${best.avgFps ?? '-'}'),
-          pw.Text('SD: ${best.sdFps ?? '-'}'),
-          pw.Text('ES: ${best.esFps ?? '-'}'),
-        ],
+        pw.Text(content.bestTitle, style: pw.TextStyle(fontSize: 16)),
+        if (content.bestLines.isEmpty)
+          pw.Text(content.bestEmptyMessage)
+        else
+          ...content.bestLines.map(pw.Text.new),
         if (photoBytes != null) ...[
           pw.SizedBox(height: 12),
           pw.Text('Target Photo'),
@@ -350,6 +421,14 @@ class ExportService {
 
   Uint8List? _safeReadBytes(TargetPhoto photo) {
     final pathValue = photo.thumbPath ?? photo.galleryPath;
+    try {
+      return Uint8List.fromList(File(pathValue).readAsBytesSync());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Uint8List? _safeReadBytesFromPath(String pathValue) {
     try {
       return Uint8List.fromList(File(pathValue).readAsBytesSync());
     } catch (_) {
@@ -432,6 +511,196 @@ class ExportService {
     return text;
   }
 
+  Uint8List _encodeCsvForExcel(String csvText) {
+    final normalized = csvText.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n');
+    final bytes = utf8.encode(normalized);
+    final withBom = Uint8List(bytes.length + 3)
+      ..[0] = 0xEF
+      ..[1] = 0xBB
+      ..[2] = 0xBF
+      ..setRange(3, bytes.length + 3, bytes);
+    return withBom;
+  }
+
+  // TEMP DEBUG CSV: diagnostics for Excel compatibility.
+  Future<void> _debugCsvExport({
+    required String csvText,
+    required String exportPath,
+    required String delimiter,
+    required String encodingLabel,
+  }) async {
+    final bytes = utf8.encode(csvText);
+    final debugPath = path.join(path.dirname(exportPath), 'export_debug.txt');
+    await File(debugPath).writeAsBytes(bytes, flush: true);
+
+    final crlfCount = RegExp(r'\r\n').allMatches(csvText).length;
+    final lfCount = RegExp(r'\n').allMatches(csvText).length;
+    final usesCrLf = crlfCount > 0;
+    final usesOnlyLf = lfCount > 0 && crlfCount == 0;
+
+    final first200 = csvText.substring(0, csvText.length.clamp(0, 200));
+    final last200 = csvText.substring(
+      csvText.length > 200 ? csvText.length - 200 : 0,
+    );
+    final firstBytes = bytes.take(20).map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ');
+    final hasBom = bytes.length >= 3 &&
+        bytes[0] == 0xEF &&
+        bytes[1] == 0xBB &&
+        bytes[2] == 0xBF;
+
+    debugPrint('----- BEGIN CSV DEBUG (Single Load) -----');
+    debugPrint('CSV export path: $exportPath');
+    debugPrint('CSV debug path: $debugPath');
+    debugPrint('Delimiter: "$delimiter"');
+    debugPrint('Encoding: $encodingLabel');
+    debugPrint('Line endings: ${usesCrLf ? 'CRLF' : 'LF'} (CRLF=$crlfCount, LF=$lfCount)');
+    debugPrint('Has UTF-8 BOM: $hasBom');
+    debugPrint('First 200 chars: $first200');
+    debugPrint('Last 200 chars: $last200');
+    debugPrint('First 20 bytes (hex): $firstBytes');
+    _debugPrintBlock('CSV TEXT', csvText);
+
+    final warnings = _lintCsv(
+      csvText: csvText,
+      delimiter: delimiter,
+      hasBom: hasBom,
+      usesOnlyLf: usesOnlyLf,
+    );
+    if (warnings.isEmpty) {
+      debugPrint('CSV Lint: no issues detected.');
+    } else {
+      for (final warning in warnings) {
+        debugPrint('CSV Lint Warning: $warning');
+      }
+    }
+    debugPrint('----- END CSV DEBUG (Single Load) -----');
+  }
+
+  void _debugPrintBlock(String label, String content) {
+    const chunkSize = 800;
+    debugPrint('----- BEGIN $label -----');
+    for (var i = 0; i < content.length; i += chunkSize) {
+      final end = (i + chunkSize < content.length) ? i + chunkSize : content.length;
+      debugPrint(content.substring(i, end));
+    }
+    debugPrint('----- END $label -----');
+  }
+
+  List<String> _lintCsv({
+    required String csvText,
+    required String delimiter,
+    required bool hasBom,
+    required bool usesOnlyLf,
+  }) {
+    final warnings = <String>[];
+    if (!hasBom) {
+      warnings.add('Missing UTF-8 BOM (Excel on Windows may mis-detect encoding).');
+    }
+    if (usesOnlyLf) {
+      warnings.add('Line endings are LF only; Excel on Windows can prefer CRLF.');
+    }
+    if (delimiter == ',') {
+      warnings.add('Delimiter is comma; some locales expect semicolon in Excel.');
+    }
+    if (csvText.contains('\uFFFD')) {
+      warnings.add('Found replacement character (\\uFFFD); potential encoding issues.');
+    }
+
+    final parse = _parseCsv(csvText, delimiter);
+    warnings.addAll(parse.warnings);
+    if (parse.rows.isNotEmpty) {
+      final headerCount = parse.rows.first.length;
+      for (var i = 1; i < parse.rows.length; i++) {
+        final row = parse.rows[i];
+        if (row.length != headerCount) {
+          warnings.add(
+            'Row ${i + 1} has ${row.length} columns; expected $headerCount.',
+          );
+        }
+        for (final field in row) {
+          final trimmed = field.trimLeft();
+          if (trimmed.startsWith('=') ||
+              trimmed.startsWith('+') ||
+              trimmed.startsWith('-') ||
+              trimmed.startsWith('@')) {
+            warnings.add('Row ${i + 1} has a field that starts with "$trimmed".');
+            break;
+          }
+        }
+      }
+    }
+    return warnings;
+  }
+
+  _CsvParseResult _parseCsv(String text, String delimiter) {
+    final rows = <List<String>>[];
+    final warnings = <String>[];
+    final field = StringBuffer();
+    var row = <String>[];
+    var inQuotes = false;
+    var i = 0;
+    var fieldStarted = false;
+
+    void endField() {
+      row.add(field.toString());
+      field.clear();
+      fieldStarted = false;
+    }
+
+    void endRow() {
+      endField();
+      rows.add(row);
+      row = <String>[];
+    }
+
+    while (i < text.length) {
+      final char = text[i];
+      if (inQuotes) {
+        if (char == '"') {
+          final nextIsQuote = i + 1 < text.length && text[i + 1] == '"';
+          if (nextIsQuote) {
+            field.write('"');
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          field.write(char);
+        }
+      } else {
+        if (char == '"') {
+          if (fieldStarted) {
+            warnings.add('Unescaped quote in field.');
+          }
+          inQuotes = true;
+          fieldStarted = true;
+        } else if (char == delimiter) {
+          endField();
+        } else if (char == '\r') {
+          if (i + 1 < text.length && text[i + 1] == '\n') {
+            i++;
+          }
+          endRow();
+        } else if (char == '\n') {
+          endRow();
+        } else {
+          field.write(char);
+          fieldStarted = true;
+        }
+      }
+      i++;
+    }
+
+    if (inQuotes) {
+      warnings.add('Unclosed quote at end of file.');
+    }
+    if (field.isNotEmpty || fieldStarted || row.isNotEmpty) {
+      endRow();
+    }
+
+    return _CsvParseResult(rows: rows, warnings: warnings);
+  }
+
   String _buildSingleLoadCsv(LoadRecipe load, List<RangeResult> results) {
     final buffer = StringBuffer();
     buffer.writeln('Load');
@@ -498,61 +767,92 @@ class ExportService {
     final excel = Excel.createExcel();
     final loadSheet = excel['Load'];
     loadSheet.appendRow([
-      TextCellValue('Field'),
-      TextCellValue('Value'),
+      TextCellValue('id'),
+      TextCellValue('recipeName'),
+      TextCellValue('cartridge'),
+      TextCellValue('bulletBrand'),
+      TextCellValue('bulletWeightGr'),
+      TextCellValue('bulletDiameter'),
+      TextCellValue('bulletType'),
+      TextCellValue('brass'),
+      TextCellValue('brassTrimLength'),
+      TextCellValue('annealingTimeSec'),
+      TextCellValue('primer'),
+      TextCellValue('caseResize'),
+      TextCellValue('gasCheckMaterial'),
+      TextCellValue('gasCheckInstallMethod'),
+      TextCellValue('bulletCoating'),
+      TextCellValue('powder'),
+      TextCellValue('powderChargeGr'),
+      TextCellValue('coal'),
+      TextCellValue('seatingDepth'),
+      TextCellValue('notes'),
+      TextCellValue('firearmId'),
+      TextCellValue('isDangerous'),
+      TextCellValue('dangerConfirmedAt'),
+      TextCellValue('createdAt'),
+      TextCellValue('updatedAt'),
     ]);
-    void addRow(String field, Object? value) {
-      loadSheet.appendRow([
-        TextCellValue(field),
-        TextCellValue(value?.toString() ?? ''),
-      ]);
-    }
+    loadSheet.appendRow([
+      TextCellValue(load.id),
+      TextCellValue(load.recipeName),
+      TextCellValue(load.cartridge),
+      TextCellValue(load.bulletBrand ?? ''),
+      TextCellValue(load.bulletWeightGr?.toString() ?? ''),
+      TextCellValue(load.bulletDiameter?.toString() ?? ''),
+      TextCellValue(load.bulletType ?? ''),
+      TextCellValue(load.brass ?? ''),
+      TextCellValue(load.brassTrimLength?.toString() ?? ''),
+      TextCellValue(load.annealingTimeSec?.toString() ?? ''),
+      TextCellValue(load.primer ?? ''),
+      TextCellValue(load.caseResize ?? ''),
+      TextCellValue(load.gasCheckMaterial ?? ''),
+      TextCellValue(load.gasCheckInstallMethod ?? ''),
+      TextCellValue(load.bulletCoating ?? ''),
+      TextCellValue(load.powder),
+      TextCellValue(load.powderChargeGr.toString()),
+      TextCellValue(load.coal?.toString() ?? ''),
+      TextCellValue(load.seatingDepth?.toString() ?? ''),
+      TextCellValue(load.notes ?? ''),
+      TextCellValue(load.firearmId),
+      TextCellValue(load.isDangerous ? '1' : '0'),
+      TextCellValue(load.dangerConfirmedAt?.toIso8601String() ?? ''),
+      TextCellValue(load.createdAt.toIso8601String()),
+      TextCellValue(load.updatedAt.toIso8601String()),
+    ]);
 
-    addRow('Recipe', load.recipeName);
-    addRow('Cartridge', load.cartridge);
-    addRow('Bullet Brand', load.bulletBrand);
-    addRow('Bullet Weight (gr)', load.bulletWeightGr);
-    addRow('Bullet Diameter', load.bulletDiameter);
-    addRow('Bullet Type', load.bulletType);
-    addRow('Powder', load.powder);
-    addRow('Powder Charge (gr)', load.powderChargeGr);
-    addRow('Brass', load.brass);
-    addRow('Brass Trim Length', load.brassTrimLength);
-    addRow('Annealing Time (sec)', load.annealingTimeSec);
-    addRow('Primer', load.primer);
-    addRow('COAL', load.coal);
-    addRow('Seating Depth', load.seatingDepth);
-    addRow('Case Resize', load.caseResize);
-    addRow('Gas Check Material', load.gasCheckMaterial);
-    addRow('Gas Check Install', load.gasCheckInstallMethod);
-    addRow('Bullet Coating', load.bulletCoating);
-    addRow('Notes', load.notes);
-    addRow('Dangerous', load.isDangerous ? 'YES' : 'No');
-
-    if (results.isNotEmpty) {
-      final chronoSheet = excel['Chrono'];
-      chronoSheet.appendRow([
-        TextCellValue('Tested At'),
-        TextCellValue('Distance (yds)'),
-        TextCellValue('AVG'),
-        TextCellValue('SD'),
-        TextCellValue('ES'),
-        TextCellValue('Group Size (in)'),
-        TextCellValue('Shots'),
-        TextCellValue('Notes'),
+    final resultsSheet = excel['Results'];
+    resultsSheet.appendRow([
+      TextCellValue('id'),
+      TextCellValue('loadId'),
+      TextCellValue('testedAt'),
+      TextCellValue('firearmId'),
+      TextCellValue('distanceYds'),
+      TextCellValue('fpsShots'),
+      TextCellValue('avgFps'),
+      TextCellValue('sdFps'),
+      TextCellValue('esFps'),
+      TextCellValue('groupSizeIn'),
+      TextCellValue('notes'),
+      TextCellValue('createdAt'),
+      TextCellValue('updatedAt'),
+    ]);
+    for (final result in results) {
+      resultsSheet.appendRow([
+        TextCellValue(result.id),
+        TextCellValue(result.loadId),
+        TextCellValue(result.testedAt.toIso8601String()),
+        TextCellValue(result.firearmId),
+        TextCellValue(result.distanceYds.toString()),
+        TextCellValue(jsonEncode(result.fpsShots)),
+        TextCellValue(result.avgFps?.toString() ?? ''),
+        TextCellValue(result.sdFps?.toString() ?? ''),
+        TextCellValue(result.esFps?.toString() ?? ''),
+        TextCellValue(result.groupSizeIn.toString()),
+        TextCellValue(result.notes ?? ''),
+        TextCellValue(result.createdAt.toIso8601String()),
+        TextCellValue(result.updatedAt.toIso8601String()),
       ]);
-      for (final result in results) {
-        chronoSheet.appendRow([
-          TextCellValue(result.testedAt.toIso8601String()),
-          TextCellValue(result.distanceYds.toString()),
-          TextCellValue(result.avgFps?.toString() ?? ''),
-          TextCellValue(result.sdFps?.toString() ?? ''),
-          TextCellValue(result.esFps?.toString() ?? ''),
-          TextCellValue(result.groupSizeIn.toString()),
-          TextCellValue(result.fpsShots?.join(', ') ?? ''),
-          TextCellValue(result.notes ?? ''),
-        ]);
-      }
     }
 
     final bytes = excel.encode();
@@ -637,4 +937,12 @@ class ExportService {
   }
 
   String _two(int value) => value.toString().padLeft(2, '0');
+}
+
+// TEMP DEBUG CSV
+class _CsvParseResult {
+  const _CsvParseResult({required this.rows, required this.warnings});
+
+  final List<List<String>> rows;
+  final List<String> warnings;
 }
