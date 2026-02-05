@@ -55,7 +55,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 _HomeNavButton(
                   label: 'Range Test',
-                  icon: Icons.speed,
+                  icon: Icons.my_location,
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const RangeTestScreen()),
