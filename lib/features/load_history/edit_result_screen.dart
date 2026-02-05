@@ -207,6 +207,27 @@ class _EditResultScreenState extends State<EditResultScreen> {
   }
 
   Future<void> _removePhoto(TargetPhoto photo) async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete photo?'),
+            content: const Text('This will remove the photo from this result.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) {
+      return;
+    }
     final repo = context.read<TargetPhotoRepository>();
     await repo.deletePhoto(photo.id);
     if (!mounted) {

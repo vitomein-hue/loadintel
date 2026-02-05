@@ -679,19 +679,33 @@ class _TestedLoadTile extends StatelessWidget {
                             itemBuilder: (context, index) {
                               final photo = photos[index];
                               final path = photo.thumbPath ?? photo.galleryPath;
+                              final heroTag = 'photo_${photo.id}';
                               return ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  File(path),
-                                  width: 64,
-                                  height: 64,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    width: 64,
-                                    height: 64,
-                                    color: AppColors.card,
-                                    alignment: Alignment.center,
-                                    child: const Icon(Icons.image_not_supported),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () => _showPhotoFullscreen(
+                                      context,
+                                      photo,
+                                      heroTag: heroTag,
+                                    ),
+                                    child: Hero(
+                                      tag: heroTag,
+                                      child: Image.file(
+                                        File(path),
+                                        width: 64,
+                                        height: 64,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          width: 64,
+                                          height: 64,
+                                          color: AppColors.card,
+                                          alignment: Alignment.center,
+                                          child: const Icon(Icons.image_not_supported),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               );
@@ -860,6 +874,74 @@ void _showLoadNotes(
       ],
     ),
   );
+}
+
+void _showPhotoFullscreen(
+  BuildContext context,
+  TargetPhoto photo, {
+  required String heroTag,
+}) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => _FullScreenPhoto(
+        path: photo.galleryPath,
+        heroTag: heroTag,
+      ),
+    ),
+  );
+}
+
+class _FullScreenPhoto extends StatelessWidget {
+  const _FullScreenPhoto({
+    required this.path,
+    required this.heroTag,
+  });
+
+  final String path;
+  final String heroTag;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Center(
+                child: Hero(
+                  tag: heroTag,
+                  child: InteractiveViewer(
+                    minScale: 1,
+                    maxScale: 4,
+                    child: Image.file(
+                      File(path),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.image_not_supported,
+                        color: Colors.white70,
+                        size: 56,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _TestedLoadsGrouped extends StatelessWidget {
