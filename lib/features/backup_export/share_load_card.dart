@@ -7,10 +7,7 @@ import 'package:loadintel/domain/models/range_result.dart';
 import 'package:loadintel/domain/models/target_photo.dart';
 
 class ShareLoadCard extends StatelessWidget {
-  const ShareLoadCard({
-    super.key,
-    required this.content,
-  });
+  const ShareLoadCard({super.key, required this.content});
 
   static const Size cardSize = Size(1080, 1350);
   static const double _edgePadding = 48;
@@ -157,7 +154,9 @@ ReportContent buildReportContent({
   if (load.annealingTimeSec != null) {
     loadLines.add('Annealing Time: ${load.annealingTimeSec} sec');
   }
-  loadLines.add('Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''}');
+  loadLines.add(
+    'Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''}',
+  );
   if (load.bulletDiameter != null) {
     loadLines.add('Bullet Diameter: ${load.bulletDiameter}');
   }
@@ -173,6 +172,18 @@ ReportContent buildReportContent({
   }
   if (load.bulletCoating != null && load.bulletCoating!.isNotEmpty) {
     loadLines.add('Bullet Coating: ${load.bulletCoating}');
+  }
+  if (load.coal != null ||
+      load.baseToOgive != null ||
+      load.seatingDepth != null) {
+    final coalText = load.coal != null ? load.coal.toString() : '-';
+    final btoText = load.baseToOgive != null
+        ? load.baseToOgive.toString()
+        : '-';
+    final seatingText = load.seatingDepth != null
+        ? load.seatingDepth.toString()
+        : '-';
+    loadLines.add('COAL: $coalText | BTO: $btoText | Seating: $seatingText');
   }
   loadLines.add('Dangerous: ${load.isDangerous ? 'YES' : 'No'}');
 

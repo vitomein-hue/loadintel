@@ -95,7 +95,8 @@ class ExportService {
       doc.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.letter,
-          build: (context) => _buildReport(load, bestResult, photos, brandImage),
+          build: (context) =>
+              _buildReport(load, bestResult, photos, brandImage),
         ),
       );
       final fileLocation = await _writeExportFile(
@@ -140,7 +141,8 @@ class ExportService {
     final filePath = await _writeTempExportFile(fileName, bytes);
     return XFile(
       filePath,
-      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      mimeType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       name: fileName,
     );
   }
@@ -226,16 +228,13 @@ class ExportService {
     }
 
     try {
-      final location = await _safChannel.invokeMethod<String>(
-        'writeFile',
-        {
-          'treeUri': treeUri,
-          'subDir': _androidSubdirName,
-          'fileName': fileName,
-          'mimeType': mimeType,
-          'bytes': bytes,
-        },
-      );
+      final location = await _safChannel.invokeMethod<String>('writeFile', {
+        'treeUri': treeUri,
+        'subDir': _androidSubdirName,
+        'fileName': fileName,
+        'mimeType': mimeType,
+        'bytes': bytes,
+      });
       if (location != null) {
         debugPrint('Exported $fileName -> $location');
       }
@@ -246,16 +245,13 @@ class ExportService {
       if (treeUri == null) {
         return null;
       }
-      final location = await _safChannel.invokeMethod<String>(
-        'writeFile',
-        {
-          'treeUri': treeUri,
-          'subDir': _androidSubdirName,
-          'fileName': fileName,
-          'mimeType': mimeType,
-          'bytes': bytes,
-        },
-      );
+      final location = await _safChannel.invokeMethod<String>('writeFile', {
+        'treeUri': treeUri,
+        'subDir': _androidSubdirName,
+        'fileName': fileName,
+        'mimeType': mimeType,
+        'bytes': bytes,
+      });
       if (location != null) {
         debugPrint('Exported $fileName -> $location');
       }
@@ -264,7 +260,9 @@ class ExportService {
   }
 
   Future<String?> _ensureAndroidTreeUri() async {
-    final existing = await _settingsRepo.getString(SettingsKeys.exportFolderUri);
+    final existing = await _settingsRepo.getString(
+      SettingsKeys.exportFolderUri,
+    );
     if (existing != null && existing.isNotEmpty) {
       return existing;
     }
@@ -329,10 +327,7 @@ class ExportService {
               child: SizedBox(
                 width: size.width,
                 height: size.height,
-                child: Material(
-                  color: Colors.transparent,
-                  child: child,
-                ),
+                child: Material(color: Colors.transparent, child: child),
               ),
             ),
           ),
@@ -343,7 +338,8 @@ class ExportService {
     try {
       await WidgetsBinding.instance.endOfFrame;
       final boundary =
-          boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+          boundaryKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
       if (boundary == null) {
         throw StateError('Unable to capture report.');
       }
@@ -370,8 +366,9 @@ class ExportService {
       bestResult: best,
       photos: photos,
     );
-    final photoBytes =
-        content.photoPath == null ? null : _safeReadBytesFromPath(content.photoPath!);
+    final photoBytes = content.photoPath == null
+        ? null
+        : _safeReadBytesFromPath(content.photoPath!);
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -439,7 +436,7 @@ class ExportService {
   String _buildLoadsCsv(List<LoadRecipe> loads) {
     final buffer = StringBuffer();
     buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
+      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,baseToOgive,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
     );
     for (final load in loads) {
       buffer.writeln(
@@ -462,6 +459,7 @@ class ExportService {
           load.powder,
           load.powderChargeGr,
           load.coal,
+          load.baseToOgive,
           load.seatingDepth,
           load.notes,
           load.firearmId,
@@ -512,7 +510,9 @@ class ExportService {
   }
 
   Uint8List _encodeCsvForExcel(String csvText) {
-    final normalized = csvText.replaceAll('\r\n', '\n').replaceAll('\n', '\r\n');
+    final normalized = csvText
+        .replaceAll('\r\n', '\n')
+        .replaceAll('\n', '\r\n');
     final bytes = utf8.encode(normalized);
     final withBom = Uint8List(bytes.length + 3)
       ..[0] = 0xEF
@@ -542,8 +542,12 @@ class ExportService {
     final last200 = csvText.substring(
       csvText.length > 200 ? csvText.length - 200 : 0,
     );
-    final firstBytes = bytes.take(20).map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ');
-    final hasBom = bytes.length >= 3 &&
+    final firstBytes = bytes
+        .take(20)
+        .map((b) => b.toRadixString(16).padLeft(2, '0'))
+        .join(' ');
+    final hasBom =
+        bytes.length >= 3 &&
         bytes[0] == 0xEF &&
         bytes[1] == 0xBB &&
         bytes[2] == 0xBF;
@@ -553,7 +557,9 @@ class ExportService {
     debugPrint('CSV debug path: $debugPath');
     debugPrint('Delimiter: "$delimiter"');
     debugPrint('Encoding: $encodingLabel');
-    debugPrint('Line endings: ${usesCrLf ? 'CRLF' : 'LF'} (CRLF=$crlfCount, LF=$lfCount)');
+    debugPrint(
+      'Line endings: ${usesCrLf ? 'CRLF' : 'LF'} (CRLF=$crlfCount, LF=$lfCount)',
+    );
     debugPrint('Has UTF-8 BOM: $hasBom');
     debugPrint('First 200 chars: $first200');
     debugPrint('Last 200 chars: $last200');
@@ -580,7 +586,9 @@ class ExportService {
     const chunkSize = 800;
     debugPrint('----- BEGIN $label -----');
     for (var i = 0; i < content.length; i += chunkSize) {
-      final end = (i + chunkSize < content.length) ? i + chunkSize : content.length;
+      final end = (i + chunkSize < content.length)
+          ? i + chunkSize
+          : content.length;
       debugPrint(content.substring(i, end));
     }
     debugPrint('----- END $label -----');
@@ -594,16 +602,24 @@ class ExportService {
   }) {
     final warnings = <String>[];
     if (!hasBom) {
-      warnings.add('Missing UTF-8 BOM (Excel on Windows may mis-detect encoding).');
+      warnings.add(
+        'Missing UTF-8 BOM (Excel on Windows may mis-detect encoding).',
+      );
     }
     if (usesOnlyLf) {
-      warnings.add('Line endings are LF only; Excel on Windows can prefer CRLF.');
+      warnings.add(
+        'Line endings are LF only; Excel on Windows can prefer CRLF.',
+      );
     }
     if (delimiter == ',') {
-      warnings.add('Delimiter is comma; some locales expect semicolon in Excel.');
+      warnings.add(
+        'Delimiter is comma; some locales expect semicolon in Excel.',
+      );
     }
     if (csvText.contains('\uFFFD')) {
-      warnings.add('Found replacement character (\\uFFFD); potential encoding issues.');
+      warnings.add(
+        'Found replacement character (\\uFFFD); potential encoding issues.',
+      );
     }
 
     final parse = _parseCsv(csvText, delimiter);
@@ -623,7 +639,9 @@ class ExportService {
               trimmed.startsWith('+') ||
               trimmed.startsWith('-') ||
               trimmed.startsWith('@')) {
-            warnings.add('Row ${i + 1} has a field that starts with "$trimmed".');
+            warnings.add(
+              'Row ${i + 1} has a field that starts with "$trimmed".',
+            );
             break;
           }
         }
@@ -705,7 +723,7 @@ class ExportService {
     final buffer = StringBuffer();
     buffer.writeln('Load');
     buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
+      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,baseToOgive,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
     );
     buffer.writeln(
       [
@@ -727,6 +745,7 @@ class ExportService {
         load.powder,
         load.powderChargeGr,
         load.coal,
+        load.baseToOgive,
         load.seatingDepth,
         load.notes,
         load.firearmId,
@@ -785,6 +804,7 @@ class ExportService {
       TextCellValue('powder'),
       TextCellValue('powderChargeGr'),
       TextCellValue('coal'),
+      TextCellValue('baseToOgive'),
       TextCellValue('seatingDepth'),
       TextCellValue('notes'),
       TextCellValue('firearmId'),
@@ -812,6 +832,7 @@ class ExportService {
       TextCellValue(load.powder),
       TextCellValue(load.powderChargeGr.toString()),
       TextCellValue(load.coal?.toString() ?? ''),
+      TextCellValue(load.baseToOgive?.toString() ?? ''),
       TextCellValue(load.seatingDepth?.toString() ?? ''),
       TextCellValue(load.notes ?? ''),
       TextCellValue(load.firearmId),
@@ -871,13 +892,16 @@ class ExportService {
     buffer.writeln('Load Intel - Load Card');
     buffer.writeln('Recipe: ${load.recipeName}');
     buffer.writeln('Cartridge: ${load.cartridge}');
-    buffer.writeln('Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''} ${load.bulletType ?? ''}');
+    buffer.writeln(
+      'Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''} ${load.bulletType ?? ''}',
+    );
     buffer.writeln('Powder: ${load.powder} ${load.powderChargeGr} gr');
     buffer.writeln('Brass: ${load.brass ?? '-'}');
     buffer.writeln('Brass Trim Length: ${load.brassTrimLength ?? '-'}');
     buffer.writeln('Annealing Time: ${load.annealingTimeSec ?? '-'} sec');
     buffer.writeln('Primer: ${load.primer ?? '-'}');
     buffer.writeln('COAL: ${load.coal ?? '-'}');
+    buffer.writeln('Base to Ogive: ${load.baseToOgive ?? '-'}');
     buffer.writeln('Seating Depth: ${load.seatingDepth ?? '-'}');
     buffer.writeln('Dangerous: ${load.isDangerous ? 'YES' : 'No'}');
     if (load.notes != null && load.notes!.trim().isNotEmpty) {
@@ -909,7 +933,10 @@ class ExportService {
 
   String _reportFileName(LoadRecipe load, String stamp) {
     final safeName = load.recipeName.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
-    final safeCartridge = load.cartridge.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final safeCartridge = load.cartridge.replaceAll(
+      RegExp(r'[^a-zA-Z0-9_-]'),
+      '_',
+    );
     return 'loadintel_${safeCartridge}_${safeName}_$stamp.pdf';
   }
 

@@ -16,7 +16,7 @@ class AppDatabase {
     final fullPath = path.join(dbPath, 'loadintel.db');
     final db = await openDatabase(
       fullPath,
-      version: 5,
+      version: 6,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -64,6 +64,7 @@ class AppDatabase {
         powder TEXT NOT NULL,
         powderChargeGr REAL NOT NULL,
         coal REAL,
+        baseToOgive REAL,
         seatingDepth REAL,
         notes TEXT,
         firearmId TEXT NOT NULL,
@@ -96,7 +97,7 @@ class AppDatabase {
     ''');
 
     await db.execute(
-      'CREATE INDEX idx_range_results_load ON range_results(loadId)'
+      'CREATE INDEX idx_range_results_load ON range_results(loadId)',
     );
 
     await db.execute('''
@@ -130,22 +131,40 @@ class AppDatabase {
     ''');
   }
 
-  Future<void> _upgradeSchema(Database db, int oldVersion, int newVersion) async {
+  Future<void> _upgradeSchema(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE load_recipes ADD COLUMN caseResize TEXT');
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN gasCheckMaterial TEXT');
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN gasCheckInstallMethod TEXT');
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN bulletCoating TEXT');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN gasCheckMaterial TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN gasCheckInstallMethod TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN bulletCoating TEXT',
+      );
     }
     if (oldVersion < 3) {
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN bulletDiameter REAL');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN bulletDiameter REAL',
+      );
     }
     if (oldVersion < 4) {
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN annealingTimeSec REAL');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN annealingTimeSec REAL',
+      );
     }
     if (oldVersion < 5) {
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN brassTrimLength REAL');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN brassTrimLength REAL',
+      );
+    }
+    if (oldVersion < 6) {
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN baseToOgive REAL');
     }
   }
 }
-

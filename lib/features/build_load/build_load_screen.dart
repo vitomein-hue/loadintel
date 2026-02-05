@@ -52,6 +52,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   late final TextEditingController _powderController;
   late final TextEditingController _powderChargeController;
   late final TextEditingController _coalController;
+  late final TextEditingController _baseToOgiveController;
   late final TextEditingController _seatingDepthController;
   late final TextEditingController _notesController;
 
@@ -75,33 +76,55 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   void initState() {
     super.initState();
     final recipe = widget.recipe;
-    _recipeNameController = TextEditingController(text: recipe?.recipeName ?? '');
+    _recipeNameController = TextEditingController(
+      text: recipe?.recipeName ?? '',
+    );
     _cartridgeController = TextEditingController(text: recipe?.cartridge ?? '');
-    _bulletBrandController = TextEditingController(text: recipe?.bulletBrand ?? '');
-    _bulletWeightController =
-        TextEditingController(text: recipe?.bulletWeightGr?.toString() ?? '');
-    _bulletDiameterController =
-        TextEditingController(text: recipe?.bulletDiameter?.toString() ?? '');
-    _bulletTypeController = TextEditingController(text: recipe?.bulletType ?? '');
-    _caseResizeController = TextEditingController(text: recipe?.caseResize ?? '');
-    _gasCheckMaterialController =
-        TextEditingController(text: recipe?.gasCheckMaterial ?? '');
-    _gasCheckInstallMethodController =
-        TextEditingController(text: recipe?.gasCheckInstallMethod ?? '');
-    _bulletCoatingController =
-        TextEditingController(text: recipe?.bulletCoating ?? '');
+    _bulletBrandController = TextEditingController(
+      text: recipe?.bulletBrand ?? '',
+    );
+    _bulletWeightController = TextEditingController(
+      text: recipe?.bulletWeightGr?.toString() ?? '',
+    );
+    _bulletDiameterController = TextEditingController(
+      text: recipe?.bulletDiameter?.toString() ?? '',
+    );
+    _bulletTypeController = TextEditingController(
+      text: recipe?.bulletType ?? '',
+    );
+    _caseResizeController = TextEditingController(
+      text: recipe?.caseResize ?? '',
+    );
+    _gasCheckMaterialController = TextEditingController(
+      text: recipe?.gasCheckMaterial ?? '',
+    );
+    _gasCheckInstallMethodController = TextEditingController(
+      text: recipe?.gasCheckInstallMethod ?? '',
+    );
+    _bulletCoatingController = TextEditingController(
+      text: recipe?.bulletCoating ?? '',
+    );
     _brassController = TextEditingController(text: recipe?.brass ?? '');
-    _brassTrimLengthController =
-        TextEditingController(text: recipe?.brassTrimLength?.toString() ?? '');
-    _annealingTimeController =
-        TextEditingController(text: recipe?.annealingTimeSec?.toString() ?? '');
+    _brassTrimLengthController = TextEditingController(
+      text: recipe?.brassTrimLength?.toString() ?? '',
+    );
+    _annealingTimeController = TextEditingController(
+      text: recipe?.annealingTimeSec?.toString() ?? '',
+    );
     _primerController = TextEditingController(text: recipe?.primer ?? '');
     _powderController = TextEditingController(text: recipe?.powder ?? '');
-    _powderChargeController =
-        TextEditingController(text: recipe?.powderChargeGr.toString() ?? '');
-    _coalController = TextEditingController(text: recipe?.coal?.toString() ?? '');
-    _seatingDepthController =
-        TextEditingController(text: recipe?.seatingDepth?.toString() ?? '');
+    _powderChargeController = TextEditingController(
+      text: recipe?.powderChargeGr.toString() ?? '',
+    );
+    _coalController = TextEditingController(
+      text: recipe?.coal?.toString() ?? '',
+    );
+    _baseToOgiveController = TextEditingController(
+      text: recipe?.baseToOgive?.toString() ?? '',
+    );
+    _seatingDepthController = TextEditingController(
+      text: recipe?.seatingDepth?.toString() ?? '',
+    );
     _notesController = TextEditingController(text: recipe?.notes ?? '');
 
     _selectedFirearmId = recipe?.firearmId;
@@ -139,6 +162,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _powderController.dispose();
     _powderChargeController.dispose();
     _coalController.dispose();
+    _baseToOgiveController.dispose();
     _seatingDepthController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -157,14 +181,22 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     for (final list in inventoryByType.values) {
       list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     }
-    final customCaseResize =
-        await _loadCustomOptions(settingsRepo, SettingsKeys.caseResizeOptions);
-    final customGasCheckMaterial =
-        await _loadCustomOptions(settingsRepo, SettingsKeys.gasCheckMaterialOptions);
-    final customGasCheckInstallMethod =
-        await _loadCustomOptions(settingsRepo, SettingsKeys.gasCheckInstallMethodOptions);
-    final customBulletCoating =
-        await _loadCustomOptions(settingsRepo, SettingsKeys.bulletCoatingOptions);
+    final customCaseResize = await _loadCustomOptions(
+      settingsRepo,
+      SettingsKeys.caseResizeOptions,
+    );
+    final customGasCheckMaterial = await _loadCustomOptions(
+      settingsRepo,
+      SettingsKeys.gasCheckMaterialOptions,
+    );
+    final customGasCheckInstallMethod = await _loadCustomOptions(
+      settingsRepo,
+      SettingsKeys.gasCheckInstallMethodOptions,
+    );
+    final customBulletCoating = await _loadCustomOptions(
+      settingsRepo,
+      SettingsKeys.bulletCoatingOptions,
+    );
     return _BuildLoadData(
       firearms: firearms,
       inventoryByType: inventoryByType,
@@ -215,7 +247,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     return exists ? value : '$value (missing)';
   }
 
-  void _syncInventoryControllers(Map<String, List<InventoryItem>> inventoryByType) {
+  void _syncInventoryControllers(
+    Map<String, List<InventoryItem>> inventoryByType,
+  ) {
     _bulletBrandController.text = _displayInventoryValue(
       _selectedBullet,
       inventoryByType['bullets'] ?? [],
@@ -347,8 +381,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                     Navigator.of(context).pop(existing);
                                     return;
                                   }
-                                  Navigator.of(context)
-                                      .pop('$_customOptionPrefix$trimmed');
+                                  Navigator.of(
+                                    context,
+                                  ).pop('$_customOptionPrefix$trimmed');
                                 },
                                 child: const Text('Add'),
                               ),
@@ -372,9 +407,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       final trimmed = result.substring(_customOptionPrefix.length);
       final updated = [...customOptions, trimmed];
       await context.read<SettingsRepository>().setString(
-            prefsKey,
-            jsonEncode(updated),
-          );
+        prefsKey,
+        jsonEncode(updated),
+      );
       debugPrint('Saved custom option [$prefsKey]: $trimmed');
       await _refreshData();
       return trimmed;
@@ -403,7 +438,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
             builder: (context, setSheetState) {
               final filtered = items
                   .where(
-                    (item) => item.name.toLowerCase().contains(query.toLowerCase()),
+                    (item) =>
+                        item.name.toLowerCase().contains(query.toLowerCase()),
                   )
                   .toList();
               return Padding(
@@ -415,7 +451,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                     if (!isAdding) ...[
                       const SizedBox(height: 8),
                       TextField(
-                        onChanged: (value) => setSheetState(() => query = value),
+                        onChanged: (value) =>
+                            setSheetState(() => query = value),
                         decoration: const InputDecoration(
                           prefixIcon: Icon(Icons.search),
                           hintText: 'Type to filter',
@@ -440,7 +477,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                               ...filtered.map(
                                 (item) => ListTile(
                                   title: Text(item.name),
-                                  onTap: () => Navigator.of(context).pop(item.name),
+                                  onTap: () =>
+                                      Navigator.of(context).pop(item.name),
                                 ),
                               ),
                             const Divider(),
@@ -483,7 +521,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                             onPressed: () async {
                               final trimmed = addController.text.trim();
                               if (trimmed.isEmpty) {
-                                setSheetState(() => errorText = 'Enter a value');
+                                setSheetState(
+                                  () => errorText = 'Enter a value',
+                                );
                                 return;
                               }
                               InventoryItem? existing;
@@ -506,13 +546,18 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                 createdAt: now,
                                 updatedAt: now,
                               );
-                              await context.read<InventoryRepository>().upsertItem(item);
-                              debugPrint('Saved inventory item [$type]: $trimmed');
+                              await context
+                                  .read<InventoryRepository>()
+                                  .upsertItem(item);
+                              debugPrint(
+                                'Saved inventory item [$type]: $trimmed',
+                              );
                               if (!context.mounted) {
                                 return;
                               }
-                              Navigator.of(context)
-                                  .pop('$_inventoryAddedPrefix$trimmed');
+                              Navigator.of(
+                                context,
+                              ).pop('$_inventoryAddedPrefix$trimmed');
                             },
                             child: const Text('Add'),
                           ),
@@ -579,16 +624,16 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     }
 
     if (_selectedFirearmId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select a firearm.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Select a firearm.')));
       return;
     }
 
     if (_selectedPowder == null || _selectedPowder!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select a powder.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Select a powder.')));
       return;
     }
 
@@ -614,8 +659,11 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       powder: _selectedPowder!,
       powderChargeGr: double.parse(_powderChargeController.text.trim()),
       coal: double.tryParse(_coalController.text.trim()),
+      baseToOgive: double.tryParse(_baseToOgiveController.text.trim()),
       seatingDepth: double.tryParse(_seatingDepthController.text.trim()),
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
       firearmId: _selectedFirearmId!,
       isDangerous: _isDangerous,
       dangerConfirmedAt: _dangerConfirmedAt,
@@ -639,10 +687,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => BuildLoadScreen(
-          recipe: widget.recipe,
-          isDuplicate: true,
-        ),
+        builder: (_) =>
+            BuildLoadScreen(recipe: widget.recipe, isDuplicate: true),
       ),
     );
   }
@@ -652,13 +698,11 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     final title = _isEditing
         ? 'Edit Load'
         : widget.isDuplicate
-            ? 'Duplicate Load'
-            : 'Build Load';
+        ? 'Duplicate Load'
+        : 'Build Load';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       body: SafeArea(
         child: FutureBuilder<_BuildLoadData>(
           future: _dataFuture,
@@ -674,7 +718,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
             final primerItems = inventoryByType['primers'] ?? [];
             final customCaseResize = data?.customCaseResize ?? [];
             final customGasCheckMaterial = data?.customGasCheckMaterial ?? [];
-            final customGasCheckInstallMethod = data?.customGasCheckInstallMethod ?? [];
+            final customGasCheckInstallMethod =
+                data?.customGasCheckInstallMethod ?? [];
             final customBulletCoating = data?.customBulletCoating ?? [];
 
             return ListView(
@@ -691,25 +736,37 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                     children: [
                       TextFormField(
                         controller: _recipeNameController,
-                        decoration: const InputDecoration(labelText: 'Recipe Name *'),
+                        decoration: const InputDecoration(
+                          labelText: 'Recipe Name *',
+                        ),
                         textInputAction: TextInputAction.next,
                         validator: (value) =>
-                            value == null || value.trim().isEmpty ? 'Required' : null,
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _cartridgeController,
-                        decoration: const InputDecoration(labelText: 'Cartridge *'),
+                        decoration: const InputDecoration(
+                          labelText: 'Cartridge *',
+                        ),
                         textInputAction: TextInputAction.next,
                         validator: (value) =>
-                            value == null || value.trim().isEmpty ? 'Required' : null,
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String?>(
-                              value: firearms.any((firearm) => firearm.id == _selectedFirearmId)
+                              value:
+                                  firearms.any(
+                                    (firearm) =>
+                                        firearm.id == _selectedFirearmId,
+                                  )
                                   ? _selectedFirearmId
                                   : null,
                               items: firearms
@@ -725,7 +782,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                   _selectedFirearmId = value;
                                 });
                               },
-                              decoration: const InputDecoration(labelText: 'Firearm *'),
+                              decoration: const InputDecoration(
+                                labelText: 'Firearm *',
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -754,7 +813,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                             return;
                           }
                           setState(() {
-                            _selectedBullet = selected.isEmpty ? null : selected;
+                            _selectedBullet = selected.isEmpty
+                                ? null
+                                : selected;
                           });
                         },
                       ),
@@ -764,22 +825,28 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Bullet Diameter',
                         ),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _bulletWeightController,
-                        decoration: const InputDecoration(labelText: 'Bullet Weight (gr)'),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Bullet Weight (gr)',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _bulletTypeController,
-                        decoration: const InputDecoration(labelText: 'Bullet Type'),
+                        decoration: const InputDecoration(
+                          labelText: 'Bullet Type',
+                        ),
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 12),
@@ -908,8 +975,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                           labelText: 'Brass Trim Length',
                           helperText: 'Final case length after trimming',
                         ),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.next,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -928,8 +996,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                           labelText: 'Annealing time',
                           suffixText: 'sec',
                         ),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.next,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -960,7 +1029,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                             return;
                           }
                           setState(() {
-                            _selectedPrimer = selected.isEmpty ? null : selected;
+                            _selectedPrimer = selected.isEmpty
+                                ? null
+                                : selected;
                           });
                         },
                       ),
@@ -974,8 +1045,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                         ),
                         validator: (_) =>
                             _selectedPowder == null || _selectedPowder!.isEmpty
-                                ? 'Required'
-                                : null,
+                            ? 'Required'
+                            : null,
                         onTap: () async {
                           final selected = await _pickInventoryItem(
                             title: 'Select Powder',
@@ -987,16 +1058,21 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                             return;
                           }
                           setState(() {
-                            _selectedPowder = selected.isEmpty ? null : selected;
+                            _selectedPowder = selected.isEmpty
+                                ? null
+                                : selected;
                           });
                         },
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _powderChargeController,
-                        decoration: const InputDecoration(labelText: 'Powder Charge (gr) *'),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Powder Charge (gr) *',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.next,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -1012,16 +1088,33 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       TextFormField(
                         controller: _coalController,
                         decoration: const InputDecoration(labelText: 'COAL'),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _baseToOgiveController,
+                        decoration: const InputDecoration(
+                          labelText: 'Base to Ogive (BTO)',
+                          helperText:
+                              'Measured from case head to bullet ogive using a comparator',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _seatingDepthController,
-                        decoration: const InputDecoration(labelText: 'Seating Depth'),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Seating Depth',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 12),
@@ -1125,10 +1218,8 @@ class _AddFirearmDialogState extends State<_AddFirearmDialog> {
               style: Theme.of(context).textTheme.bodyLarge,
               items: FirearmType.values
                   .map(
-                    (type) => DropdownMenuItem(
-                      value: type,
-                      child: Text(type.name),
-                    ),
+                    (type) =>
+                        DropdownMenuItem(value: type, child: Text(type.name)),
                   )
                   .toList(),
               onChanged: (value) {

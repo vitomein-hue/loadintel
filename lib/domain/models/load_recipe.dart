@@ -18,6 +18,7 @@
     required this.powder,
     required this.powderChargeGr,
     this.coal,
+    this.baseToOgive,
     this.seatingDepth,
     this.notes,
     required this.firearmId,
@@ -45,6 +46,7 @@
   final String powder;
   final double powderChargeGr;
   final double? coal;
+  final double? baseToOgive;
   final double? seatingDepth;
   final String? notes;
   final String firearmId;
@@ -72,6 +74,7 @@
     String? powder,
     double? powderChargeGr,
     double? coal,
+    double? baseToOgive,
     double? seatingDepth,
     String? notes,
     String? firearmId,
@@ -94,11 +97,13 @@
       primer: primer ?? this.primer,
       caseResize: caseResize ?? this.caseResize,
       gasCheckMaterial: gasCheckMaterial ?? this.gasCheckMaterial,
-      gasCheckInstallMethod: gasCheckInstallMethod ?? this.gasCheckInstallMethod,
+      gasCheckInstallMethod:
+          gasCheckInstallMethod ?? this.gasCheckInstallMethod,
       bulletCoating: bulletCoating ?? this.bulletCoating,
       powder: powder ?? this.powder,
       powderChargeGr: powderChargeGr ?? this.powderChargeGr,
       coal: coal ?? this.coal,
+      baseToOgive: baseToOgive ?? this.baseToOgive,
       seatingDepth: seatingDepth ?? this.seatingDepth,
       notes: notes ?? this.notes,
       firearmId: firearmId ?? this.firearmId,
@@ -133,6 +138,7 @@
       'powder': powder,
       'powderChargeGr': powderChargeGr,
       'coal': coal,
+      'baseToOgive': baseToOgive,
       'seatingDepth': seatingDepth,
       'notes': notes,
       'firearmId': firearmId,
@@ -168,6 +174,7 @@
       powder: map['powder'] as String,
       powderChargeGr: (map['powderChargeGr'] as num).toDouble(),
       coal: (map['coal'] as num?)?.toDouble(),
+      baseToOgive: (map['baseToOgive'] as num?)?.toDouble(),
       seatingDepth: (map['seatingDepth'] as num?)?.toDouble(),
       notes: map['notes'] as String?,
       firearmId: map['firearmId'] as String,
@@ -178,4 +185,3 @@
     );
   }
 }
-
