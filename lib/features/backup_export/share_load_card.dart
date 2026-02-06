@@ -191,6 +191,7 @@ ReportContent buildReportContent({
   if (bestResult != null) {
     bestLines.add('Group Size: ${bestResult.groupSizeIn} in');
     bestLines.add('Tested At: ${bestResult.testedAt.toLocal()}');
+    bestLines.add('Rounds Tested: ${bestResult.roundsTested ?? '-'}');
     bestLines.add('AVG: ${bestResult.avgFps ?? '-'}');
     bestLines.add('SD: ${bestResult.sdFps ?? '-'}');
     bestLines.add('ES: ${bestResult.esFps ?? '-'}');

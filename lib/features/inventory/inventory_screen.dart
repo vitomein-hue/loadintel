@@ -67,14 +67,18 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 TextFormField(
                   controller: nameController,
                   decoration: const InputDecoration(labelText: 'Name'),
+                  textInputAction: TextInputAction.next,
                   validator: (value) =>
                       value == null || value.trim().isEmpty ? 'Required' : null,
+                  onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: notesController,
                   maxLines: 3,
+                  textInputAction: TextInputAction.done,
                   decoration: const InputDecoration(labelText: 'Notes'),
+                  onSubmitted: (_) => FocusScope.of(context).unfocus(),
                 ),
               ],
             ),

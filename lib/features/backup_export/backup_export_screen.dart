@@ -361,11 +361,14 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                         labelText: 'Search',
                         prefixIcon: Icon(Icons.search),
                       ),
+                      textInputAction: TextInputAction.done,
                       onChanged: (value) {
                         setDialogState(() {
                           query = value.trim();
                         });
                       },
+                      onSubmitted: (_) =>
+                          FocusScope.of(dialogContext).unfocus(),
                     ),
                     const SizedBox(height: 12),
                     Flexible(

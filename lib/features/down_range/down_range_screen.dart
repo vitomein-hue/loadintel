@@ -1,6 +1,7 @@
 ﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
 import 'package:loadintel/domain/models/range_result.dart';
 import 'package:loadintel/domain/models/target_photo.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
@@ -112,6 +113,7 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
       testedAt: now,
       firearmId: firearmId,
       distanceYds: bench.distanceYds!,
+      roundsTested: bench.roundsTested,
       fpsShots: bench.fpsMode == FpsEntryMode.shots ? bench.shots : null,
       avgFps: bench.avgFps,
       sdFps: bench.sdFps,
@@ -200,54 +202,58 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
       appBar: AppBar(
         title: const Text('Down Range'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text(
-            'Select Load',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 68,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _states.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final state = _states[index];
-                final isActive = state.benchEntry.recipe.id == _activeLoadId;
-                return InputChip(
-                  label: Text(state.benchEntry.recipe.recipeName),
-                  selected: isActive,
-                  avatar: state.isSaved
-                      ? const Icon(Icons.check_circle, color: Colors.green)
-                      : null,
-                  onSelected: (_) {
-                    setState(() {
-                      _activeLoadId = state.benchEntry.recipe.id;
-                    });
-                  },
-                );
-              },
+      resizeToAvoidBottomInset: true,
+      body: KeyboardSafePage(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Select Load',
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-          ),
-          const SizedBox(height: 16),
-          if (activeState == null)
-            const Text('No loads available.')
-          else
-            _DownRangeEntryCard(
-              entryState: activeState,
-              sessionNotes: widget.sessionNotes,
-              onAddCamera: () => _addPhoto(activeState, _photoService.pickFromCamera),
-              onRemovePhoto: (path) {
-                setState(() {
-                  activeState.photoPaths.remove(path);
-                });
-              },
-              onSave: activeState.isSaved ? null : () => _saveResult(activeState),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 68,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _states.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final state = _states[index];
+                  final isActive = state.benchEntry.recipe.id == _activeLoadId;
+                  return InputChip(
+                    label: Text(state.benchEntry.recipe.recipeName),
+                    selected: isActive,
+                    avatar: state.isSaved
+                        ? const Icon(Icons.check_circle, color: Colors.green)
+                        : null,
+                    onSelected: (_) {
+                      setState(() {
+                        _activeLoadId = state.benchEntry.recipe.id;
+                      });
+                    },
+                  );
+                },
+              ),
             ),
-        ],
+            const SizedBox(height: 16),
+            if (activeState == null)
+              const Text('No loads available.')
+            else
+              _DownRangeEntryCard(
+                entryState: activeState,
+                sessionNotes: widget.sessionNotes,
+                onAddCamera: () =>
+                    _addPhoto(activeState, _photoService.pickFromCamera),
+                onRemovePhoto: (path) {
+                  setState(() {
+                    activeState.photoPaths.remove(path);
+                  });
+                },
+                onSave: activeState.isSaved ? null : () => _saveResult(activeState),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -283,6 +289,7 @@ class _DownRangeEntryCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text('Distance: ${bench.distanceYds?.toStringAsFixed(0) ?? '-'} yds'),
+            Text('Rounds tested: ${bench.roundsTested?.toString() ?? '-'}'),
             Text(
               'AVG ${bench.avgFps?.toStringAsFixed(1) ?? '-'} '
               'SD ${bench.sdFps?.toStringAsFixed(1) ?? '-'} '
@@ -349,13 +356,17 @@ class _DownRangeEntryCard extends StatelessWidget {
             TextField(
               controller: entryState.groupSizeController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Group Size (in)'),
+              onSubmitted: (_) => FocusScope.of(context).nextFocus(),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: entryState.loadNotesController,
               maxLines: 3,
+              textInputAction: TextInputAction.done,
               decoration: const InputDecoration(labelText: 'Load Notes'),
+              onSubmitted: (_) => FocusScope.of(context).unfocus(),
             ),
             if (sessionNotes.isNotEmpty)
               Padding(

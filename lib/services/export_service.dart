@@ -476,7 +476,7 @@ class ExportService {
   String _buildResultsCsv(List<RangeResult> results) {
     final buffer = StringBuffer();
     buffer.writeln(
-      'id,loadId,testedAt,firearmId,distanceYds,fpsShots,avgFps,sdFps,esFps,groupSizeIn,notes,createdAt,updatedAt',
+      'id,loadId,testedAt,firearmId,distanceYds,roundsTested,fpsShots,avgFps,sdFps,esFps,groupSizeIn,notes,createdAt,updatedAt',
     );
     for (final result in results) {
       buffer.writeln(
@@ -486,6 +486,7 @@ class ExportService {
           result.testedAt.toIso8601String(),
           result.firearmId,
           result.distanceYds,
+          result.roundsTested,
           jsonEncode(result.fpsShots),
           result.avgFps,
           result.sdFps,
@@ -758,7 +759,7 @@ class ExportService {
     buffer.writeln();
     buffer.writeln('Results');
     buffer.writeln(
-      'id,loadId,testedAt,firearmId,distanceYds,fpsShots,avgFps,sdFps,esFps,groupSizeIn,notes,createdAt,updatedAt',
+      'id,loadId,testedAt,firearmId,distanceYds,roundsTested,fpsShots,avgFps,sdFps,esFps,groupSizeIn,notes,createdAt,updatedAt',
     );
     for (final result in results) {
       buffer.writeln(
@@ -768,6 +769,7 @@ class ExportService {
           result.testedAt.toIso8601String(),
           result.firearmId,
           result.distanceYds,
+          result.roundsTested,
           jsonEncode(result.fpsShots),
           result.avgFps,
           result.sdFps,
@@ -849,6 +851,7 @@ class ExportService {
       TextCellValue('testedAt'),
       TextCellValue('firearmId'),
       TextCellValue('distanceYds'),
+      TextCellValue('roundsTested'),
       TextCellValue('fpsShots'),
       TextCellValue('avgFps'),
       TextCellValue('sdFps'),
@@ -865,6 +868,7 @@ class ExportService {
         TextCellValue(result.testedAt.toIso8601String()),
         TextCellValue(result.firearmId),
         TextCellValue(result.distanceYds.toString()),
+        TextCellValue(result.roundsTested?.toString() ?? ''),
         TextCellValue(jsonEncode(result.fpsShots)),
         TextCellValue(result.avgFps?.toString() ?? ''),
         TextCellValue(result.sdFps?.toString() ?? ''),
@@ -914,6 +918,7 @@ class ExportService {
       buffer.writeln('Best Result');
       buffer.writeln('Tested At: ${best.testedAt.toLocal()}');
       buffer.writeln('Group Size: ${best.groupSizeIn} in');
+      buffer.writeln('Rounds Tested: ${best.roundsTested ?? '-'}');
       buffer.writeln('AVG: ${best.avgFps ?? '-'}');
       buffer.writeln('SD: ${best.sdFps ?? '-'}');
       buffer.writeln('ES: ${best.esFps ?? '-'}');
@@ -924,7 +929,8 @@ class ExportService {
       for (final result in results) {
         buffer.writeln(
           '- ${result.testedAt.toLocal().toString().split(' ').first}: '
-          'Group ${result.groupSizeIn} in, AVG ${result.avgFps ?? '-'}, SD ${result.sdFps ?? '-'}, ES ${result.esFps ?? '-'}',
+          'Group ${result.groupSizeIn} in, Rounds ${result.roundsTested ?? '-'}, '
+          'AVG ${result.avgFps ?? '-'}, SD ${result.sdFps ?? '-'}, ES ${result.esFps ?? '-'}',
         );
       }
     }

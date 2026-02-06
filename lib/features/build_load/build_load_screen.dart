@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:loadintel/core/theme/app_colors.dart';
 import 'package:loadintel/core/utils/free_tier.dart';
+import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
 import 'package:loadintel/domain/models/firearm.dart';
 import 'package:loadintel/domain/models/inventory_item.dart';
 import 'package:loadintel/domain/models/load_recipe.dart';
@@ -703,6 +704,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: FutureBuilder<_BuildLoadData>(
           future: _dataFuture,
@@ -722,18 +724,11 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                 data?.customGasCheckInstallMethod ?? [];
             final customBulletCoating = data?.customBulletCoating ?? [];
 
-            return ListView(
-              padding: EdgeInsets.fromLTRB(
-                16,
-                16,
-                16,
-                16 + MediaQuery.of(context).padding.bottom,
-              ),
-              children: [
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
+            return KeyboardSafePage(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
                       TextFormField(
                         controller: _recipeNameController,
                         decoration: const InputDecoration(
@@ -1123,31 +1118,33 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                         decoration: const InputDecoration(labelText: 'Notes'),
                         textCapitalization: TextCapitalization.sentences,
                         maxLines: 3,
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) =>
+                            FocusScope.of(context).unfocus(),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _saveRecipe,
-                        child: const Text('Save'),
-                      ),
-                    ),
-                    if (_isEditing) ...[
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _duplicateRecipe,
-                          child: const Text('Duplicate Load'),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _saveRecipe,
+                            child: const Text('Save'),
+                          ),
                         ),
-                      ),
-                    ],
+                        if (_isEditing) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: _duplicateRecipe,
+                              child: const Text('Duplicate Load'),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
-              ],
+              ),
             );
           },
         ),

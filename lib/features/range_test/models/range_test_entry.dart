@@ -9,6 +9,7 @@ class RangeTestLoadEntry {
   final LoadRecipe recipe;
   String? firearmId;
   double? distanceYds;
+  int? roundsTested;
   FpsEntryMode fpsMode = FpsEntryMode.manual;
   List<double> shots = [];
   double? avgFps;

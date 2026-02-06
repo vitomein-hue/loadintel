@@ -1,7 +1,9 @@
 ﻿import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:loadintel/core/utils/fps_stats.dart';
+import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
 import 'package:loadintel/domain/models/firearm.dart';
 import 'package:loadintel/domain/models/range_result.dart';
 import 'package:loadintel/domain/models/target_photo.dart';
@@ -29,6 +31,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
   final _photoService = PhotoService();
 
   late final TextEditingController _distanceController;
+  late final TextEditingController _roundsTestedController;
   late final TextEditingController _groupController;
   late final TextEditingController _avgController;
   late final TextEditingController _sdController;
@@ -47,6 +50,9 @@ class _EditResultScreenState extends State<EditResultScreen> {
     super.initState();
     _distanceController =
         TextEditingController(text: widget.result.distanceYds.toString());
+    _roundsTestedController = TextEditingController(
+      text: widget.result.roundsTested?.toString() ?? '',
+    );
     _groupController =
         TextEditingController(text: widget.result.groupSizeIn.toString());
     _avgController = TextEditingController(text: widget.result.avgFps?.toString() ?? '');
@@ -66,6 +72,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
   @override
   void dispose() {
     _distanceController.dispose();
+    _roundsTestedController.dispose();
     _groupController.dispose();
     _avgController.dispose();
     _sdController.dispose();
@@ -257,6 +264,11 @@ class _EditResultScreenState extends State<EditResultScreen> {
       return;
     }
 
+    final roundsTestedText = _roundsTestedController.text.trim();
+    final roundsTested = roundsTestedText.isEmpty
+        ? null
+        : int.tryParse(roundsTestedText);
+
     final shots = _shotsMode ? _currentShots() : <double>[];
     if (_shotsMode && shots.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -286,16 +298,20 @@ class _EditResultScreenState extends State<EditResultScreen> {
     }
 
     final groupSize = double.parse(_groupController.text.trim());
-    final updated = widget.result.copyWith(
+    final updated = RangeResult(
+      id: widget.result.id,
+      loadId: widget.result.loadId,
       testedAt: _testedAt,
-      firearmId: _firearmId,
+      firearmId: _firearmId!,
       distanceYds: distance,
+      roundsTested: roundsTested,
       fpsShots: _shotsMode ? shots : null,
       avgFps: avgFps,
       sdFps: sdFps,
       esFps: esFps,
       groupSizeIn: groupSize,
       notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      createdAt: widget.result.createdAt,
       updatedAt: DateTime.now(),
     );
 
@@ -320,7 +336,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
     }
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => BuildLoadScreen(recipe: recipe)),
-    );
+  );
   }
 
   Future<void> _deleteResult() async {
@@ -373,18 +389,20 @@ class _EditResultScreenState extends State<EditResultScreen> {
           ),
         ],
       ),
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: FutureBuilder<List<Firearm>>(
-          future: _firearmsFuture,
-          builder: (context, snapshot) {
-            final firearms = snapshot.data ?? [];
-            final shots = _currentShots();
-            final stats = _shotsMode ? _statsForShots(shots) : null;
-            return Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
+        child: KeyboardSafePage(
+          child: FutureBuilder<List<Firearm>>(
+            future: _firearmsFuture,
+            builder: (context, snapshot) {
+              final firearms = snapshot.data ?? [];
+              final shots = _currentShots();
+              final stats = _shotsMode ? _statsForShots(shots) : null;
+              return Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                   Row(
                     children: [
                       Expanded(
@@ -441,7 +459,9 @@ class _EditResultScreenState extends State<EditResultScreen> {
                             controller: _distanceController,
                             keyboardType:
                                 const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(labelText: 'Distance (yds)'),
+                            textInputAction: TextInputAction.next,
+                            decoration:
+                                const InputDecoration(labelText: 'Distance (yds)'),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Required';
@@ -451,6 +471,21 @@ class _EditResultScreenState extends State<EditResultScreen> {
                               }
                               return null;
                             },
+                            onFieldSubmitted: (_) =>
+                                FocusScope.of(context).nextFocus(),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _roundsTestedController,
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                            decoration: const InputDecoration(
+                              labelText: '# of rounds tested',
+                              helperText: 'How many rounds were fired in this test',
+                            ),
+                            onFieldSubmitted: (_) =>
+                                FocusScope.of(context).nextFocus(),
                           ),
                           const SizedBox(height: 12),
                           Align(
@@ -478,8 +513,12 @@ class _EditResultScreenState extends State<EditResultScreen> {
                                     child: TextField(
                                       controller: controller,
                                       keyboardType:
-                                          const TextInputType.numberWithOptions(decimal: true),
-                                      decoration: InputDecoration(labelText: 'Shot ${index + 1}'),
+                                          const TextInputType.numberWithOptions(
+                                            decimal: true,
+                                          ),
+                                      textInputAction: TextInputAction.next,
+                                      decoration:
+                                          InputDecoration(labelText: 'Shot ${index + 1}'),
                                       onChanged: (_) {
                                         if (index == _shotControllers.length - 1 &&
                                             controller.text.trim().isNotEmpty) {
@@ -490,6 +529,8 @@ class _EditResultScreenState extends State<EditResultScreen> {
                                         }
                                         setState(() {});
                                       },
+                                      onSubmitted: (_) =>
+                                          FocusScope.of(context).nextFocus(),
                                     ),
                                   );
                                 }),
@@ -508,6 +549,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
                                   controller: _avgController,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(decimal: true),
+                                  textInputAction: TextInputAction.next,
                                   decoration: const InputDecoration(labelText: 'AVG FPS *'),
                                   validator: (value) {
                                     if (value == null || value.trim().isEmpty) {
@@ -518,20 +560,28 @@ class _EditResultScreenState extends State<EditResultScreen> {
                                     }
                                     return null;
                                   },
+                                  onFieldSubmitted: (_) =>
+                                      FocusScope.of(context).nextFocus(),
                                 ),
                                 const SizedBox(height: 8),
                                 TextFormField(
                                   controller: _sdController,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(decimal: true),
+                                  textInputAction: TextInputAction.next,
                                   decoration: const InputDecoration(labelText: 'SD FPS'),
+                                  onFieldSubmitted: (_) =>
+                                      FocusScope.of(context).nextFocus(),
                                 ),
                                 const SizedBox(height: 8),
                                 TextFormField(
                                   controller: _esController,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(decimal: true),
+                                  textInputAction: TextInputAction.next,
                                   decoration: const InputDecoration(labelText: 'ES FPS'),
+                                  onFieldSubmitted: (_) =>
+                                      FocusScope.of(context).nextFocus(),
                                 ),
                               ],
                             ),
@@ -540,7 +590,9 @@ class _EditResultScreenState extends State<EditResultScreen> {
                             controller: _groupController,
                             keyboardType:
                                 const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(labelText: 'Group Size (in)'),
+                            textInputAction: TextInputAction.next,
+                            decoration:
+                                const InputDecoration(labelText: 'Group Size (in)'),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Required';
@@ -550,12 +602,17 @@ class _EditResultScreenState extends State<EditResultScreen> {
                               }
                               return null;
                             },
+                            onFieldSubmitted: (_) =>
+                                FocusScope.of(context).nextFocus(),
                           ),
                           const SizedBox(height: 12),
                           TextField(
                             controller: _notesController,
                             maxLines: 3,
+                            textInputAction: TextInputAction.done,
                             decoration: const InputDecoration(labelText: 'Notes'),
+                            onSubmitted: (_) =>
+                                FocusScope.of(context).unfocus(),
                           ),
                         ],
                       ),
@@ -610,7 +667,8 @@ class _EditResultScreenState extends State<EditResultScreen> {
                                                 height: 72,
                                                 color: Colors.black12,
                                                 alignment: Alignment.center,
-                                                child: const Icon(Icons.image_not_supported),
+                                                child:
+                                                    const Icon(Icons.image_not_supported),
                                               ),
                                             ),
                                           ),
@@ -640,7 +698,8 @@ class _EditResultScreenState extends State<EditResultScreen> {
           },
         ),
       ),
-    );
+    ),
+  );
   }
 
   String _formatDateTime(DateTime value) {

@@ -1,5 +1,7 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:loadintel/core/utils/fps_stats.dart';
+import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
 import 'package:loadintel/domain/models/firearm.dart';
 import 'package:loadintel/domain/models/load_recipe.dart';
 import 'package:loadintel/domain/repositories/firearm_repository.dart';
@@ -59,6 +61,8 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
     _entries.add(entry);
     final controller = RangeTestEntryController();
     controller.distanceController.text = '100';
+    controller.roundsTestedController.text =
+        entry.roundsTested?.toString() ?? '';
     _controllers[recipe.id] = controller;
   }
 
@@ -241,138 +245,156 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       appBar: AppBar(
         title: const Text('Range Test'),
       ),
-      body: FutureBuilder<List<Firearm>>(
-        future: _firearmsFuture,
-        builder: (context, snapshot) {
-          final firearms = snapshot.data ?? [];
-          final activeEntry = _activeEntry();
+      resizeToAvoidBottomInset: true,
+      body: KeyboardSafePage(
+        child: FutureBuilder<List<Firearm>>(
+          future: _firearmsFuture,
+          builder: (context, snapshot) {
+            final firearms = snapshot.data ?? [];
+            final activeEntry = _activeEntry();
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Selected Loads',
-                      style: Theme.of(context).textTheme.titleLarge,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Selected Loads',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                     ),
-                  ),
-                  TextButton.icon(
-                    onPressed: _pickLoads,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Loads'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 80,
-                child: _entries.isEmpty
-                    ? const Center(child: Text('No loads selected.'))
-                    : ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _entries.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final entry = _entries[index];
-                          final isActive = entry.recipe.id == _activeLoadId;
-                          return InputChip(
-                            label: Text(
-                              '${entry.recipe.recipeName} (${entry.recipe.powderChargeGr.toStringAsFixed(1)} gr)',
-                            ),
-                            labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                            selected: isActive,
-                            onSelected: (_) {
-                              setState(() {
-                                _activeLoadId = entry.recipe.id;
-                              });
-                            },
-                            onDeleted: () => _confirmRemoveEntry(entry),
-                          );
-                        },
-                      ),
-              ),
-              const SizedBox(height: 16),
-              if (activeEntry == null)
-                const Text('Add a load to begin bench data entry.'),
-              if (activeEntry != null)
-                _BenchEntryCard(
-                  entry: activeEntry,
-                  firearms: firearms,
-                  controller: _controllers[activeEntry.recipe.id]!,
-                  onFirearmChanged: (value) {
-                    setState(() {
-                      activeEntry.firearmId = value;
-                    });
-                  },
-                  onDistanceChanged: (value) {
-                    setState(() {
-                      activeEntry.distanceYds = value;
-                    });
-                  },
-                  onModeChanged: (mode) => _switchMode(activeEntry, mode),
-                  onManualChanged: () => _updateManualValues(activeEntry),
-                  onShotsChanged: () => _updateShots(activeEntry),
+                    TextButton.icon(
+                      onPressed: _pickLoads,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Loads'),
+                    ),
+                  ],
                 ),
-              const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Session Notes',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _sessionNotesController,
-                        textCapitalization: TextCapitalization.sentences,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          hintText: 'Shared notes for this range test',
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 80,
+                  child: _entries.isEmpty
+                      ? const Center(child: Text('No loads selected.'))
+                      : ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _entries.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final entry = _entries[index];
+                            final isActive = entry.recipe.id == _activeLoadId;
+                            return InputChip(
+                              label: Text(
+                                '${entry.recipe.recipeName} (${entry.recipe.powderChargeGr.toStringAsFixed(1)} gr)',
+                              ),
+                              labelPadding:
+                                  const EdgeInsets.symmetric(horizontal: 6),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                              selected: isActive,
+                              onSelected: (_) {
+                                setState(() {
+                                  _activeLoadId = entry.recipe.id;
+                                });
+                              },
+                              onDeleted: () => _confirmRemoveEntry(entry),
+                            );
+                          },
                         ),
-                      ),
-                      if (activeEntry != null) ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Checkbox(
-                              value: activeEntry.isDangerous,
-                              onChanged: (value) => _toggleDangerous(activeEntry, value),
-                            ),
-                            const Expanded(child: Text('Label load as dangerous')),
-                          ],
+                ),
+                const SizedBox(height: 16),
+                if (activeEntry == null)
+                  const Text('Add a load to begin bench data entry.'),
+                if (activeEntry != null)
+                  _BenchEntryCard(
+                    entry: activeEntry,
+                    firearms: firearms,
+                    controller: _controllers[activeEntry.recipe.id]!,
+                    onFirearmChanged: (value) {
+                      setState(() {
+                        activeEntry.firearmId = value;
+                      });
+                    },
+                    onDistanceChanged: (value) {
+                      setState(() {
+                        activeEntry.distanceYds = value;
+                      });
+                    },
+                    onRoundsTestedChanged: (value) {
+                      setState(() {
+                        activeEntry.roundsTested = value;
+                      });
+                    },
+                    onModeChanged: (mode) => _switchMode(activeEntry, mode),
+                    onManualChanged: () => _updateManualValues(activeEntry),
+                    onShotsChanged: () => _updateShots(activeEntry),
+                  ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Session Notes',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        if (activeEntry.isDangerous) ...[
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller:
-                                _controllers[activeEntry.recipe.id]!.dangerReasonController,
-                            textCapitalization: TextCapitalization.sentences,
-                            maxLines: 2,
-                            decoration: const InputDecoration(
-                              labelText: 'Why is it dangerous?',
-                              hintText: 'Pressure signs, heavy bolt lift, etc.',
-                            ),
-                            onChanged: (value) => _updateDangerReason(activeEntry, value),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _sessionNotesController,
+                          textCapitalization: TextCapitalization.sentences,
+                          maxLines: 4,
+                          textInputAction: TextInputAction.done,
+                          decoration: const InputDecoration(
+                            hintText: 'Shared notes for this range test',
                           ),
+                          onSubmitted: (_) =>
+                              FocusScope.of(context).unfocus(),
+                        ),
+                        if (activeEntry != null) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Checkbox(
+                                value: activeEntry.isDangerous,
+                                onChanged: (value) =>
+                                    _toggleDangerous(activeEntry, value),
+                              ),
+                              const Expanded(child: Text('Label load as dangerous')),
+                            ],
+                          ),
+                          if (activeEntry.isDangerous) ...[
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _controllers[activeEntry.recipe.id]!
+                                  .dangerReasonController,
+                              textCapitalization: TextCapitalization.sentences,
+                              maxLines: 2,
+                              textInputAction: TextInputAction.done,
+                              decoration: const InputDecoration(
+                                labelText: 'Why is it dangerous?',
+                                hintText: 'Pressure signs, heavy bolt lift, etc.',
+                              ),
+                              onChanged: (value) =>
+                                  _updateDangerReason(activeEntry, value),
+                              onSubmitted: (_) =>
+                                  FocusScope.of(context).unfocus(),
+                            ),
+                          ],
                         ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+      bottomNavigationBar: KeyboardAwareBottomBar(
+        child: SizedBox(
+          width: double.infinity,
           child: ElevatedButton(
             onPressed: _allBenchComplete
                 ? () {
@@ -401,6 +423,7 @@ class _BenchEntryCard extends StatelessWidget {
     required this.controller,
     required this.onFirearmChanged,
     required this.onDistanceChanged,
+    required this.onRoundsTestedChanged,
     required this.onModeChanged,
     required this.onManualChanged,
     required this.onShotsChanged,
@@ -411,6 +434,7 @@ class _BenchEntryCard extends StatelessWidget {
   final RangeTestEntryController controller;
   final ValueChanged<String?> onFirearmChanged;
   final ValueChanged<double?> onDistanceChanged;
+  final ValueChanged<int?> onRoundsTestedChanged;
   final ValueChanged<FpsEntryMode> onModeChanged;
   final VoidCallback onManualChanged;
   final VoidCallback onShotsChanged;
@@ -447,8 +471,25 @@ class _BenchEntryCard extends StatelessWidget {
             TextField(
               controller: controller.distanceController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Distance (yds)'),
               onChanged: (value) => onDistanceChanged(double.tryParse(value.trim())),
+              onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller.roundsTestedController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(
+                labelText: '# of rounds tested',
+                helperText: 'How many rounds were fired in this test',
+              ),
+              onChanged: (value) => onRoundsTestedChanged(
+                value.trim().isEmpty ? null : int.tryParse(value.trim()),
+              ),
+              onSubmitted: (_) => FocusScope.of(context).nextFocus(),
             ),
             const SizedBox(height: 12),
             Align(
@@ -470,22 +511,28 @@ class _BenchEntryCard extends StatelessWidget {
                   TextField(
                     controller: controller.avgController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(labelText: 'AVG FPS *'),
                     onChanged: (_) => onManualChanged(),
+                    onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: controller.sdController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(labelText: 'SD FPS'),
                     onChanged: (_) => onManualChanged(),
+                    onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: controller.esController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(labelText: 'ES FPS'),
                     onChanged: (_) => onManualChanged(),
+                    onSubmitted: (_) => FocusScope.of(context).unfocus(),
                   ),
                 ],
               ),
@@ -501,6 +548,7 @@ class _BenchEntryCard extends StatelessWidget {
                       child: TextField(
                         controller: shotController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        textInputAction: TextInputAction.next,
                         decoration: InputDecoration(labelText: 'Shot ${index + 1}'),
                         onChanged: (_) {
                           if (index == controller.shotControllers.length - 1 &&
@@ -509,6 +557,7 @@ class _BenchEntryCard extends StatelessWidget {
                           }
                           onShotsChanged();
                         },
+                        onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                       ),
                     );
                   }),
@@ -642,6 +691,7 @@ class _LoadPickerSheetState extends State<_LoadPickerSheet> {
 class RangeTestEntryController {
   RangeTestEntryController()
       : distanceController = TextEditingController(),
+        roundsTestedController = TextEditingController(),
         avgController = TextEditingController(),
         sdController = TextEditingController(),
         esController = TextEditingController(),
@@ -649,6 +699,7 @@ class RangeTestEntryController {
         dangerReasonController = TextEditingController();
 
   final TextEditingController distanceController;
+  final TextEditingController roundsTestedController;
   final TextEditingController avgController;
   final TextEditingController sdController;
   final TextEditingController esController;
@@ -673,6 +724,7 @@ class RangeTestEntryController {
 
   void dispose() {
     distanceController.dispose();
+    roundsTestedController.dispose();
     avgController.dispose();
     sdController.dispose();
     esController.dispose();

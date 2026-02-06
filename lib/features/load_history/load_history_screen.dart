@@ -738,6 +738,8 @@ class _TestedLoadTile extends StatelessWidget {
                     'Tested: ${bestResult.testedAt.toLocal().toString().split(' ').first}',
                   ),
                 if (bestResult != null)
+                  Text('Rounds tested: ${bestResult.roundsTested ?? '-'}'),
+                if (bestResult != null)
                   Text(
                     'AVG: ${bestResult.avgFps?.toStringAsFixed(1) ?? '-'} | '
                     'SD: ${bestResult.sdFps?.toStringAsFixed(1) ?? '-'} | '
@@ -1311,11 +1313,15 @@ class _MoreFiltersSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
-      child: ListView(
-        shrinkWrap: true,
-        children: [
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset + keyboardInset),
+        child: ListView(
+          shrinkWrap: true,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          children: [
           Text('More Filters', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
@@ -1441,7 +1447,9 @@ class _MoreFiltersSheet extends StatelessWidget {
             initialValue: notesQuery,
             decoration: const InputDecoration(labelText: 'Notes contains'),
             textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.done,
             onChanged: onNotesQueryChanged,
+            onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
           ),
           const SizedBox(height: 16),
           Align(
@@ -1451,7 +1459,8 @@ class _MoreFiltersSheet extends StatelessWidget {
               child: const Text('Close'),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

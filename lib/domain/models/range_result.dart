@@ -5,6 +5,7 @@
     required this.testedAt,
     required this.firearmId,
     required this.distanceYds,
+    this.roundsTested,
     this.fpsShots,
     this.avgFps,
     this.sdFps,
@@ -20,6 +21,7 @@
   final DateTime testedAt;
   final String firearmId;
   final double distanceYds;
+  final int? roundsTested;
   final List<double>? fpsShots;
   final double? avgFps;
   final double? sdFps;
@@ -35,6 +37,7 @@
     DateTime? testedAt,
     String? firearmId,
     double? distanceYds,
+    int? roundsTested,
     List<double>? fpsShots,
     double? avgFps,
     double? sdFps,
@@ -50,6 +53,7 @@
       testedAt: testedAt ?? this.testedAt,
       firearmId: firearmId ?? this.firearmId,
       distanceYds: distanceYds ?? this.distanceYds,
+      roundsTested: roundsTested ?? this.roundsTested,
       fpsShots: fpsShots ?? this.fpsShots,
       avgFps: avgFps ?? this.avgFps,
       sdFps: sdFps ?? this.sdFps,
@@ -73,6 +77,7 @@
       'testedAt': testedAtMillis,
       'firearmId': firearmId,
       'distanceYds': distanceYds,
+      'roundsTested': roundsTested,
       'fpsShots': fpsShotsJson,
       'avgFps': avgFps,
       'sdFps': sdFps,
@@ -97,6 +102,7 @@
       testedAt: testedAt,
       firearmId: map['firearmId'] as String,
       distanceYds: (map['distanceYds'] as num).toDouble(),
+      roundsTested: map['roundsTested'] as int?,
       fpsShots: fpsShots,
       avgFps: (map['avgFps'] as num?)?.toDouble(),
       sdFps: (map['sdFps'] as num?)?.toDouble(),
