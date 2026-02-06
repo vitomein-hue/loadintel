@@ -58,13 +58,14 @@ class KeyboardAwareBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.viewInsets.bottom;
+    final bottomSafeArea = mediaQuery.viewPadding.bottom;
 
-    return SafeArea(
-      child: Padding(
-        padding: padding.add(EdgeInsets.only(bottom: bottomInset)),
-        child: child,
-      ),
+    return Padding(
+      padding:
+          padding.add(EdgeInsets.only(bottom: bottomInset + bottomSafeArea)),
+      child: child,
     );
   }
 }
