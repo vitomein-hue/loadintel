@@ -17,6 +17,44 @@ flutter pub get
 flutter run
 ```
 
+## Building for Release (TestFlight / Play Store)
+
+### Android (Play Store AAB)
+
+Build obfuscated release bundle with split debug info:
+
+```bash
+flutter build appbundle --release --obfuscate --split-debug-info=build/symbols/loadintel/android
+```
+
+The AAB will be at `build/app/outputs/bundle/release/app-release.aab`.
+
+### iOS (TestFlight IPA)
+
+Build obfuscated release IPA with split debug info:
+
+```bash
+flutter build ipa --release --obfuscate --split-debug-info=build/symbols/loadintel/ios
+```
+
+The IPA will be at `build/ios/ipa/Load Intel.ipa`. dSYM files are in `build/ios/archive/Runner.xcarchive/dSYMs/`.
+
+### Important: Symbol Files for Crash De-obfuscation
+
+- **Symbol files** are generated in `build/symbols/loadintel/{android,ios}/` and are **required** to de-obfuscate crash stack traces from production.
+- **Archive these symbols** for each release build (by version) in a secure location.
+- Without the matching symbols, obfuscated crash logs will be unreadable.
+- Use `flutter symbolize` to decode crashes:
+  ```bash
+  flutter symbolize -i <obfuscated_stack_trace.txt> -d build/symbols/loadintel/android
+  ```
+
+### Storage Recommendations
+
+- Store symbols in version control (private repo) or secure cloud storage
+- Naming: `loadintel-symbols-v{version}-{platform}.zip`
+- Keep symbols for at least 90 days after releasing a new version
+
 ## Notes
 
 - Local data is stored in SQLite (sqflite) under the app documents directory.
