@@ -2,6 +2,7 @@
 import 'package:loadintel/core/theme/app_colors.dart';
 import 'package:loadintel/features/backup_export/backup_export_screen.dart';
 import 'package:loadintel/features/build_load/build_load_screen.dart';
+import 'package:loadintel/features/inventory/inventory_screen.dart';
 import 'package:loadintel/features/load_history/load_history_screen.dart';
 import 'package:loadintel/features/range_test/range_test_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -13,7 +14,19 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Load Intel'),
+        leadingWidth: 120,
+        leading: TextButton.icon(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const InventoryScreen()),
+            );
+          },
+          icon: const Icon(Icons.inventory_2),
+          label: const Text('Inventory'),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white,
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: () {

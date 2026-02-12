@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loadintel/domain/models/load_with_best_result.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
-import 'package:loadintel/features/inventory/inventory_screen.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
 import 'package:loadintel/services/backup_service.dart';
 import 'package:loadintel/services/export_service.dart';
@@ -492,18 +491,6 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
         children: [
           Card(
             child: ListTile(
-              title: const Text('Inventory'),
-              subtitle: const Text('Manage brass, bullets, powder, and primers.'),
-              trailing: const Icon(Icons.inventory_2),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const InventoryScreen()),
-                );
-              },
-            ),
-          ),
-          Card(
-            child: ListTile(
               title: const Text('Backup/Restore'),
               subtitle: const Text('Export or import a JSON backup.'),
               trailing: const Icon(Icons.backup),
@@ -519,51 +506,6 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
               onTap: _showShareLoadDataSheet,
             ),
           ),
-          if (kDebugMode) ...[
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Developer',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<ProEntitlementOverride>(
-                      value: _proOverride,
-                      decoration: const InputDecoration(
-                        labelText: 'Pro entitlement (debug)',
-                      ),
-                      items: ProEntitlementOverride.values
-                          .map(
-                            (value) => DropdownMenuItem(
-                              value: value,
-                              child: Text(_proOverrideLabel(value)),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: _overrideLoaded
-                          ? (value) {
-                              if (value == null) {
-                                return;
-                              }
-                              _setProOverride(value);
-                            }
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Debug builds only. PRO_OVERRIDE dart-define overrides this.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

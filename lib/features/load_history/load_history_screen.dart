@@ -551,24 +551,45 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                                     )
                                   : null,
                             ),
-                            if (_hasNotes(
-                              recipe,
-                              null,
-                              isDangerous: recipe.isDangerous,
-                            ))
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: TextButton(
-                                  onPressed: () => _showLoadNotes(
-                                    context,
-                                    recipe.recipeName,
-                                    recipeNotes: recipe.notes,
-                                    resultNotes: null,
-                                    isDangerous: recipe.isDangerous,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: Row(
+                                children: [
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      Navigator.of(context)
+                                          .push(
+                                            MaterialPageRoute(
+                                              builder: (_) => BuildLoadScreen(
+                                                recipe: recipe,
+                                                isDuplicate: false,
+                                              ),
+                                            ),
+                                          )
+                                          .then((_) => _refresh());
+                                    },
+                                    icon: const Icon(Icons.edit),
+                                    label: const Text('Edit'),
                                   ),
-                                  child: const Text('View Notes'),
-                                ),
+                                  if (_hasNotes(
+                                    recipe,
+                                    null,
+                                    isDangerous: recipe.isDangerous,
+                                  ))
+                                    TextButton.icon(
+                                      onPressed: () => _showLoadNotes(
+                                        context,
+                                        recipe.recipeName,
+                                        recipeNotes: recipe.notes,
+                                        resultNotes: null,
+                                        isDangerous: recipe.isDangerous,
+                                      ),
+                                      icon: const Icon(Icons.notes),
+                                      label: const Text('View Notes'),
+                                    ),
+                                ],
                               ),
+                            ),
                           ],
                         ),
                       ),
