@@ -17,6 +17,14 @@ class RangeTestLoadEntry {
   double? esFps;
   bool isDangerous = false;
   String? dangerReason;
+  
+  // Weather fields
+  double? temperatureF;
+  double? humidity;
+  double? barometricPressureInHg;
+  String? windDirection;
+  double? windSpeedMph;
+  String? weatherConditions;
 }
 
 enum FpsEntryMode { manual, shots }

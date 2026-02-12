@@ -120,6 +120,12 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
       esFps: bench.esFps,
       groupSizeIn: groupSize,
       notes: notes,
+      temperatureF: bench.temperatureF,
+      humidity: bench.humidity,
+      barometricPressureInHg: bench.barometricPressureInHg,
+      windDirection: bench.windDirection,
+      windSpeedMph: bench.windSpeedMph,
+      weatherConditions: bench.weatherConditions,
       createdAt: now,
       updatedAt: now,
     );

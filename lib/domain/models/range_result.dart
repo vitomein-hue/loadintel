@@ -12,6 +12,12 @@
     this.esFps,
     required this.groupSizeIn,
     this.notes,
+    this.temperatureF,
+    this.humidity,
+    this.barometricPressureInHg,
+    this.windDirection,
+    this.windSpeedMph,
+    this.weatherConditions,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -28,6 +34,12 @@
   final double? esFps;
   final double groupSizeIn;
   final String? notes;
+  final double? temperatureF;
+  final double? humidity;
+  final double? barometricPressureInHg;
+  final String? windDirection;
+  final double? windSpeedMph;
+  final String? weatherConditions;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -44,6 +56,12 @@
     double? esFps,
     double? groupSizeIn,
     String? notes,
+    double? temperatureF,
+    double? humidity,
+    double? barometricPressureInHg,
+    String? windDirection,
+    double? windSpeedMph,
+    String? weatherConditions,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -60,6 +78,12 @@
       esFps: esFps ?? this.esFps,
       groupSizeIn: groupSizeIn ?? this.groupSizeIn,
       notes: notes ?? this.notes,
+      temperatureF: temperatureF ?? this.temperatureF,
+      humidity: humidity ?? this.humidity,
+      barometricPressureInHg: barometricPressureInHg ?? this.barometricPressureInHg,
+      windDirection: windDirection ?? this.windDirection,
+      windSpeedMph: windSpeedMph ?? this.windSpeedMph,
+      weatherConditions: weatherConditions ?? this.weatherConditions,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -84,6 +108,12 @@
       'esFps': esFps,
       'groupSizeIn': groupSizeIn,
       'notes': notes,
+      'temperatureF': temperatureF,
+      'humidity': humidity,
+      'barometricPressureInHg': barometricPressureInHg,
+      'windDirection': windDirection,
+      'windSpeedMph': windSpeedMph,
+      'weatherConditions': weatherConditions,
       'createdAt': createdAtMillis,
       'updatedAt': updatedAtMillis,
     };
@@ -109,6 +139,12 @@
       esFps: (map['esFps'] as num?)?.toDouble(),
       groupSizeIn: (map['groupSizeIn'] as num).toDouble(),
       notes: map['notes'] as String?,
+      temperatureF: (map['temperatureF'] as num?)?.toDouble(),
+      humidity: (map['humidity'] as num?)?.toDouble(),
+      barometricPressureInHg: (map['barometricPressureInHg'] as num?)?.toDouble(),
+      windDirection: map['windDirection'] as String?,
+      windSpeedMph: (map['windSpeedMph'] as num?)?.toDouble(),
+      weatherConditions: map['weatherConditions'] as String?,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

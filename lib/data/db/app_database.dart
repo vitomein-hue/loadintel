@@ -16,7 +16,7 @@ class AppDatabase {
     final fullPath = path.join(dbPath, 'loadintel.db');
     final db = await openDatabase(
       fullPath,
-      version: 7,
+      version: 8,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -90,6 +90,12 @@ class AppDatabase {
         esFps REAL,
         groupSizeIn REAL NOT NULL,
         notes TEXT,
+        temperatureF REAL,
+        humidity REAL,
+        barometricPressureInHg REAL,
+        windDirection TEXT,
+        windSpeedMph REAL,
+        weatherConditions TEXT,
         createdAt INTEGER NOT NULL,
         updatedAt INTEGER NOT NULL,
         FOREIGN KEY (loadId) REFERENCES load_recipes(id) ON DELETE CASCADE,
@@ -170,6 +176,26 @@ class AppDatabase {
     if (oldVersion < 7) {
       await db.execute(
         'ALTER TABLE range_results ADD COLUMN roundsTested INTEGER',
+      );
+    }
+    if (oldVersion < 8) {
+      await db.execute(
+        'ALTER TABLE range_results ADD COLUMN temperatureF REAL',
+      );
+      await db.execute(
+        'ALTER TABLE range_results ADD COLUMN humidity REAL',
+      );
+      await db.execute(
+        'ALTER TABLE range_results ADD COLUMN barometricPressureInHg REAL',
+      );
+      await db.execute(
+        'ALTER TABLE range_results ADD COLUMN windDirection TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE range_results ADD COLUMN windSpeedMph REAL',
+      );
+      await db.execute(
+        'ALTER TABLE range_results ADD COLUMN weatherConditions TEXT',
       );
     }
   }

@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:loadintel/core/utils/fps_stats.dart';
 import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
 import 'package:loadintel/domain/models/firearm.dart';
@@ -9,6 +10,7 @@ import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
 import 'package:loadintel/features/build_load/build_load_screen.dart';
 import 'package:loadintel/features/down_range/down_range_screen.dart';
 import 'package:loadintel/features/range_test/models/range_test_entry.dart';
+import 'package:loadintel/services/weather_service.dart';
 import 'package:provider/provider.dart';
 
 class RangeTestScreen extends StatefulWidget {
@@ -24,6 +26,11 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   final List<RangeTestLoadEntry> _entries = [];
   final Map<String, RangeTestEntryController> _controllers = {};
   final TextEditingController _sessionNotesController = TextEditingController();
+  final WeatherService _weatherService = WeatherService();
+  bool _isLoadingWeather = false;
+  bool _weatherExpanded = false;
+  bool _weatherCaptured = false;
+  bool _weatherSaved = false;
 
   String? _activeLoadId;
   late Future<List<Firearm>> _firearmsFuture;
@@ -223,6 +230,228 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
     entry.dangerReason = value.trim().isEmpty ? null : value;
   }
 
+  Future<void> _captureWeather() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 16,
+          right: 16,
+          top: 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Retrieve Weather',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _fetchWeatherFromGPS();
+              },
+              icon: const Icon(Icons.my_location),
+              label: const Text('Use My Location'),
+            ),
+            const SizedBox(height: 12),
+            const Text('Or enter zip code:'),
+            const SizedBox(height: 8),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Zip Code',
+                hintText: '12345',
+              ),
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (value) async {
+                Navigator.of(context).pop();
+                await _fetchWeatherFromZip(value);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _fetchWeatherFromGPS() async {
+    setState(() {
+      _isLoadingWeather = true;
+    });
+
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location services are disabled')),
+          );
+        }
+        setState(() {
+          _isLoadingWeather = false;
+        });
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permission denied')),
+            );
+          }
+          setState(() {
+            _isLoadingWeather = false;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location permission permanently denied'),
+            ),
+          );
+        }
+        setState(() {
+          _isLoadingWeather = false;
+        });
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      final weather = await _weatherService.fetchWeather(
+        latitude: position.latitude.toString(),
+        longitude: position.longitude.toString(),
+      );
+
+      if (weather == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Weather currently not available')),
+          );
+        }
+        setState(() {
+          _isLoadingWeather = false;
+          _weatherExpanded = true;
+          _weatherCaptured = true;
+        });
+        return;
+      }
+
+      final activeEntry = _activeEntry();
+      if (activeEntry != null) {
+        activeEntry.temperatureF = weather.temperatureF;
+        activeEntry.humidity = weather.humidity;
+        activeEntry.barometricPressureInHg = weather.barometricPressureInHg;
+        activeEntry.windDirection = weather.windDirection;
+        activeEntry.windSpeedMph = weather.windSpeedMph;
+        activeEntry.weatherConditions = weather.weatherConditions;
+      }
+      setState(() {
+        _isLoadingWeather = false;
+        _weatherExpanded = true;
+        _weatherCaptured = true;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to get location')),
+        );
+      }
+      setState(() {
+        _isLoadingWeather = false;
+      });
+    }
+  }
+
+  Future<void> _fetchWeatherFromZip(String zipCode) async {
+    if (zipCode.trim().isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingWeather = true;
+    });
+
+    final weather = await _weatherService.fetchWeather(zipCode: zipCode.trim());
+
+    if (weather == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Weather currently not available')),
+        );
+      }
+      setState(() {
+        _isLoadingWeather = false;
+        _weatherExpanded = true;
+        _weatherCaptured = true;
+      });
+      return;
+    }
+
+    final activeEntry = _activeEntry();
+    if (activeEntry != null) {
+      activeEntry.temperatureF = weather.temperatureF;
+      activeEntry.humidity = weather.humidity;
+      activeEntry.barometricPressureInHg = weather.barometricPressureInHg;
+      activeEntry.windDirection = weather.windDirection;
+      activeEntry.windSpeedMph = weather.windSpeedMph;
+      activeEntry.weatherConditions = weather.weatherConditions;
+    }
+    setState(() {
+      _isLoadingWeather = false;
+      _weatherExpanded = true;
+      _weatherCaptured = true;
+    });
+  }
+
+  void _applyWeatherToAllLoads(WeatherData weather) {
+    for (final entry in _entries) {
+      entry.temperatureF = weather.temperatureF;
+      entry.humidity = weather.humidity;
+      entry.barometricPressureInHg = weather.barometricPressureInHg;
+      entry.windDirection = weather.windDirection;
+      entry.windSpeedMph = weather.windSpeedMph;
+      entry.weatherConditions = weather.weatherConditions;
+    }
+  }
+
+  void _saveWeather() {
+    final activeEntry = _activeEntry();
+    if (activeEntry == null) return;
+
+    // Apply active entry's weather to all loads
+    for (final entry in _entries) {
+      entry.temperatureF = activeEntry.temperatureF;
+      entry.humidity = activeEntry.humidity;
+      entry.barometricPressureInHg = activeEntry.barometricPressureInHg;
+      entry.windDirection = activeEntry.windDirection;
+      entry.windSpeedMph = activeEntry.windSpeedMph;
+      entry.weatherConditions = activeEntry.weatherConditions;
+    }
+
+    setState(() {
+      _weatherExpanded = false;
+      _weatherSaved = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Weather saved to all loads')),
+    );
+  }
+
   bool _isBenchComplete(RangeTestLoadEntry entry) {
     if (entry.firearmId == null || entry.firearmId!.isEmpty) {
       return false;
@@ -303,6 +532,57 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                         ),
                 ),
                 const SizedBox(height: 16),
+                if (_entries.isNotEmpty && !_weatherSaved) ...[
+                  ElevatedButton.icon(
+                    onPressed: _isLoadingWeather ? null : _captureWeather,
+                    icon: _isLoadingWeather
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.cloud),
+                    label: Text(_isLoadingWeather
+                        ? 'Loading Weather...'
+                        : 'Retrieve Weather'),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (activeEntry != null &&
+                    _weatherCaptured && !_weatherSaved)
+                  Card(
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                      ),
+                      child: ExpansionTile(
+                        title: const Text('Weather Conditions'),
+                        initiallyExpanded: _weatherExpanded,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _WeatherFields(
+                                  entry: activeEntry,
+                                  onChanged: () => setState(() {}),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: _saveWeather,
+                                  child: const Text('Save for this range session'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (activeEntry != null &&
+                    _weatherCaptured && !_weatherSaved)
+                  const SizedBox(height: 16),
                 if (activeEntry == null)
                   const Text('Add a load to begin bench data entry.'),
                 if (activeEntry != null)
@@ -387,6 +667,29 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                     ),
                   ),
                 ),
+                if (activeEntry != null && _weatherSaved) ...[
+                  const SizedBox(height: 16),
+                  Card(
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                      ),
+                      child: ExpansionTile(
+                        title: const Text('Weather Conditions (Saved)'),
+                        initiallyExpanded: false,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: _WeatherFields(
+                              entry: activeEntry,
+                              onChanged: () => setState(() {}),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             );
           },
@@ -732,5 +1035,147 @@ class RangeTestEntryController {
     for (final controller in shotControllers) {
       controller.dispose();
     }
+  }
+}
+
+class _WeatherFields extends StatefulWidget {
+  const _WeatherFields({
+    required this.entry,
+    required this.onChanged,
+  });
+
+  final RangeTestLoadEntry entry;
+  final VoidCallback onChanged;
+
+  @override
+  State<_WeatherFields> createState() => _WeatherFieldsState();
+}
+
+class _WeatherFieldsState extends State<_WeatherFields> {
+  late final TextEditingController _tempController;
+  late final TextEditingController _humidityController;
+  late final TextEditingController _pressureController;
+  late final TextEditingController _windDirController;
+  late final TextEditingController _windSpeedController;
+  late final TextEditingController _conditionsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tempController = TextEditingController(
+      text: widget.entry.temperatureF?.toStringAsFixed(1) ?? '',
+    );
+    _humidityController = TextEditingController(
+      text: widget.entry.humidity?.toStringAsFixed(0) ?? '',
+    );
+    _pressureController = TextEditingController(
+      text: widget.entry.barometricPressureInHg?.toStringAsFixed(2) ?? '',
+    );
+    _windDirController = TextEditingController(
+      text: widget.entry.windDirection ?? '',
+    );
+    _windSpeedController = TextEditingController(
+      text: widget.entry.windSpeedMph?.toStringAsFixed(1) ?? '',
+    );
+    _conditionsController = TextEditingController(
+      text: widget.entry.weatherConditions ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _tempController.dispose();
+    _humidityController.dispose();
+    _pressureController.dispose();
+    _windDirController.dispose();
+    _windSpeedController.dispose();
+    _conditionsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _tempController,
+          decoration: const InputDecoration(
+            labelText: 'Temperature (°F)',
+            hintText: '70',
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (value) {
+            widget.entry.temperatureF = double.tryParse(value);
+            widget.onChanged();
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _humidityController,
+          decoration: const InputDecoration(
+            labelText: 'Humidity (%)',
+            hintText: '50',
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (value) {
+            widget.entry.humidity = double.tryParse(value);
+            widget.onChanged();
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _pressureController,
+          decoration: const InputDecoration(
+            labelText: 'Barometric Pressure (inHg)',
+            hintText: '29.92',
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (value) {
+            widget.entry.barometricPressureInHg = double.tryParse(value);
+            widget.onChanged();
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _windDirController,
+          decoration: const InputDecoration(
+            labelText: 'Wind Direction',
+            hintText: 'N, NE, E, etc.',
+          ),
+          textCapitalization: TextCapitalization.characters,
+          onChanged: (value) {
+            widget.entry.windDirection = value.trim().isEmpty ? null : value;
+            widget.onChanged();
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _windSpeedController,
+          decoration: const InputDecoration(
+            labelText: 'Wind Speed (mph)',
+            hintText: '5',
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          onChanged: (value) {
+            widget.entry.windSpeedMph = double.tryParse(value);
+            widget.onChanged();
+          },
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _conditionsController,
+          decoration: const InputDecoration(
+            labelText: 'Weather Conditions',
+            hintText: 'Sunny, Cloudy, etc.',
+          ),
+          textCapitalization: TextCapitalization.sentences,
+          onChanged: (value) {
+            widget.entry.weatherConditions = value.trim().isEmpty ? null : value;
+            widget.onChanged();
+          },
+        ),
+      ],
+    );
   }
 }
