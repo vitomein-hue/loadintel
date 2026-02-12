@@ -235,47 +235,49 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Retrieve Weather',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await _fetchWeatherFromGPS();
-              },
-              icon: const Icon(Icons.my_location),
-              label: const Text('Use My Location'),
-            ),
-            const SizedBox(height: 12),
-            const Text('Or enter zip code:'),
-            const SizedBox(height: 8),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Zip Code',
-                hintText: '12345',
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Retrieve Weather',
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (value) async {
-                Navigator.of(context).pop();
-                await _fetchWeatherFromZip(value);
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _fetchWeatherFromGPS();
+                },
+                icon: const Icon(Icons.my_location),
+                label: const Text('Use My Location'),
+              ),
+              const SizedBox(height: 12),
+              const Text('Or enter zip code:'),
+              const SizedBox(height: 8),
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Zip Code',
+                  hintText: '12345',
+                ),
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (value) async {
+                  Navigator.of(context).pop();
+                  await _fetchWeatherFromZip(value);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );
