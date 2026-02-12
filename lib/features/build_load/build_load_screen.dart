@@ -292,6 +292,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     required List<String> customOptions,
   }) async {
     final options = <String>[...predefinedOptions, ...customOptions];
+
     final controller = TextEditingController();
     bool isAdding = false;
     String? errorText;
@@ -429,45 +430,57 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     bool isAdding = false;
     String? errorText;
     final label = _inventoryLabelForType(type);
-    final result = await showModalBottomSheet<String?>(
+    final result = await showDialog<String?>(
       context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: StatefulBuilder(
-            builder: (context, setSheetState) {
-              final filtered = items
-                  .where(
-                    (item) =>
-                        item.name.toLowerCase().contains(query.toLowerCase()),
-                  )
-                  .toList();
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(title, style: Theme.of(context).textTheme.titleLarge),
-                    if (!isAdding) ...[
-                      const SizedBox(height: 8),
-                      TextField(
-                        onChanged: (value) =>
-                            setSheetState(() => query = value),
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.search),
-                          hintText: 'Type to filter',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Flexible(
-                        child: ListView(
-                          shrinkWrap: true,
-                          children: [
+      builder: (dialogContext) {
+        return Dialog(
+          alignment: Alignment.topCenter,
+          insetPadding: const EdgeInsets.only(
+            top: 60,
+            left: 16,
+            right: 16,
+            bottom: 16,
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(dialogContext).size.height * 0.65,
+            ),
+            child: SafeArea(
+              child: StatefulBuilder(
+                builder: (sheetContext, setSheetState) {
+                  final filtered = items
+                      .where(
+                        (item) => item.name
+                            .toLowerCase()
+                            .contains(query.toLowerCase()),
+                      )
+                      .toList();
+
+                  return SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(sheetContext).textTheme.titleLarge,
+                          ),
+                          if (!isAdding) ...[
+                            const SizedBox(height: 8),
+                            TextField(
+                              onChanged: (value) =>
+                                  setSheetState(() => query = value),
+                              decoration: const InputDecoration(
+                                prefixIcon: Icon(Icons.search),
+                                hintText: 'Type to filter',
+                              ),
+                            ),
+                            const SizedBox(height: 8),
                             if (allowClear)
                               ListTile(
                                 title: const Text('Clear selection'),
-                                onTap: () => Navigator.of(context).pop(''),
+                                onTap: () => Navigator.of(dialogContext).pop(''),
                               ),
                             if (filtered.isEmpty)
                               const Padding(
@@ -479,7 +492,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                 (item) => ListTile(
                                   title: Text(item.name),
                                   onTap: () =>
-                                      Navigator.of(context).pop(item.name),
+                                      Navigator.of(dialogContext).pop(item.name),
                                 ),
                               ),
                             const Divider(),
@@ -492,88 +505,94 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                 addController.clear();
                               }),
                             ),
+                          ] else ...[
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: addController,
+                              decoration: InputDecoration(
+                                labelText: label,
+                                errorText: errorText,
+                              ),
+                              textInputAction: TextInputAction.done,
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+                                    setSheetState(() {
+                                      isAdding = false;
+                                      errorText = null;
+                                    });
+                                  },
+                                  child: const Text('Cancel'),
+                                ),
+                                const Spacer(),
+                                ElevatedButton(
+                                  onPressed: () async {
+                                    final trimmed = addController.text.trim();
+                                    if (trimmed.isEmpty) {
+                                      setSheetState(
+                                        () => errorText = 'Enter a value',
+                                      );
+                                      return;
+                                    }
+                                    InventoryItem? existing;
+                                    for (final item in items) {
+                                      if (item.name.toLowerCase() ==
+                                          trimmed.toLowerCase()) {
+                                        existing = item;
+                                        break;
+                                      }
+                                    }
+                                    if (existing != null) {
+                                      Navigator.of(dialogContext).pop(
+                                        existing.name,
+                                      );
+                                      return;
+                                    }
+                                    final now = DateTime.now();
+                                    final item = InventoryItem(
+                                      id: _uuid.v4(),
+                                      type: type,
+                                      name: trimmed,
+                                      createdAt: now,
+                                      updatedAt: now,
+                                    );
+                                    await context
+                                        .read<InventoryRepository>()
+                                        .upsertItem(item);
+                                    debugPrint(
+                                      'Saved inventory item [$type]: $trimmed',
+                                    );
+                                    if (!mounted) {
+                                      return;
+                                    }
+                                    Navigator.of(dialogContext).pop(
+                                      '$_inventoryAddedPrefix$trimmed',
+                                    );
+                                  },
+                                  child: const Text('Add'),
+                                ),
+                              ],
+                            ),
                           ],
-                        ),
-                      ),
-                    ] else ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: addController,
-                        decoration: InputDecoration(
-                          labelText: label,
-                          errorText: errorText,
-                        ),
-                        textInputAction: TextInputAction.done,
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          TextButton(
-                            onPressed: () {
-                              setSheetState(() {
-                                isAdding = false;
-                                errorText = null;
-                              });
-                            },
-                            child: const Text('Cancel'),
-                          ),
-                          const Spacer(),
-                          ElevatedButton(
-                            onPressed: () async {
-                              final trimmed = addController.text.trim();
-                              if (trimmed.isEmpty) {
-                                setSheetState(
-                                  () => errorText = 'Enter a value',
-                                );
-                                return;
-                              }
-                              InventoryItem? existing;
-                              for (final item in items) {
-                                if (item.name.toLowerCase() ==
-                                    trimmed.toLowerCase()) {
-                                  existing = item;
-                                  break;
-                                }
-                              }
-                              if (existing != null) {
-                                Navigator.of(context).pop(existing.name);
-                                return;
-                              }
-                              final now = DateTime.now();
-                              final item = InventoryItem(
-                                id: _uuid.v4(),
-                                type: type,
-                                name: trimmed,
-                                createdAt: now,
-                                updatedAt: now,
-                              );
-                              await context
-                                  .read<InventoryRepository>()
-                                  .upsertItem(item);
-                              debugPrint(
-                                'Saved inventory item [$type]: $trimmed',
-                              );
-                              if (!context.mounted) {
-                                return;
-                              }
-                              Navigator.of(
-                                context,
-                              ).pop('$_inventoryAddedPrefix$trimmed');
-                            },
-                            child: const Text('Add'),
-                          ),
                         ],
                       ),
-                    ],
-                  ],
-                ),
-              );
-            },
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
         );
       },
     );
+    await Future.delayed(const Duration(milliseconds: 150));
     addController.dispose();
+    if (!mounted) {
+      return null;
+    }
     if (result == null) {
       return null;
     }
