@@ -12,6 +12,8 @@ import 'package:loadintel/domain/repositories/target_photo_repository.dart';
 import 'package:loadintel/features/build_load/build_load_screen.dart';
 import 'package:loadintel/features/load_history/edit_result_screen.dart';
 import 'package:loadintel/features/range_test/range_test_screen.dart';
+import 'package:loadintel/features/trial/trial_banner.dart';
+import 'package:loadintel/services/trial_service.dart';
 import 'package:provider/provider.dart';
 
 class LoadHistoryScreen extends StatefulWidget {
@@ -332,8 +334,12 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
             );
 
           final bottomInset = MediaQuery.of(context).padding.bottom;
+          
+          final trialService = context.watch<TrialService>();
+          
           return Column(
             children: [
+              if (trialService.shouldShowBanner()) TrialBanner(trialService: trialService),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Align(

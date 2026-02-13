@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:loadintel/core/theme/app_colors.dart';
-import 'package:loadintel/core/utils/free_tier.dart';
 import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
 import 'package:loadintel/domain/models/firearm.dart';
 import 'package:loadintel/domain/models/inventory_item.dart';
@@ -13,8 +12,9 @@ import 'package:loadintel/domain/repositories/inventory_repository.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
 import 'package:loadintel/features/inventory/inventory_screen.dart';
-import 'package:loadintel/features/paywall/paywall.dart';
+import 'package:loadintel/features/trial/trial_banner.dart';
 import 'package:loadintel/services/purchase_service.dart';
+import 'package:loadintel/services/trial_service.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -621,26 +621,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     }
   }
 
-  Future<bool> _canCreateRecipe() async {
-    final loadRepo = context.read<LoadRecipeRepository>();
-    final purchaseService = context.read<PurchaseService>();
-    await purchaseService.refreshEntitlement();
-    final unlocked = purchaseService.isProEntitled;
-    final count = await loadRepo.countRecipes();
-    return canCreateRecipe(existingCount: count, isUnlocked: unlocked);
-  }
-
   Future<void> _saveRecipe() async {
     if (!_formKey.currentState!.validate()) {
       return;
-    }
-
-    if (!_isEditing) {
-      final canCreate = await _canCreateRecipe();
-      if (!canCreate) {
-        await Paywall.show(context);
-        return;
-      }
     }
 
     if (_selectedFirearmId == null) {
@@ -743,11 +726,14 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                 data?.customGasCheckInstallMethod ?? [];
             final customBulletCoating = data?.customBulletCoating ?? [];
 
+            final trialService = context.watch<TrialService>();
+
             return KeyboardSafePage(
               child: Form(
                 key: _formKey,
                 child: Column(
                   children: [
+                    if (trialService.shouldShowBanner()) TrialBanner(trialService: trialService),
                       TextFormField(
                         controller: _recipeNameController,
                         decoration: const InputDecoration(

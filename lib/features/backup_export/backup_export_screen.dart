@@ -7,6 +7,7 @@ import 'package:loadintel/domain/repositories/settings_repository.dart';
 import 'package:loadintel/services/backup_service.dart';
 import 'package:loadintel/services/export_service.dart';
 import 'package:loadintel/services/purchase_service.dart';
+import 'package:loadintel/services/trial_service.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -464,6 +465,188 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     }
   }
 
+  Widget _buildTrialStatusCard(BuildContext context) {
+    final trialService = context.watch<TrialService>();
+    final purchaseService = context.watch<PurchaseService>();
+    
+    final isPro = purchaseService.isProEntitled;
+    final trialStartDate = trialService.trialStartDate;
+    final daysRemaining = trialService.getDaysRemaining();
+    
+    String title;
+    String subtitle;
+    IconData icon;
+    
+    if (isPro) {
+      title = 'Pro: Lifetime Access';
+      subtitle = 'Thank you for supporting Load Intel!';
+      icon = Icons.verified;
+    } else if (trialStartDate == null) {
+      title = 'Trial: Not Started';
+      subtitle = 'Trial will begin on first app use';
+      icon = Icons.timer;
+    } else if (daysRemaining > 0) {
+      title = 'Trial: $daysRemaining ${daysRemaining == 1 ? "day" : "days"} remaining';
+      final localDate = trialStartDate.toLocal();
+      final startDateStr = '${localDate.month.toString().padLeft(2, '0')}/${localDate.day.toString().padLeft(2, '0')}/${localDate.year}';
+      subtitle = 'Trial started on $startDateStr';
+      icon = Icons.timer;
+    } else {
+      title = 'Trial: Expired';
+      subtitle = 'Upgrade to continue using Load Intel';
+      icon = Icons.timer_off;
+    }
+    
+    if (kDebugMode) {
+      return Card(
+        child: Column(
+          children: [
+            ListTile(
+              title: Text(title),
+              subtitle: Text(subtitle),
+              leading: Icon(icon),
+            ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Debug: Set Trial Date',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await trialService.setTrialStartDate(
+                              DateTime.now().subtract(const Duration(days: 10)),
+                            );
+                          },
+                          child: const Text('Day 10'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await trialService.setTrialStartDate(
+                              DateTime.now().subtract(const Duration(days: 13)),
+                            );
+                          },
+                          child: const Text('Day 13'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await trialService.setTrialStartDate(
+                              DateTime.now().subtract(const Duration(days: 14)),
+                            );
+                          },
+                          child: const Text('Day 14'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await trialService.setTrialStartDate(
+                              DateTime.now().subtract(const Duration(days: 15)),
+                            );
+                          },
+                          child: const Text('Day 15'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await trialService.setTrialStartDate(
+                              DateTime.now().subtract(const Duration(days: 20)),
+                            );
+                          },
+                          child: const Text('Day 20'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await trialService.clearTrialStartDate();
+                          },
+                          child: const Text('Reset'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  const Text(
+                    'Debug: Trial Receipt (IAP)',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Has Receipt: ${purchaseService.hasTrialReceipt}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  if (purchaseService.trialReceiptDate != null)
+                    Text(
+                      'Receipt Date: ${purchaseService.trialReceiptDate}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: purchaseService.canStartTrial
+                        ? () async {
+                            try {
+                              await purchaseService.startFreeTrial();
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Free trial purchase initiated'),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(e.toString().replaceAll('Exception: ', '')),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        : null,
+                    child: const Text('Start Free Trial (IAP)'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return Card(
+      child: ListTile(
+        title: Text(title),
+        subtitle: Text(subtitle),
+        leading: Icon(icon),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -489,6 +672,8 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildTrialStatusCard(context),
+          const SizedBox(height: 16),
           Card(
             child: ListTile(
               title: const Text('Backup/Restore'),
