@@ -185,6 +185,7 @@ ReportContent buildReportContent({
         : '-';
     loadLines.add('COAL: $coalText | BTO: $btoText | Seating: $seatingText');
   }
+  loadLines.add('Keeper: ${load.isKeeper ? 'YES' : 'No'}');
   loadLines.add('Dangerous: ${load.isDangerous ? 'YES' : 'No'}');
 
   final bestLines = <String>[];

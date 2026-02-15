@@ -48,6 +48,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
   double? _filterSeatingDepth;
   String? _filterNotesQuery;
   bool? _filterIsDangerous;
+  bool _filterKeeperOnly = false;
 
   @override
   void initState() {
@@ -142,6 +143,12 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
       }
       if (_filterIsDangerous != null &&
           recipe.isDangerous != _filterIsDangerous) {
+        return false;
+      }
+      if (_filterKeeperOnly && !recipe.isKeeper) {
+        return false;
+      }
+      if (_filterKeeperOnly && !recipe.isKeeper) {
         return false;
       }
       final notesQuery = _filterNotesQuery?.trim();
@@ -488,6 +495,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                         selectedBaseToOgive: _filterBaseToOgive,
                         selectedSeatingDepth: _filterSeatingDepth,
                         selectedIsDangerous: _filterIsDangerous,
+                        keeperOnly: _filterKeeperOnly,
                         notesQuery: _filterNotesQuery ?? '',
                         onRecipeNameChanged: (value) =>
                             setState(() => _filterRecipeName = value),
@@ -522,6 +530,9 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                             setState(() => _filterNotesQuery = value),
                         onIsDangerousChanged: (value) =>
                             setState(() => _filterIsDangerous = value),
+                        onKeeperOnlyChanged: (value) => setState(
+                          () => _filterKeeperOnly = value ?? false,
+                        ),
                       ),
                     );
                   },
@@ -727,6 +738,14 @@ class _TestedLoadTile extends StatelessWidget {
             if (recipe.isDangerous) ...[
               const SizedBox(width: 8),
               const _CautionBadge(),
+            ],
+            if (recipe.isKeeper) ...[
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.gps_fixed,
+                color: Colors.red,
+                size: 20,
+              ),
             ],
           ],
         ),
@@ -1271,6 +1290,7 @@ class _MoreFiltersSheet extends StatelessWidget {
     required this.selectedBaseToOgive,
     required this.selectedSeatingDepth,
     required this.selectedIsDangerous,
+    required this.keeperOnly,
     required this.notesQuery,
     required this.onRecipeNameChanged,
     required this.onFirearmChanged,
@@ -1288,6 +1308,7 @@ class _MoreFiltersSheet extends StatelessWidget {
     required this.onSeatingDepthChanged,
     required this.onNotesQueryChanged,
     required this.onIsDangerousChanged,
+    required this.onKeeperOnlyChanged,
   });
 
   final List<String> recipeNames;
@@ -1319,6 +1340,7 @@ class _MoreFiltersSheet extends StatelessWidget {
   final double? selectedBaseToOgive;
   final double? selectedSeatingDepth;
   final bool? selectedIsDangerous;
+  final bool keeperOnly;
   final String notesQuery;
   final ValueChanged<String?> onRecipeNameChanged;
   final ValueChanged<String?> onFirearmChanged;
@@ -1336,6 +1358,7 @@ class _MoreFiltersSheet extends StatelessWidget {
   final ValueChanged<double?> onSeatingDepthChanged;
   final ValueChanged<String> onNotesQueryChanged;
   final ValueChanged<bool?> onIsDangerousChanged;
+  final ValueChanged<bool?> onKeeperOnlyChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1468,6 +1491,13 @@ class _MoreFiltersSheet extends StatelessWidget {
               DropdownMenuItem<bool?>(value: false, child: Text('No')),
             ],
             onChanged: onIsDangerousChanged,
+          ),
+          const SizedBox(height: 12),
+          CheckboxListTile(
+            value: keeperOnly,
+            onChanged: onKeeperOnlyChanged,
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Keeper'),
           ),
           const SizedBox(height: 12),
           TextFormField(

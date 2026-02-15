@@ -22,6 +22,7 @@
     this.seatingDepth,
     this.notes,
     required this.firearmId,
+    required this.isKeeper,
     required this.isDangerous,
     this.dangerConfirmedAt,
     required this.createdAt,
@@ -50,6 +51,7 @@
   final double? seatingDepth;
   final String? notes;
   final String firearmId;
+  final bool isKeeper;
   final bool isDangerous;
   final DateTime? dangerConfirmedAt;
   final DateTime createdAt;
@@ -78,6 +80,7 @@
     double? seatingDepth,
     String? notes,
     String? firearmId,
+    bool? isKeeper,
     bool? isDangerous,
     DateTime? dangerConfirmedAt,
     DateTime? createdAt,
@@ -107,6 +110,7 @@
       seatingDepth: seatingDepth ?? this.seatingDepth,
       notes: notes ?? this.notes,
       firearmId: firearmId ?? this.firearmId,
+      isKeeper: isKeeper ?? this.isKeeper,
       isDangerous: isDangerous ?? this.isDangerous,
       dangerConfirmedAt: dangerConfirmedAt ?? this.dangerConfirmedAt,
       createdAt: createdAt ?? this.createdAt,
@@ -142,6 +146,7 @@
       'seatingDepth': seatingDepth,
       'notes': notes,
       'firearmId': firearmId,
+      'isKeeper': isKeeper ? 1 : 0,
       'isDangerous': isDangerous ? 1 : 0,
       'dangerConfirmedAt': dangerConfirmedAtMillis,
       'createdAt': createdAtMillis,
@@ -178,6 +183,7 @@
       seatingDepth: (map['seatingDepth'] as num?)?.toDouble(),
       notes: map['notes'] as String?,
       firearmId: map['firearmId'] as String,
+      isKeeper: (map['isKeeper'] as int? ?? 0) == 1,
       isDangerous: (map['isDangerous'] as int? ?? 0) == 1,
       dangerConfirmedAt: dangerConfirmedAt,
       createdAt: createdAt,

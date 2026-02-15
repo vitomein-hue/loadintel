@@ -69,6 +69,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
 
   bool _isDangerous = false;
   DateTime? _dangerConfirmedAt;
+  bool _isKeeper = false;
   late Future<_BuildLoadData> _dataFuture;
 
   bool get _isEditing => widget.recipe != null && !widget.isDuplicate;
@@ -140,6 +141,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
 
     _isDangerous = recipe?.isDangerous ?? false;
     _dangerConfirmedAt = recipe?.dangerConfirmedAt;
+    _isKeeper = recipe?.isKeeper ?? false;
 
     _dataFuture = _loadData();
   }
@@ -668,6 +670,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
           ? null
           : _notesController.text.trim(),
       firearmId: _selectedFirearmId!,
+      isKeeper: _isKeeper,
       isDangerous: _isDangerous,
       dangerConfirmedAt: _dangerConfirmedAt,
       createdAt: _isEditing ? widget.recipe!.createdAt : now,
@@ -694,6 +697,18 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
             BuildLoadScreen(recipe: widget.recipe, isDuplicate: true),
       ),
     );
+  }
+
+  Future<void> _setKeeper(bool value) async {
+    setState(() {
+      _isKeeper = value;
+    });
+    if (_isEditing) {
+      await context.read<LoadRecipeRepository>().updateKeeper(
+            widget.recipe!.id,
+            value,
+          );
+    }
   }
 
   @override
@@ -1127,8 +1142,21 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                         onFieldSubmitted: (_) =>
                             FocusScope.of(context).unfocus(),
                       ),
-                    const SizedBox(height: 12),
-                    Row(
+                      const SizedBox(height: 12),
+                      CheckboxListTile(
+                        value: _isKeeper,
+                        onChanged: (value) {
+                          if (value == null) {
+                            return;
+                          }
+                          _setKeeper(value);
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Keeper'),
+                        subtitle: const Text('Mark as a go-to load'),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
                       children: [
                         Expanded(
                           child: ElevatedButton(

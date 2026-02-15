@@ -436,7 +436,7 @@ class ExportService {
   String _buildLoadsCsv(List<LoadRecipe> loads) {
     final buffer = StringBuffer();
     buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,baseToOgive,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
+      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,baseToOgive,seatingDepth,notes,firearmId,isKeeper,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
     );
     for (final load in loads) {
       buffer.writeln(
@@ -463,6 +463,7 @@ class ExportService {
           load.seatingDepth,
           load.notes,
           load.firearmId,
+          load.isKeeper ? 1 : 0,
           load.isDangerous ? 1 : 0,
           load.dangerConfirmedAt?.toIso8601String(),
           load.createdAt.toIso8601String(),
@@ -724,7 +725,7 @@ class ExportService {
     final buffer = StringBuffer();
     buffer.writeln('Load');
     buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,baseToOgive,seatingDepth,notes,firearmId,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
+      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,baseToOgive,seatingDepth,notes,firearmId,isKeeper,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
     );
     buffer.writeln(
       [
@@ -750,6 +751,7 @@ class ExportService {
         load.seatingDepth,
         load.notes,
         load.firearmId,
+        load.isKeeper ? 1 : 0,
         load.isDangerous ? 1 : 0,
         load.dangerConfirmedAt?.toIso8601String(),
         load.createdAt.toIso8601String(),
@@ -810,6 +812,7 @@ class ExportService {
       TextCellValue('seatingDepth'),
       TextCellValue('notes'),
       TextCellValue('firearmId'),
+      TextCellValue('isKeeper'),
       TextCellValue('isDangerous'),
       TextCellValue('dangerConfirmedAt'),
       TextCellValue('createdAt'),
@@ -838,6 +841,7 @@ class ExportService {
       TextCellValue(load.seatingDepth?.toString() ?? ''),
       TextCellValue(load.notes ?? ''),
       TextCellValue(load.firearmId),
+      TextCellValue(load.isKeeper ? '1' : '0'),
       TextCellValue(load.isDangerous ? '1' : '0'),
       TextCellValue(load.dangerConfirmedAt?.toIso8601String() ?? ''),
       TextCellValue(load.createdAt.toIso8601String()),
@@ -907,6 +911,7 @@ class ExportService {
     buffer.writeln('COAL: ${load.coal ?? '-'}');
     buffer.writeln('Base to Ogive: ${load.baseToOgive ?? '-'}');
     buffer.writeln('Seating Depth: ${load.seatingDepth ?? '-'}');
+    buffer.writeln('Keeper: ${load.isKeeper ? 'YES' : 'No'}');
     buffer.writeln('Dangerous: ${load.isDangerous ? 'YES' : 'No'}');
     if (load.notes != null && load.notes!.trim().isNotEmpty) {
       buffer.writeln('Notes: ${load.notes}');

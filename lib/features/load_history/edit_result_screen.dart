@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:loadintel/core/utils/fps_stats.dart';
 import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
 import 'package:loadintel/domain/models/firearm.dart';
+import 'package:loadintel/domain/models/load_recipe.dart';
 import 'package:loadintel/domain/models/range_result.dart';
 import 'package:loadintel/domain/models/target_photo.dart';
 import 'package:loadintel/domain/repositories/firearm_repository.dart';
@@ -40,6 +41,8 @@ class _EditResultScreenState extends State<EditResultScreen> {
 
   late DateTime _testedAt;
   String? _firearmId;
+  LoadRecipe? _recipe;
+  bool _isKeeper = false;
   bool _shotsMode = false;
   final List<TextEditingController> _shotControllers = [];
   final List<TargetPhoto> _photos = [];
@@ -66,6 +69,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
     _initShotControllers(widget.result.fpsShots);
 
     _firearmsFuture = context.read<FirearmRepository>().listFirearms();
+    _loadRecipe();
     _loadPhotos();
   }
 
@@ -107,6 +111,28 @@ class _EditResultScreenState extends State<EditResultScreen> {
         ..clear()
         ..addAll(photos);
     });
+  }
+
+  Future<void> _loadRecipe() async {
+    final repo = context.read<LoadRecipeRepository>();
+    final recipe = await repo.getRecipe(widget.result.loadId);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _recipe = recipe;
+      _isKeeper = recipe?.isKeeper ?? false;
+    });
+  }
+
+  Future<void> _setKeeper(bool value) async {
+    setState(() {
+      _isKeeper = value;
+    });
+    await context.read<LoadRecipeRepository>().updateKeeper(
+          widget.result.loadId,
+          value,
+        );
   }
 
   Future<void> _pickTestedAt() async {
@@ -413,6 +439,21 @@ class _EditResultScreenState extends State<EditResultScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    value: _isKeeper,
+                    onChanged: _recipe == null
+                        ? null
+                        : (value) {
+                            if (value == null) {
+                              return;
+                            }
+                            _setKeeper(value);
+                          },
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Keeper'),
+                    subtitle: const Text('Mark as a go-to load'),
                   ),
                   const SizedBox(height: 12),
                   Card(

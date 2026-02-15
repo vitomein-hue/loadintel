@@ -29,6 +29,20 @@ class LoadRecipeRepositorySqlite implements LoadRecipeRepository {
   }
 
   @override
+  Future<void> updateKeeper(String id, bool isKeeper) async {
+    final db = await _db.database;
+    await db.update(
+      'load_recipes',
+      {
+        'isKeeper': isKeeper ? 1 : 0,
+        'updatedAt': encodeDateTime(DateTime.now()),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  @override
   Future<void> deleteRecipe(String id) async {
     final db = await _db.database;
     await db.delete('load_recipes', where: 'id = ?', whereArgs: [id]);

@@ -16,7 +16,7 @@ class AppDatabase {
     final fullPath = path.join(dbPath, 'loadintel.db');
     final db = await openDatabase(
       fullPath,
-      version: 8,
+      version: 9,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -68,6 +68,7 @@ class AppDatabase {
         seatingDepth REAL,
         notes TEXT,
         firearmId TEXT NOT NULL,
+        isKeeper INTEGER NOT NULL DEFAULT 0,
         isDangerous INTEGER NOT NULL DEFAULT 0,
         dangerConfirmedAt INTEGER,
         createdAt INTEGER NOT NULL,
@@ -196,6 +197,11 @@ class AppDatabase {
       );
       await db.execute(
         'ALTER TABLE range_results ADD COLUMN weatherConditions TEXT',
+      );
+    }
+    if (oldVersion < 9) {
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN isKeeper INTEGER NOT NULL DEFAULT 0',
       );
     }
   }
