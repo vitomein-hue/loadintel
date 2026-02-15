@@ -34,6 +34,10 @@
 	<string>Save target photos to the Load Intel album.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Select target photos for range results.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Load Intel needs your location to capture weather data for range testing conditions.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Load Intel needs your location to capture weather data for range testing conditions.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
