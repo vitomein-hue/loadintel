@@ -9,9 +9,9 @@ class TrialDialog {
       barrierDismissible: false,
       builder: (dialogContext) => _UpgradeDialog(
         title: 'Trial Ends Tomorrow',
-        message: 'Your 14-day trial expires in 24 hours. Upgrade now to lifetime access for just \$19.99.',
+        message: 'Your 14-day trial expires in 24 hours. Upgrade now to lifetime access for just {price}.',
         remindText: 'Remind Me Tomorrow',
-        upgradeText: 'Upgrade for \$19.99',
+        upgradeText: 'Upgrade for {price}',
       ),
     );
   }
@@ -22,9 +22,9 @@ class TrialDialog {
       barrierDismissible: false,
       builder: (dialogContext) => _UpgradeDialog(
         title: 'Trial Expired',
-        message: 'Your trial has ended. You have 1 grace day to upgrade for \$19.99 and keep your data.',
+        message: 'Your trial has ended. You have 1 grace day to upgrade for {price} and keep your data.',
         remindText: 'Continue for 1 More Day',
-        upgradeText: 'Upgrade for \$19.99',
+        upgradeText: 'Upgrade for {price}',
       ),
     );
   }
@@ -34,9 +34,9 @@ class TrialDialog {
       context: context,
       builder: (dialogContext) => _UpgradeDialog(
         title: 'Upgrade to Lifetime Access',
-        message: 'Get lifetime access to all Load Intel features for just \$19.99 - a one-time purchase.',
+        message: 'Get lifetime access to Load Intel for just {price} - a one-time purchase.',
         remindText: 'Not Now',
-        upgradeText: 'Upgrade for \$19.99',
+        upgradeText: 'Upgrade for {price}',
         showRestore: true,
       ),
     );
@@ -147,9 +147,14 @@ class _UpgradeDialogState extends State<_UpgradeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final purchaseService = context.watch<PurchaseService>();
+    final priceLabel = purchaseService.proProduct?.price ?? '\$9.99';
+    final message = widget.message.replaceAll('{price}', priceLabel);
+    final upgradeText = widget.upgradeText.replaceAll('{price}', priceLabel);
+
     return AlertDialog(
       title: Text(widget.title),
-      content: Text(widget.message),
+      content: Text(message),
       actions: [
         if (widget.showRestore)
           TextButton(
@@ -179,7 +184,7 @@ class _UpgradeDialogState extends State<_UpgradeDialog> {
                     color: Colors.white,
                   ),
                 )
-              : Text(widget.upgradeText),
+              : Text(upgradeText),
         ),
       ],
     );

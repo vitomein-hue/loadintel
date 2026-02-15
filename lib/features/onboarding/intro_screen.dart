@@ -159,6 +159,9 @@ class _IntroScreenState extends State<IntroScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final purchaseService = context.watch<PurchaseService>();
+    final priceLabel = purchaseService.proProduct?.price ?? '\$9.99';
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -256,7 +259,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   Text(
                     _isInitializing 
                         ? 'Loading store...'
-                        : 'After 14 days, unlock lifetime access for just \$9.99',
+                        : 'After 14 days, unlock lifetime access for just $priceLabel',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade600,

@@ -93,6 +93,7 @@ class _TrialPaywallState extends State<TrialPaywall> {
   @override
   Widget build(BuildContext context) {
     final service = context.watch<PurchaseService>();
+    final priceLabel = service.proProduct?.price ?? '\$9.99';
     final canInteract = !_isUpgrading && !_isRestoring;
 
     return Scaffold(
@@ -139,9 +140,9 @@ class _TrialPaywallState extends State<TrialPaywall> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Upgrade to Lifetime Access - \$9.99',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    : Text(
+                        'Upgrade to Lifetime Access - $priceLabel',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
               ),
               const SizedBox(height: 16),

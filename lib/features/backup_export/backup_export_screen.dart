@@ -8,6 +8,7 @@ import 'package:loadintel/services/backup_service.dart';
 import 'package:loadintel/services/export_service.dart';
 import 'package:loadintel/services/purchase_service.dart';
 import 'package:loadintel/services/trial_service.dart';
+import 'package:loadintel/features/trial/trial_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -673,6 +674,15 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           _buildTrialStatusCard(context),
+          const SizedBox(height: 16),
+          Card(
+            child: ListTile(
+              title: const Text('Get Lifetime Access'),
+              subtitle: const Text('Unlock all features permanently'),
+              trailing: const Icon(Icons.stars),
+              onTap: () => TrialDialog.showUpgradeDialog(context),
+            ),
+          ),
           const SizedBox(height: 16),
           Card(
             child: ListTile(
