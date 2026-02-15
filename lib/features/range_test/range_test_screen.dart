@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:loadintel/core/utils/fps_stats.dart';
@@ -31,9 +33,50 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   bool _weatherExpanded = false;
   bool _weatherCaptured = false;
   bool _weatherSaved = false;
+  int _weatherRequestId = 0;
 
   String? _activeLoadId;
   late Future<List<Firearm>> _firearmsFuture;
+
+  void _safeSetState(String source, VoidCallback update) {
+    if (!mounted) {
+      debugPrint('⚠️ $source: Skipping setState because widget is unmounted');
+      return;
+    }
+    setState(update);
+  }
+
+  void _showWeatherSnack(String message) {
+    if (!mounted) {
+      debugPrint('⚠️ Weather UI: Cannot show SnackBar, widget unmounted');
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  int _startWeatherRequest(String source) {
+    _weatherRequestId += 1;
+    final requestId = _weatherRequestId;
+    debugPrint('🌦️ $source: Starting request #$requestId');
+    _safeSetState('$source start', () {
+      _isLoadingWeather = true;
+    });
+    return requestId;
+  }
+
+  bool _isWeatherRequestActive(int requestId, String source) {
+    if (!mounted) {
+      debugPrint('⚠️ $source: request #$requestId aborted (widget unmounted)');
+      return false;
+    }
+    if (requestId != _weatherRequestId) {
+      debugPrint('⚠️ $source: request #$requestId stale; active request is #$_weatherRequestId');
+      return false;
+    }
+    return true;
+  }
 
   @override
   void initState() {
@@ -49,6 +92,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   @override
   void dispose() {
+    _weatherRequestId += 1;
     for (final controller in _controllers.values) {
       controller.dispose();
     }
@@ -231,15 +275,16 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   }
 
   Future<void> _captureWeather() async {
+    debugPrint('🌦️ Weather UI: Opening weather capture sheet');
     final zipController = TextEditingController();
-    await showModalBottomSheet(
+    final request = await showModalBottomSheet<_WeatherFetchRequest>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Padding(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
             left: 16,
             right: 16,
             top: 16,
@@ -250,13 +295,14 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
             children: [
               Text(
                 'Retrieve Weather',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: Theme.of(sheetContext).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await _fetchWeatherFromGPS();
+                onPressed: () {
+                  Navigator.of(sheetContext).pop(
+                    const _WeatherFetchRequest.useMyLocation(),
+                  );
                 },
                 icon: const Icon(Icons.my_location),
                 label: const Text('Use My Location'),
@@ -271,24 +317,27 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                   hintText: '12345',
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.search),
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                      await _fetchWeatherFromZip(zipController.text);
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop(
+                        _WeatherFetchRequest.fromZip(zipController.text),
+                      );
                     },
                   ),
                 ),
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.go,
-                onSubmitted: (value) async {
-                  Navigator.of(context).pop();
-                  await _fetchWeatherFromZip(value);
+                onSubmitted: (value) {
+                  Navigator.of(sheetContext).pop(
+                    _WeatherFetchRequest.fromZip(value),
+                  );
                 },
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await _fetchWeatherFromZip(zipController.text);
+                onPressed: () {
+                  Navigator.of(sheetContext).pop(
+                    _WeatherFetchRequest.fromZip(zipController.text),
+                  );
                 },
                 icon: const Icon(Icons.search),
                 label: const Text('Get Weather'),
@@ -300,37 +349,69 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       ),
     );
     zipController.dispose();
+
+    if (!mounted || request == null) {
+      debugPrint('🌦️ Weather UI: Request canceled or widget unmounted');
+      return;
+    }
+
+    if (request.useMyLocation) {
+      debugPrint('🌦️ Weather UI: Starting location-based weather flow');
+      await _fetchWeatherFromGPS();
+      if (!mounted) return;
+      return;
+    }
+
+    if (request.zipCode == null || request.zipCode!.isEmpty) {
+      debugPrint('⚠️ Weather UI: ZIP request missing ZIP code');
+      _showWeatherSnack('Enter a valid ZIP code');
+      return;
+    }
+
+    debugPrint('🌦️ Weather UI: Starting ZIP-based weather flow for ${request.zipCode}');
+    await _fetchWeatherFromZip(request.zipCode!);
+    if (!mounted) return;
   }
 
   Future<void> _fetchWeatherFromGPS() async {
-    setState(() {
-      _isLoadingWeather = true;
-    });
+    debugPrint('🌍 Starting GPS weather fetch...');
+    
+    if (!mounted) {
+      debugPrint('⚠️ Widget not mounted, aborting GPS fetch');
+      return;
+    }
+    
+    final requestId = _startWeatherRequest('GPS weather fetch');
 
     try {
+      debugPrint('🌍 Checking if location services are enabled...');
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!mounted) return;
+      debugPrint('🌍 Location services enabled: $serviceEnabled');
+      if (!_isWeatherRequestActive(requestId, 'GPS weather services check')) return;
       if (!serviceEnabled) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Location services are disabled')),
-          );
-        }
-        setState(() {
+        _showWeatherSnack('Location services are disabled');
+        _safeSetState('GPS weather services disabled #$requestId', () {
           _isLoadingWeather = false;
         });
         return;
       }
 
+      debugPrint('🌍 Checking location permissions...');
       LocationPermission permission = await Geolocator.checkPermission();
+      if (!mounted) return;
+      debugPrint('🌍 Current permission status: $permission');
+      if (!_isWeatherRequestActive(requestId, 'GPS permission check')) return;
+      
       if (permission == LocationPermission.denied) {
+        debugPrint('🌍 Permission denied, requesting permission...');
         permission = await Geolocator.requestPermission();
+        if (!mounted) return;
+        debugPrint('🌍 Permission after request: $permission');
+        if (!_isWeatherRequestActive(requestId, 'GPS permission request')) return;
         if (permission == LocationPermission.denied) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Location permission denied')),
-            );
-          }
-          setState(() {
+          _showWeatherSnack('Location permission denied');
+          _safeSetState('GPS permission denied #$requestId', () {
             _isLoadingWeather = false;
           });
           return;
@@ -338,35 +419,55 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Location permission permanently denied'),
-            ),
-          );
-        }
-        setState(() {
+        _showWeatherSnack('Location permission permanently denied');
+        _safeSetState('GPS permission denied forever #$requestId', () {
           _isLoadingWeather = false;
         });
         return;
       }
 
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: const Duration(seconds: 10),
-      );
+      debugPrint('🌍 Getting current GPS position...');
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 10),
+        );
+        if (!mounted) return;
+      } on TimeoutException catch (e, st) {
+        debugPrint('⚠️ GPS: Timed out waiting for current position: $e');
+        debugPrint('⚠️ GPS: Timeout stack trace: $st');
+      } catch (e, st) {
+        debugPrint('⚠️ GPS: Current position lookup failed: $e');
+        debugPrint('⚠️ GPS: Current position error stack trace: $st');
+      }
+
+      position ??= await Geolocator.getLastKnownPosition();
+      if (!mounted) return;
+      if (position == null) {
+        _showWeatherSnack('Could not determine current location');
+        _safeSetState('GPS no position #$requestId', () {
+          _isLoadingWeather = false;
+        });
+        return;
+      }
+
+      debugPrint('🌍 Position acquired: ${position.latitude}, ${position.longitude}');
+      if (!_isWeatherRequestActive(requestId, 'GPS position lookup')) return;
+      
+      debugPrint('🌍 Fetching weather for location...');
       final weather = await _weatherService.fetchWeather(
         latitude: position.latitude.toString(),
         longitude: position.longitude.toString(),
       );
+      if (!mounted) return;
+      if (!_isWeatherRequestActive(requestId, 'GPS weather API call')) return;
+      debugPrint('🌍 Weather data received: ${weather != null ? "Success" : "Null"}');
 
       if (weather == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Weather currently not available')),
-          );
-        }
-        setState(() {
+        debugPrint('⚠️ GPS: Weather data is null');
+        _showWeatherSnack('Weather currently not available');
+        _safeSetState('GPS weather unavailable #$requestId', () {
           _isLoadingWeather = false;
           _weatherExpanded = true;
           _weatherCaptured = true;
@@ -374,53 +475,65 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         return;
       }
 
+      debugPrint('✅ GPS: Weather data received successfully');
       final activeEntry = _activeEntry();
       if (activeEntry != null) {
+        debugPrint('✅ GPS: Applying weather to active entry');
         activeEntry.temperatureF = weather.temperatureF;
         activeEntry.humidity = weather.humidity;
         activeEntry.barometricPressureInHg = weather.barometricPressureInHg;
         activeEntry.windDirection = weather.windDirection;
         activeEntry.windSpeedMph = weather.windSpeedMph;
         activeEntry.weatherConditions = weather.weatherConditions;
+      } else {
+        debugPrint('⚠️ GPS: No active entry found');
       }
-      setState(() {
+      _safeSetState('GPS weather success #$requestId', () {
         _isLoadingWeather = false;
         _weatherExpanded = true;
         _weatherCaptured = true;
       });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to get location: $e')),
-        );
-      }
-      setState(() {
+      debugPrint('✅ GPS: Weather fetch complete');
+    } catch (e, st) {
+      debugPrint('❌ GPS: Error occurred: $e');
+      debugPrint('❌ GPS: Stack trace: $st');
+      if (!_isWeatherRequestActive(requestId, 'GPS weather error handler')) return;
+      _showWeatherSnack('Failed to get location/weather: $e');
+      _safeSetState('GPS weather error #$requestId', () {
         _isLoadingWeather = false;
       });
     }
   }
 
   Future<void> _fetchWeatherFromZip(String zipCode) async {
-    if (zipCode.trim().isEmpty) {
+    debugPrint('📮 Starting ZIP code weather fetch: $zipCode');
+    final cleanedZip = zipCode.trim();
+    if (cleanedZip.isEmpty || !RegExp(r'^\d{5}(?:-\d{4})?$').hasMatch(cleanedZip)) {
+      debugPrint('⚠️ ZIP: Empty zip code provided');
+      _showWeatherSnack('Enter a valid ZIP code');
       return;
     }
 
-    setState(() {
-      _isLoadingWeather = true;
-    });
+    if (!mounted) {
+      debugPrint('⚠️ ZIP: Widget not mounted, aborting fetch');
+      return;
+    }
+
+    final requestId = _startWeatherRequest('ZIP weather fetch');
 
     try {
+      debugPrint('📮 Fetching weather for zip code: $cleanedZip');
       final weather = await _weatherService.fetchWeather(
-        zipCode: zipCode.trim(),
+        zipCode: cleanedZip,
       );
+      if (!mounted) return;
+      if (!_isWeatherRequestActive(requestId, 'ZIP weather API call')) return;
+      debugPrint('📮 Weather data received: ${weather != null ? "Success" : "Null"}');
 
       if (weather == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Weather currently not available')),
-          );
-        }
-        setState(() {
+        debugPrint('⚠️ ZIP: Weather data is null');
+        _showWeatherSnack('Weather currently not available');
+        _safeSetState('ZIP weather unavailable #$requestId', () {
           _isLoadingWeather = false;
           _weatherExpanded = true;
           _weatherCaptured = true;
@@ -428,44 +541,41 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         return;
       }
 
+      debugPrint('✅ ZIP: Weather data received successfully');
       final activeEntry = _activeEntry();
       if (activeEntry != null) {
+        debugPrint('✅ ZIP: Applying weather to active entry');
         activeEntry.temperatureF = weather.temperatureF;
         activeEntry.humidity = weather.humidity;
         activeEntry.barometricPressureInHg = weather.barometricPressureInHg;
         activeEntry.windDirection = weather.windDirection;
         activeEntry.windSpeedMph = weather.windSpeedMph;
         activeEntry.weatherConditions = weather.weatherConditions;
+      } else {
+        debugPrint('⚠️ ZIP: No active entry found');
       }
-      setState(() {
+      _safeSetState('ZIP weather success #$requestId', () {
         _isLoadingWeather = false;
         _weatherExpanded = true;
         _weatherCaptured = true;
       });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to get weather: $e')),
-        );
-      }
-      setState(() {
+      debugPrint('✅ ZIP: Weather fetch complete');
+    } catch (e, st) {
+      debugPrint('❌ ZIP: Error occurred: $e');
+      debugPrint('❌ ZIP: Stack trace: $st');
+      if (!_isWeatherRequestActive(requestId, 'ZIP weather error handler')) return;
+      _showWeatherSnack('Failed to get weather: $e');
+      _safeSetState('ZIP weather error #$requestId', () {
         _isLoadingWeather = false;
       });
     }
   }
 
-  void _applyWeatherToAllLoads(WeatherData weather) {
-    for (final entry in _entries) {
-      entry.temperatureF = weather.temperatureF;
-      entry.humidity = weather.humidity;
-      entry.barometricPressureInHg = weather.barometricPressureInHg;
-      entry.windDirection = weather.windDirection;
-      entry.windSpeedMph = weather.windSpeedMph;
-      entry.weatherConditions = weather.weatherConditions;
-    }
-  }
-
   void _saveWeather() {
+    if (!mounted) {
+      debugPrint('⚠️ Save weather: widget unmounted');
+      return;
+    }
     final activeEntry = _activeEntry();
     if (activeEntry == null) return;
 
@@ -479,14 +589,12 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       entry.weatherConditions = activeEntry.weatherConditions;
     }
 
-    setState(() {
+    _safeSetState('Save weather', () {
       _weatherExpanded = false;
       _weatherSaved = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Weather saved to all loads')),
-    );
+    _showWeatherSnack('Weather saved to all loads');
   }
 
   bool _isBenchComplete(RangeTestLoadEntry entry) {
@@ -754,6 +862,27 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       ),
     );
   }
+}
+
+class _WeatherFetchRequest {
+  const _WeatherFetchRequest._({
+    required this.useMyLocation,
+    this.zipCode,
+  });
+
+  const _WeatherFetchRequest.useMyLocation()
+      : this._(useMyLocation: true);
+
+  factory _WeatherFetchRequest.fromZip(String zipCode) {
+    final cleaned = zipCode.trim();
+    return _WeatherFetchRequest._(
+      useMyLocation: false,
+      zipCode: cleaned.isEmpty ? null : cleaned,
+    );
+  }
+
+  final bool useMyLocation;
+  final String? zipCode;
 }
 
 class _BenchEntryCard extends StatelessWidget {
