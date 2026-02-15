@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Capture target photos for range results.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Use location to fetch local weather for range sessions.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Save target photos to the Load Intel album.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

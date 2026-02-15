@@ -231,6 +231,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   }
 
   Future<void> _captureWeather() async {
+    final zipController = TextEditingController();
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -264,23 +265,41 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
               const Text('Or enter zip code:'),
               const SizedBox(height: 8),
               TextField(
-                decoration: const InputDecoration(
+                controller: zipController,
+                decoration: InputDecoration(
                   labelText: 'Zip Code',
                   hintText: '12345',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.search),
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                      await _fetchWeatherFromZip(zipController.text);
+                    },
+                  ),
                 ),
                 keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
+                textInputAction: TextInputAction.go,
                 onSubmitted: (value) async {
                   Navigator.of(context).pop();
                   await _fetchWeatherFromZip(value);
                 },
               ),
               const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _fetchWeatherFromZip(zipController.text);
+                },
+                icon: const Icon(Icons.search),
+                label: const Text('Get Weather'),
+              ),
+              const SizedBox(height: 8),
             ],
           ),
         ),
       ),
     );
+    zipController.dispose();
   }
 
   Future<void> _fetchWeatherFromGPS() async {
@@ -332,7 +351,10 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         return;
       }
 
-      final position = await Geolocator.getCurrentPosition();
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 10),
+      );
       final weather = await _weatherService.fetchWeather(
         latitude: position.latitude.toString(),
         longitude: position.longitude.toString(),
@@ -369,7 +391,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to get location')),
+          SnackBar(content: Text('Failed to get location: $e')),
         );
       }
       setState(() {
@@ -387,36 +409,49 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       _isLoadingWeather = true;
     });
 
-    final weather = await _weatherService.fetchWeather(zipCode: zipCode.trim());
+    try {
+      final weather = await _weatherService.fetchWeather(
+        zipCode: zipCode.trim(),
+      );
 
-    if (weather == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Weather currently not available')),
-        );
+      if (weather == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Weather currently not available')),
+          );
+        }
+        setState(() {
+          _isLoadingWeather = false;
+          _weatherExpanded = true;
+          _weatherCaptured = true;
+        });
+        return;
+      }
+
+      final activeEntry = _activeEntry();
+      if (activeEntry != null) {
+        activeEntry.temperatureF = weather.temperatureF;
+        activeEntry.humidity = weather.humidity;
+        activeEntry.barometricPressureInHg = weather.barometricPressureInHg;
+        activeEntry.windDirection = weather.windDirection;
+        activeEntry.windSpeedMph = weather.windSpeedMph;
+        activeEntry.weatherConditions = weather.weatherConditions;
       }
       setState(() {
         _isLoadingWeather = false;
         _weatherExpanded = true;
         _weatherCaptured = true;
       });
-      return;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to get weather: $e')),
+        );
+      }
+      setState(() {
+        _isLoadingWeather = false;
+      });
     }
-
-    final activeEntry = _activeEntry();
-    if (activeEntry != null) {
-      activeEntry.temperatureF = weather.temperatureF;
-      activeEntry.humidity = weather.humidity;
-      activeEntry.barometricPressureInHg = weather.barometricPressureInHg;
-      activeEntry.windDirection = weather.windDirection;
-      activeEntry.windSpeedMph = weather.windSpeedMph;
-      activeEntry.weatherConditions = weather.weatherConditions;
-    }
-    setState(() {
-      _isLoadingWeather = false;
-      _weatherExpanded = true;
-      _weatherCaptured = true;
-    });
   }
 
   void _applyWeatherToAllLoads(WeatherData weather) {
