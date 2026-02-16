@@ -53,6 +53,19 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final nameController = TextEditingController(text: item?.name ?? '');
     final notesController = TextEditingController(text: item?.notes ?? '');
     final formKey = GlobalKey<FormState>();
+    final rootContext = context;
+
+    Future<bool> isDuplicateName(String name) async {
+      final trimmed = name.trim().toLowerCase();
+      final repo = rootContext.read<InventoryRepository>();
+      final items = await repo.listItems();
+      return items.any(
+        (existing) =>
+            existing.type == category.type &&
+            existing.id != item?.id &&
+            existing.name.trim().toLowerCase() == trimmed,
+      );
+    }
 
     final result = await showDialog<bool>(
       context: context,
@@ -90,8 +103,18 @@ class _InventoryScreenState extends State<InventoryScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (!formKey.currentState!.validate()) {
+                return;
+              }
+              if (await isDuplicateName(nameController.text)) {
+                ScaffoldMessenger.of(rootContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'An item with this name already exists in ${category.label}',
+                    ),
+                  ),
+                );
                 return;
               }
               Navigator.of(context).pop(true);
