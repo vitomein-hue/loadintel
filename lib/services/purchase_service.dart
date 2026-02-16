@@ -6,7 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
 
 // Set to false before Google Play Store production release.
-const bool ANDROID_BETA_MODE = true;
+const bool androidBetaMode = true;
 
 class PurchaseService extends ChangeNotifier {
   PurchaseService(this._settingsRepository);
@@ -63,7 +63,7 @@ class PurchaseService extends ChangeNotifier {
   bool get canStartTrial => Platform.isAndroid
       ? _isInitialized &&
           !_hasTrialReceipt &&
-          (!ANDROID_BETA_MODE
+          (!androidBetaMode
               ? _isAvailable && _trialProduct != null
               : true)
       : _isStoreEnabled &&
@@ -74,7 +74,7 @@ class PurchaseService extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
 
   bool get _isStoreEnabled =>
-      Platform.isIOS || (Platform.isAndroid && !ANDROID_BETA_MODE);
+      Platform.isIOS || (Platform.isAndroid && !androidBetaMode);
 
   Future<void> init() async {
     debugPrint('🔵 PurchaseService.init() - Starting initialization');
@@ -210,7 +210,7 @@ class PurchaseService extends ChangeNotifier {
       throw Exception(error);
     }
 
-    if (Platform.isAndroid && ANDROID_BETA_MODE) {
+    if (Platform.isAndroid && androidBetaMode) {
       return _startLocalTrial();
     }
     if (!_isStoreEnabled) {

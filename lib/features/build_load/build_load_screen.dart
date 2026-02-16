@@ -1,7 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:loadintel/core/theme/app_colors.dart';
 import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
 import 'package:loadintel/domain/models/firearm.dart';
@@ -11,9 +10,7 @@ import 'package:loadintel/domain/repositories/firearm_repository.dart';
 import 'package:loadintel/domain/repositories/inventory_repository.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
-import 'package:loadintel/features/inventory/inventory_screen.dart';
 import 'package:loadintel/features/trial/trial_banner.dart';
-import 'package:loadintel/services/purchase_service.dart';
 import 'package:loadintel/services/trial_service.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -29,7 +26,6 @@ class BuildLoadScreen extends StatefulWidget {
 }
 
 class _BuildLoadScreenState extends State<BuildLoadScreen> {
-  static const String _addNewOptionValue = '__add_new__';
   static const String _customOptionPrefix = '__custom_option__::';
   static const String _inventoryAddedPrefix = '__inventory_added__::';
 
@@ -323,15 +319,6 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     });
   }
 
-  Future<void> _openInventory(String type) async {
-    final category = InventoryCategory.byType(type);
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => InventoryScreen(initialCategory: category.type),
-      ),
-    );
-    await _refreshData();
-  }
 
   String _displayInventoryValue(String? value, List<InventoryItem> items) {
     if (value == null || value.isEmpty) {
@@ -674,7 +661,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                     debugPrint(
                                       'Saved inventory item [$type]: $trimmed',
                                     );
-                                    if (!mounted) {
+                                    if (!context.mounted) {
                                       return;
                                     }
                                     Navigator.of(dialogContext).pop(
@@ -967,7 +954,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String?>(
-                            value:
+                            initialValue:
                                 firearms.any(
                                   (firearm) => firearm.id == _selectedFirearmId,
                                 )
@@ -1338,7 +1325,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                     ],
                     if (_selectedLoadType == LoadType.shotgun) ...[
                       DropdownButtonFormField<String>(
-                        value: _selectedGauge,
+                        initialValue: _selectedGauge,
                         decoration: const InputDecoration(
                           labelText: 'Gauge *',
                         ),
@@ -1362,7 +1349,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedShellLength,
+                        initialValue: _selectedShellLength,
                         decoration: const InputDecoration(
                           labelText: 'Shell Length *',
                         ),
@@ -1493,7 +1480,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedShotType,
+                        initialValue: _selectedShotType,
                         decoration: const InputDecoration(
                           labelText: 'Shot Type *',
                         ),
@@ -1517,7 +1504,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedCrimpType,
+                        initialValue: _selectedCrimpType,
                         decoration: const InputDecoration(
                           labelText: 'Crimp Type *',
                         ),
@@ -1575,7 +1562,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedIgnitionType,
+                        initialValue: _selectedIgnitionType,
                         decoration: const InputDecoration(
                           labelText: 'Ignition Type *',
                         ),
@@ -1599,7 +1586,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedMuzzleloaderPowderType,
+                        initialValue: _selectedMuzzleloaderPowderType,
                         decoration: const InputDecoration(
                           labelText: 'Powder Type *',
                         ),
@@ -1623,7 +1610,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedPowderGranulation,
+                        initialValue: _selectedPowderGranulation,
                         decoration: const InputDecoration(
                           labelText: 'Powder Granulation *',
                         ),
@@ -1667,7 +1654,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: _selectedProjectileType,
+                        initialValue: _selectedProjectileType,
                         decoration: const InputDecoration(
                           labelText: 'Projectile Type *',
                         ),
@@ -1843,7 +1830,7 @@ class _AddFirearmDialogState extends State<_AddFirearmDialog> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<FirearmType>(
-              value: _type,
+              initialValue: _type,
               decoration: const InputDecoration(labelText: 'Type'),
               isExpanded: true,
               dropdownColor: AppColors.card,

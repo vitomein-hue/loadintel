@@ -111,7 +111,7 @@ class ShareLoadCard extends StatelessWidget {
         width: 240,
         height: 240,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
+        errorBuilder: (context, error, stackTrace) => Container(
           width: 240,
           height: 240,
           color: AppColors.card,

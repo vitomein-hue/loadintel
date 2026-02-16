@@ -65,7 +65,7 @@ class LoadIntelApp extends StatelessWidget {
             service.init();
             return service;
           },
-          update: (_, __, previous) => previous!,
+          update: (_, settingsRepo, previous) => previous!,
         ),
         ChangeNotifierProxyProvider2<SettingsRepository, PurchaseService, TrialService>(
           create: (context) {
@@ -76,7 +76,7 @@ class LoadIntelApp extends StatelessWidget {
             service.init();
             return service;
           },
-          update: (_, __, ___, previous) => previous!,
+          update: (_, settingsRepo, purchaseService, previous) => previous!,
         ),
       ],
       child: MaterialApp(
@@ -99,7 +99,6 @@ class _TrialAwareHome extends StatefulWidget {
 class _TrialAwareHomeState extends State<_TrialAwareHome> {
   bool _hasShownDialog = false;
   bool _isCheckingIntro = true;
-  bool _shouldShowIntro = false;
 
   @override
   void initState() {
@@ -121,7 +120,6 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
                       purchaseService.hasClaimedFreeTrial();
     
     setState(() {
-      _shouldShowIntro = !shouldSkip;
       _isCheckingIntro = false;
     });
     
@@ -141,9 +139,6 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
         }
         
         if (mounted) {
-          setState(() {
-            _shouldShowIntro = false;
-          });
           _checkTrialStatus();
         }
       }

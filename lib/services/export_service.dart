@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:excel/excel.dart';
@@ -309,9 +308,6 @@ class ExportService {
     required Size size,
   }) async {
     final overlay = Overlay.of(context);
-    if (overlay == null) {
-      throw StateError('No overlay available for capture.');
-    }
     final boundaryKey = GlobalKey();
     final entry = OverlayEntry(
       builder: (_) => Positioned(
@@ -346,10 +342,7 @@ class ExportService {
       final image = await boundary.toImage(pixelRatio: 3);
       final data = await image.toByteData(format: ui.ImageByteFormat.png);
       image.dispose();
-      if (data == null) {
-        throw StateError('Unable to encode report.');
-      }
-      return data.buffer.asUint8List();
+      return data!.buffer.asUint8List();
     } finally {
       entry.remove();
     }
@@ -414,15 +407,6 @@ class ExportService {
   Future<pw.ImageProvider> _loadBrandImage() async {
     final data = await rootBundle.load('assets/brand.png');
     return pw.MemoryImage(data.buffer.asUint8List());
-  }
-
-  Uint8List? _safeReadBytes(TargetPhoto photo) {
-    final pathValue = photo.thumbPath ?? photo.galleryPath;
-    try {
-      return Uint8List.fromList(File(pathValue).readAsBytesSync());
-    } catch (_) {
-      return null;
-    }
   }
 
   Uint8List? _safeReadBytesFromPath(String pathValue) {

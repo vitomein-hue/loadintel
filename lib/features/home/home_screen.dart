@@ -110,7 +110,7 @@ class _BetaBanner extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.danger.withOpacity(0.12),
+            color: AppColors.danger.withValues(alpha: 0.12),
             border: Border.all(color: AppColors.danger),
             borderRadius: BorderRadius.circular(12),
           ),

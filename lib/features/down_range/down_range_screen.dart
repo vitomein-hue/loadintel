@@ -144,13 +144,17 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
         ),
       );
     }
+    
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       entry.isSaved = true;
     });
 
     if (_states.every((state) => state.isSaved)) {
-      if (!mounted) {
+      if (!context.mounted) {
         return;
       }
       await showDialog<void>(
@@ -223,7 +227,7 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: _states.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
                   final state = _states[index];
                   final isActive = state.benchEntry.recipe.id == _activeLoadId;
@@ -335,7 +339,7 @@ class _DownRangeEntryCard extends StatelessWidget {
                                 width: 72,
                                 height: 72,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorBuilder: (context, error, stackTrace) => Container(
                                   width: 72,
                                   height: 72,
                                   color: Colors.black12,

@@ -816,7 +816,7 @@ class _TestedLoadTile extends StatelessWidget {
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: photos.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (context, index) =>
                                 const SizedBox(width: 8),
                             itemBuilder: (context, index) {
                               final photo = photos[index];
@@ -839,7 +839,7 @@ class _TestedLoadTile extends StatelessWidget {
                                         width: 64,
                                         height: 64,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
+                                        errorBuilder: (context, error, stackTrace) => Container(
                                           width: 64,
                                           height: 64,
                                           color: AppColors.card,
@@ -915,7 +915,7 @@ class _CautionBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.danger.withOpacity(0.1),
+        color: AppColors.danger.withValues(alpha: 0.1),
         border: Border.all(color: AppColors.danger),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -1060,7 +1060,7 @@ class _FullScreenPhoto extends StatelessWidget {
                     child: Image.file(
                       File(path),
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.image_not_supported,
                         color: Colors.white70,
                         size: 56,
@@ -1186,7 +1186,7 @@ class _FilterRow extends StatelessWidget {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: selectedCartridge,
+                  initialValue: selectedCartridge,
                   decoration: const InputDecoration(labelText: 'Cartridge'),
                   items: _dropdownItems(cartridges),
                   onChanged: onCartridgeChanged,
@@ -1195,7 +1195,7 @@ class _FilterRow extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String?>(
-                  value: selectedPowder,
+                  initialValue: selectedPowder,
                   decoration: const InputDecoration(labelText: 'Powder'),
                   items: _dropdownItems(powders),
                   onChanged: onPowderChanged,
@@ -1208,7 +1208,7 @@ class _FilterRow extends StatelessWidget {
             children: [
               Expanded(
                 child: DropdownButtonFormField<double?>(
-                  value: selectedPowderCharge,
+                  initialValue: selectedPowderCharge,
                   decoration: const InputDecoration(labelText: 'Powder Charge'),
                   items: [
                     const DropdownMenuItem<double?>(
@@ -1228,7 +1228,7 @@ class _FilterRow extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<double?>(
-                  value: selectedBulletWeight,
+                  initialValue: selectedBulletWeight,
                   decoration: const InputDecoration(labelText: 'Bullet Weight'),
                   items: [
                     const DropdownMenuItem<double?>(
@@ -1391,14 +1391,14 @@ class _MoreFiltersSheet extends StatelessWidget {
           Text('More Filters', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedRecipeName,
+            initialValue: selectedRecipeName,
             decoration: const InputDecoration(labelText: 'Recipe Name'),
             items: _stringItems(recipeNames),
             onChanged: onRecipeNameChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<LoadType?>(
-            value: selectedLoadType,
+            initialValue: selectedLoadType,
             decoration: const InputDecoration(labelText: 'Load Type'),
             items: [
               const DropdownMenuItem<LoadType?>(
@@ -1416,7 +1416,7 @@ class _MoreFiltersSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedFirearmId,
+            initialValue: selectedFirearmId,
             decoration: const InputDecoration(labelText: 'Firearm'),
             items: [
               const DropdownMenuItem<String?>(value: null, child: Text('Any')),
@@ -1431,42 +1431,42 @@ class _MoreFiltersSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedBulletBrand,
+            initialValue: selectedBulletBrand,
             decoration: const InputDecoration(labelText: 'Bullet'),
             items: _stringItems(bulletBrands),
             onChanged: onBulletBrandChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<double?>(
-            value: selectedBulletDiameter,
+            initialValue: selectedBulletDiameter,
             decoration: const InputDecoration(labelText: 'Bullet Diameter'),
             items: _doubleItems(bulletDiameters, decimals: 3),
             onChanged: onBulletDiameterChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedBulletType,
+            initialValue: selectedBulletType,
             decoration: const InputDecoration(labelText: 'Bullet Type'),
             items: _stringItems(bulletTypes),
             onChanged: onBulletTypeChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedCaseResize,
+            initialValue: selectedCaseResize,
             decoration: const InputDecoration(labelText: 'Case Resize'),
             items: _stringItems(caseResize),
             onChanged: onCaseResizeChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedGasCheckMaterial,
+            initialValue: selectedGasCheckMaterial,
             decoration: const InputDecoration(labelText: 'Gas Check Material'),
             items: _stringItems(gasCheckMaterials),
             onChanged: onGasCheckMaterialChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedGasCheckInstallMethod,
+            initialValue: selectedGasCheckInstallMethod,
             decoration: const InputDecoration(
               labelText: 'Gas Check Install Method',
             ),
@@ -1475,49 +1475,49 @@ class _MoreFiltersSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedBulletCoating,
+            initialValue: selectedBulletCoating,
             decoration: const InputDecoration(labelText: 'Bullet Coating'),
             items: _stringItems(bulletCoatings),
             onChanged: onBulletCoatingChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedBrass,
+            initialValue: selectedBrass,
             decoration: const InputDecoration(labelText: 'Brass'),
             items: _stringItems(brass),
             onChanged: onBrassChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedPrimer,
+            initialValue: selectedPrimer,
             decoration: const InputDecoration(labelText: 'Primer'),
             items: _stringItems(primers),
             onChanged: onPrimerChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<double?>(
-            value: selectedCoal,
+            initialValue: selectedCoal,
             decoration: const InputDecoration(labelText: 'COAL'),
             items: _doubleItems(coalValues, decimals: 3),
             onChanged: onCoalChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<double?>(
-            value: selectedBaseToOgive,
+            initialValue: selectedBaseToOgive,
             decoration: const InputDecoration(labelText: 'Base to Ogive (BTO)'),
             items: _doubleItems(baseToOgiveValues, decimals: 3),
             onChanged: onBaseToOgiveChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<double?>(
-            value: selectedSeatingDepth,
+            initialValue: selectedSeatingDepth,
             decoration: const InputDecoration(labelText: 'Seating Depth'),
             items: _doubleItems(seatingDepthValues, decimals: 3),
             onChanged: onSeatingDepthChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<bool?>(
-            value: selectedIsDangerous,
+            initialValue: selectedIsDangerous,
             decoration: const InputDecoration(labelText: 'Dangerous'),
             items: const [
               DropdownMenuItem<bool?>(value: null, child: Text('Any')),

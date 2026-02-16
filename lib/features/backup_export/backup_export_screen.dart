@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loadintel/domain/models/load_with_best_result.dart';
 import 'package:loadintel/domain/repositories/load_recipe_repository.dart';
-import 'package:loadintel/domain/repositories/settings_repository.dart';
 import 'package:loadintel/services/backup_service.dart';
 import 'package:loadintel/services/export_service.dart';
 import 'package:loadintel/services/purchase_service.dart';
@@ -22,45 +21,11 @@ class BackupExportScreen extends StatefulWidget {
 }
 
 class _BackupExportScreenState extends State<BackupExportScreen> {
-  ProEntitlementOverride _proOverride = ProEntitlementOverride.auto;
-  bool _overrideLoaded = false;
   bool _isExporting = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProOverride();
-  }
-
-  Future<void> _loadProOverride() async {
-    final settings = context.read<SettingsRepository>();
-    final value = await settings.getProEntitlementOverride();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _proOverride = value;
-      _overrideLoaded = true;
-    });
-  }
-
-  Future<void> _setProOverride(ProEntitlementOverride value) async {
-    setState(() {
-      _proOverride = value;
-    });
-    await context.read<SettingsRepository>().setProEntitlementOverride(value);
-    await context.read<PurchaseService>().refreshEntitlement();
-  }
-
-  String _proOverrideLabel(ProEntitlementOverride value) {
-    switch (value) {
-      case ProEntitlementOverride.auto:
-        return 'Auto (use entitlement)';
-      case ProEntitlementOverride.forceOn:
-        return 'Force On (Pro)';
-      case ProEntitlementOverride.forceOff:
-        return 'Force Off (Free)';
-    }
   }
 
   Future<void> _exportBackup(BuildContext context) async {
@@ -100,6 +65,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       return;
     }
     final filePath = result.files.single.path!;
+    if (!context.mounted) {
+      return;
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -117,7 +85,7 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
         ],
       ),
     );
-    if (confirmed != true) {
+    if (confirmed != true || !context.mounted) {
       return;
     }
     final service = context.read<BackupService>();
@@ -335,12 +303,15 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
   Future<LoadWithBestResult?> _pickTestedLoad(BuildContext context) async {
     final loads = await context.read<LoadRecipeRepository>().listTestedLoads();
     if (loads.isEmpty) {
-      if (!mounted) {
+      if (!context.mounted) {
         return null;
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No tested loads available.')),
       );
+      return null;
+    }
+    if (!context.mounted) {
       return null;
     }
     return showDialog<LoadWithBestResult>(
@@ -378,7 +349,7 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                           : ListView.separated(
                               shrinkWrap: true,
                               itemCount: filtered.length,
-                              separatorBuilder: (_, __) => const Divider(height: 1),
+                              separatorBuilder: (context, index) => const Divider(height: 1),
                               itemBuilder: (context, index) {
                                 final entry = filtered[index];
                                 return ListTile(
@@ -610,22 +581,24 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                         ? () async {
                             try {
                               await purchaseService.startFreeTrial();
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Free trial purchase initiated'),
-                                  ),
-                                );
+                              if (!context.mounted) {
+                                return;
                               }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Free trial purchase initiated'),
+                                ),
+                              );
                             } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(e.toString().replaceAll('Exception: ', '')),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
+                              if (!context.mounted) {
+                                return;
                               }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(e.toString().replaceAll('Exception: ', '')),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
                             }
                           }
                         : null,

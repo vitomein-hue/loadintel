@@ -401,23 +401,16 @@ class WeatherService {
           humidity != null ||
           pressureInHg != null ||
           windSpeedMph != null ||
-          windDir != null ||
           safeConditions != null;
       if (!hasAny) {
         debugPrint('WeatherService: NOAA observation missing all fields');
         return null;
       }
 
-      final isValid = tempF != null ||
-          humidity != null ||
-          pressureInHg != null ||
-          windSpeedMph != null ||
-          windDir != null ||
-          safeConditions != null;
       debugPrint(
         'WeatherService: Parsed NOAA data - Temp: $tempF°F, Humidity: $humidity%, '
         'Pressure: $pressureInHg inHg, Wind: $windSpeedMph mph $windDir, '
-        'Conditions: ${safeConditions ?? "N/A"}, isValid=$isValid',
+        'Conditions: ${safeConditions ?? "N/A"}',
       );
 
       return WeatherData(

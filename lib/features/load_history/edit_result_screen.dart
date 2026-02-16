@@ -476,7 +476,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
                             ],
                           ),
                           DropdownButtonFormField<String?>(
-                            value: firearms.any((f) => f.id == _firearmId)
+                            initialValue: firearms.any((f) => f.id == _firearmId)
                                 ? _firearmId
                                 : null,
                             decoration: const InputDecoration(labelText: 'Firearm'),
@@ -718,7 +718,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
                                               width: 72,
                                               height: 72,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => Container(
+                                              errorBuilder: (context, error, stackTrace) => Container(
                                                 width: 72,
                                                 height: 72,
                                                 color: Colors.black12,

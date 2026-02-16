@@ -1,7 +1,5 @@
 ﻿import 'dart:async';
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -638,7 +636,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                       : ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _entries.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          separatorBuilder: (context, index) => const SizedBox(width: 8),
                           itemBuilder: (context, index) {
                             final entry = _entries[index];
                             final isActive = entry.recipe.id == _activeLoadId;
@@ -886,7 +884,7 @@ class _BenchEntryCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String?>(
-              value: firearms.any((firearm) => firearm.id == entry.firearmId)
+              initialValue: firearms.any((firearm) => firearm.id == entry.firearmId)
                   ? entry.firearmId
                   : null,
               decoration: const InputDecoration(labelText: 'Firearm'),
