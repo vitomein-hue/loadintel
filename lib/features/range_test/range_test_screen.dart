@@ -1,5 +1,7 @@
 ﻿import 'dart:async';
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -51,9 +53,13 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       debugPrint('⚠️ Weather UI: Cannot show SnackBar, widget unmounted');
       return;
     }
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(SnackBar(content: Text(message)));
+    try {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      debugPrint('⚠️ SnackBar failed (context disposed): $e');
+    }
   }
 
   int _startWeatherRequest(String source) {
@@ -276,8 +282,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   Future<void> _captureWeather() async {
     debugPrint('🌦️ Weather UI: Opening weather capture sheet');
-    final zipController = TextEditingController();
-    final request = await showModalBottomSheet<_WeatherFetchRequest>(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -299,48 +304,12 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(sheetContext).pop(
-                    const _WeatherFetchRequest.useMyLocation(),
-                  );
+                onPressed: () async {
+                  Navigator.of(sheetContext).pop();
+                  await _fetchWeatherFromGPS();
                 },
                 icon: const Icon(Icons.my_location),
                 label: const Text('Use My Location'),
-              ),
-              const SizedBox(height: 12),
-              const Text('Or enter zip code:'),
-              const SizedBox(height: 8),
-              TextField(
-                controller: zipController,
-                decoration: InputDecoration(
-                  labelText: 'Zip Code',
-                  hintText: '12345',
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.search),
-                    onPressed: () {
-                      Navigator.of(sheetContext).pop(
-                        _WeatherFetchRequest.fromZip(zipController.text),
-                      );
-                    },
-                  ),
-                ),
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.go,
-                onSubmitted: (value) {
-                  Navigator.of(sheetContext).pop(
-                    _WeatherFetchRequest.fromZip(value),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.of(sheetContext).pop(
-                    _WeatherFetchRequest.fromZip(zipController.text),
-                  );
-                },
-                icon: const Icon(Icons.search),
-                label: const Text('Get Weather'),
               ),
               const SizedBox(height: 8),
             ],
@@ -348,29 +317,6 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         ),
       ),
     );
-    zipController.dispose();
-
-    if (!mounted || request == null) {
-      debugPrint('🌦️ Weather UI: Request canceled or widget unmounted');
-      return;
-    }
-
-    if (request.useMyLocation) {
-      debugPrint('🌦️ Weather UI: Starting location-based weather flow');
-      await _fetchWeatherFromGPS();
-      if (!mounted) return;
-      return;
-    }
-
-    if (request.zipCode == null || request.zipCode!.isEmpty) {
-      debugPrint('⚠️ Weather UI: ZIP request missing ZIP code');
-      _showWeatherSnack('Enter a valid ZIP code');
-      return;
-    }
-
-    debugPrint('🌦️ Weather UI: Starting ZIP-based weather flow for ${request.zipCode}');
-    await _fetchWeatherFromZip(request.zipCode!);
-    if (!mounted) return;
   }
 
   Future<void> _fetchWeatherFromGPS() async {
@@ -505,71 +451,6 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
     }
   }
 
-  Future<void> _fetchWeatherFromZip(String zipCode) async {
-    debugPrint('📮 Starting ZIP code weather fetch: $zipCode');
-    final cleanedZip = zipCode.trim();
-    if (cleanedZip.isEmpty || !RegExp(r'^\d{5}(?:-\d{4})?$').hasMatch(cleanedZip)) {
-      debugPrint('⚠️ ZIP: Empty zip code provided');
-      _showWeatherSnack('Enter a valid ZIP code');
-      return;
-    }
-
-    if (!mounted) {
-      debugPrint('⚠️ ZIP: Widget not mounted, aborting fetch');
-      return;
-    }
-
-    final requestId = _startWeatherRequest('ZIP weather fetch');
-
-    try {
-      debugPrint('📮 Fetching weather for zip code: $cleanedZip');
-      final weather = await _weatherService.fetchWeather(
-        zipCode: cleanedZip,
-      );
-      if (!mounted) return;
-      if (!_isWeatherRequestActive(requestId, 'ZIP weather API call')) return;
-      debugPrint('📮 Weather data received: ${weather != null ? "Success" : "Null"}');
-
-      if (weather == null) {
-        debugPrint('⚠️ ZIP: Weather data is null');
-        _showWeatherSnack('Weather currently not available');
-        _safeSetState('ZIP weather unavailable #$requestId', () {
-          _isLoadingWeather = false;
-          _weatherExpanded = true;
-          _weatherCaptured = true;
-        });
-        return;
-      }
-
-      debugPrint('✅ ZIP: Weather data received successfully');
-      final activeEntry = _activeEntry();
-      if (activeEntry != null) {
-        debugPrint('✅ ZIP: Applying weather to active entry');
-        activeEntry.temperatureF = weather.temperatureF;
-        activeEntry.humidity = weather.humidity;
-        activeEntry.barometricPressureInHg = weather.barometricPressureInHg;
-        activeEntry.windDirection = weather.windDirection;
-        activeEntry.windSpeedMph = weather.windSpeedMph;
-        activeEntry.weatherConditions = weather.weatherConditions;
-      } else {
-        debugPrint('⚠️ ZIP: No active entry found');
-      }
-      _safeSetState('ZIP weather success #$requestId', () {
-        _isLoadingWeather = false;
-        _weatherExpanded = true;
-        _weatherCaptured = true;
-      });
-      debugPrint('✅ ZIP: Weather fetch complete');
-    } catch (e, st) {
-      debugPrint('❌ ZIP: Error occurred: $e');
-      debugPrint('❌ ZIP: Stack trace: $st');
-      if (!_isWeatherRequestActive(requestId, 'ZIP weather error handler')) return;
-      _showWeatherSnack('Failed to get weather: $e');
-      _safeSetState('ZIP weather error #$requestId', () {
-        _isLoadingWeather = false;
-      });
-    }
-  }
 
   void _saveWeather() {
     if (!mounted) {
@@ -862,27 +743,6 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       ),
     );
   }
-}
-
-class _WeatherFetchRequest {
-  const _WeatherFetchRequest._({
-    required this.useMyLocation,
-    this.zipCode,
-  });
-
-  const _WeatherFetchRequest.useMyLocation()
-      : this._(useMyLocation: true);
-
-  factory _WeatherFetchRequest.fromZip(String zipCode) {
-    final cleaned = zipCode.trim();
-    return _WeatherFetchRequest._(
-      useMyLocation: false,
-      zipCode: cleaned.isEmpty ? null : cleaned,
-    );
-  }
-
-  final bool useMyLocation;
-  final String? zipCode;
 }
 
 class _BenchEntryCard extends StatelessWidget {
@@ -1225,26 +1085,57 @@ class _WeatherFieldsState extends State<_WeatherFields> {
   late final TextEditingController _windSpeedController;
   late final TextEditingController _conditionsController;
 
+  String _displayNumber(double? value, int decimals) {
+    if (value == null || value.isNaN) {
+      return 'N/A';
+    }
+    return value.toStringAsFixed(decimals);
+  }
+
+  String _displayText(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) {
+      return 'N/A';
+    }
+    return trimmed;
+  }
+
+  double? _parseNumber(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed.toUpperCase() == 'N/A') {
+      return null;
+    }
+    return double.tryParse(trimmed);
+  }
+
+  String? _parseText(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed.toUpperCase() == 'N/A') {
+      return null;
+    }
+    return trimmed;
+  }
+
   @override
   void initState() {
     super.initState();
     _tempController = TextEditingController(
-      text: widget.entry.temperatureF?.toStringAsFixed(1) ?? '',
+      text: _displayNumber(widget.entry.temperatureF, 1),
     );
     _humidityController = TextEditingController(
-      text: widget.entry.humidity?.toStringAsFixed(0) ?? '',
+      text: _displayNumber(widget.entry.humidity, 0),
     );
     _pressureController = TextEditingController(
-      text: widget.entry.barometricPressureInHg?.toStringAsFixed(2) ?? '',
+      text: _displayNumber(widget.entry.barometricPressureInHg, 2),
     );
     _windDirController = TextEditingController(
-      text: widget.entry.windDirection ?? '',
+      text: _displayText(widget.entry.windDirection),
     );
     _windSpeedController = TextEditingController(
-      text: widget.entry.windSpeedMph?.toStringAsFixed(1) ?? '',
+      text: _displayNumber(widget.entry.windSpeedMph, 1),
     );
     _conditionsController = TextEditingController(
-      text: widget.entry.weatherConditions ?? '',
+      text: _displayText(widget.entry.weatherConditions),
     );
   }
 
@@ -1272,7 +1163,7 @@ class _WeatherFieldsState extends State<_WeatherFields> {
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (value) {
-            widget.entry.temperatureF = double.tryParse(value);
+            widget.entry.temperatureF = _parseNumber(value);
             widget.onChanged();
           },
         ),
@@ -1285,7 +1176,7 @@ class _WeatherFieldsState extends State<_WeatherFields> {
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (value) {
-            widget.entry.humidity = double.tryParse(value);
+            widget.entry.humidity = _parseNumber(value);
             widget.onChanged();
           },
         ),
@@ -1298,7 +1189,7 @@ class _WeatherFieldsState extends State<_WeatherFields> {
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (value) {
-            widget.entry.barometricPressureInHg = double.tryParse(value);
+            widget.entry.barometricPressureInHg = _parseNumber(value);
             widget.onChanged();
           },
         ),
@@ -1311,7 +1202,7 @@ class _WeatherFieldsState extends State<_WeatherFields> {
           ),
           textCapitalization: TextCapitalization.characters,
           onChanged: (value) {
-            widget.entry.windDirection = value.trim().isEmpty ? null : value;
+            widget.entry.windDirection = _parseText(value);
             widget.onChanged();
           },
         ),
@@ -1324,7 +1215,7 @@ class _WeatherFieldsState extends State<_WeatherFields> {
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: (value) {
-            widget.entry.windSpeedMph = double.tryParse(value);
+            widget.entry.windSpeedMph = _parseNumber(value);
             widget.onChanged();
           },
         ),
@@ -1337,7 +1228,7 @@ class _WeatherFieldsState extends State<_WeatherFields> {
           ),
           textCapitalization: TextCapitalization.sentences,
           onChanged: (value) {
-            widget.entry.weatherConditions = value.trim().isEmpty ? null : value;
+            widget.entry.weatherConditions = _parseText(value);
             widget.onChanged();
           },
         ),
