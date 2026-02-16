@@ -218,6 +218,7 @@ class InventoryCategory {
   static const values = [
     InventoryCategory(type: 'brass', label: 'Brass'),
     InventoryCategory(type: 'bullets', label: 'Bullets'),
+    InventoryCategory(type: 'wads', label: 'Wads'),
     InventoryCategory(type: 'powder', label: 'Powder'),
     InventoryCategory(type: 'primers', label: 'Primers'),
   ];

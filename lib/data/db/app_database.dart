@@ -16,7 +16,7 @@ class AppDatabase {
     final fullPath = path.join(dbPath, 'loadintel.db');
     final db = await openDatabase(
       fullPath,
-      version: 10,
+      version: 11,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -68,6 +68,31 @@ class AppDatabase {
         seatingDepth REAL,
         notes TEXT,
         firearmId TEXT,
+        loadType TEXT NOT NULL DEFAULT 'rifle',
+        gauge TEXT,
+        shellLength TEXT,
+        hull TEXT,
+        shotgunPrimer TEXT,
+        shotgunPowder TEXT,
+        shotgunPowderCharge REAL,
+        wad TEXT,
+        shotWeight TEXT,
+        shotSize TEXT,
+        shotType TEXT,
+        crimpType TEXT,
+        dramEquivalent REAL,
+        muzzleloaderCaliber TEXT,
+        ignitionType TEXT,
+        muzzleloaderPowderType TEXT,
+        powderGranulation TEXT,
+        muzzleloaderPowderCharge REAL,
+        projectileType TEXT,
+        projectileSizeWeight TEXT,
+        patchMaterial TEXT,
+        patchThickness TEXT,
+        patchLube TEXT,
+        sabotType TEXT,
+        cleanedBetweenShots INTEGER,
         isKeeper INTEGER NOT NULL DEFAULT 0,
         isDangerous INTEGER NOT NULL DEFAULT 0,
         dangerConfirmedAt INTEGER,
@@ -301,6 +326,49 @@ class AppDatabase {
       await db.execute('DROP TABLE load_recipes');
       await db.execute('ALTER TABLE load_recipes_new RENAME TO load_recipes');
       await db.execute('PRAGMA foreign_keys = ON');
+    }
+    if (oldVersion < 11) {
+      await db.execute(
+        "ALTER TABLE load_recipes ADD COLUMN loadType TEXT NOT NULL DEFAULT 'rifle'",
+      );
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN gauge TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN shellLength TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN hull TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN shotgunPrimer TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN shotgunPowder TEXT');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN shotgunPowderCharge REAL',
+      );
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN wad TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN shotWeight TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN shotSize TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN shotType TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN crimpType TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN dramEquivalent REAL');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN muzzleloaderCaliber TEXT',
+      );
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN ignitionType TEXT');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN muzzleloaderPowderType TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN powderGranulation TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN muzzleloaderPowderCharge REAL',
+      );
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN projectileType TEXT');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN projectileSizeWeight TEXT',
+      );
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN patchMaterial TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN patchThickness TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN patchLube TEXT');
+      await db.execute('ALTER TABLE load_recipes ADD COLUMN sabotType TEXT');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN cleanedBetweenShots INTEGER',
+      );
     }
   }
 }

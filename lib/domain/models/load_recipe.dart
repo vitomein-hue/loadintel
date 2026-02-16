@@ -1,4 +1,42 @@
-﻿class LoadRecipe {
+﻿enum LoadType { rifle, shotgun, muzzleloader }
+
+extension LoadTypeX on LoadType {
+  String get storageValue {
+    switch (this) {
+      case LoadType.rifle:
+        return 'rifle';
+      case LoadType.shotgun:
+        return 'shotgun';
+      case LoadType.muzzleloader:
+        return 'muzzleloader';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case LoadType.rifle:
+        return 'Rifle/Pistol';
+      case LoadType.shotgun:
+        return 'Shotgun';
+      case LoadType.muzzleloader:
+        return 'Muzzleloader';
+    }
+  }
+
+  static LoadType fromStorage(String? value) {
+    switch (value) {
+      case 'shotgun':
+        return LoadType.shotgun;
+      case 'muzzleloader':
+        return LoadType.muzzleloader;
+      case 'rifle':
+      default:
+        return LoadType.rifle;
+    }
+  }
+}
+
+class LoadRecipe {
   static const Object _unset = Object();
 
   const LoadRecipe({
@@ -24,6 +62,31 @@
     this.seatingDepth,
     this.notes,
     this.firearmId,
+    this.loadType = LoadType.rifle,
+    this.gauge,
+    this.shellLength,
+    this.hull,
+    this.shotgunPrimer,
+    this.shotgunPowder,
+    this.shotgunPowderCharge,
+    this.wad,
+    this.shotWeight,
+    this.shotSize,
+    this.shotType,
+    this.crimpType,
+    this.dramEquivalent,
+    this.muzzleloaderCaliber,
+    this.ignitionType,
+    this.muzzleloaderPowderType,
+    this.powderGranulation,
+    this.muzzleloaderPowderCharge,
+    this.projectileType,
+    this.projectileSizeWeight,
+    this.patchMaterial,
+    this.patchThickness,
+    this.patchLube,
+    this.sabotType,
+    this.cleanedBetweenShots,
     required this.isKeeper,
     required this.isDangerous,
     this.dangerConfirmedAt,
@@ -53,6 +116,34 @@
   final double? seatingDepth;
   final String? notes;
   final String? firearmId;
+  final LoadType loadType;
+
+  final String? gauge;
+  final String? shellLength;
+  final String? hull;
+  final String? shotgunPrimer;
+  final String? shotgunPowder;
+  final double? shotgunPowderCharge;
+  final String? wad;
+  final String? shotWeight;
+  final String? shotSize;
+  final String? shotType;
+  final String? crimpType;
+  final double? dramEquivalent;
+
+  final String? muzzleloaderCaliber;
+  final String? ignitionType;
+  final String? muzzleloaderPowderType;
+  final String? powderGranulation;
+  final double? muzzleloaderPowderCharge;
+  final String? projectileType;
+  final String? projectileSizeWeight;
+  final String? patchMaterial;
+  final String? patchThickness;
+  final String? patchLube;
+  final String? sabotType;
+  final bool? cleanedBetweenShots;
+
   final bool isKeeper;
   final bool isDangerous;
   final DateTime? dangerConfirmedAt;
@@ -82,6 +173,31 @@
     double? seatingDepth,
     String? notes,
     Object? firearmId = _unset,
+    LoadType? loadType,
+    String? gauge,
+    String? shellLength,
+    String? hull,
+    String? shotgunPrimer,
+    String? shotgunPowder,
+    double? shotgunPowderCharge,
+    String? wad,
+    String? shotWeight,
+    String? shotSize,
+    String? shotType,
+    String? crimpType,
+    double? dramEquivalent,
+    String? muzzleloaderCaliber,
+    String? ignitionType,
+    String? muzzleloaderPowderType,
+    String? powderGranulation,
+    double? muzzleloaderPowderCharge,
+    String? projectileType,
+    String? projectileSizeWeight,
+    String? patchMaterial,
+    String? patchThickness,
+    String? patchLube,
+    String? sabotType,
+    bool? cleanedBetweenShots,
     bool? isKeeper,
     bool? isDangerous,
     DateTime? dangerConfirmedAt,
@@ -112,6 +228,32 @@
       notes: notes ?? this.notes,
       firearmId:
           identical(firearmId, _unset) ? this.firearmId : firearmId as String?,
+      loadType: loadType ?? this.loadType,
+      gauge: gauge ?? this.gauge,
+      shellLength: shellLength ?? this.shellLength,
+      hull: hull ?? this.hull,
+      shotgunPrimer: shotgunPrimer ?? this.shotgunPrimer,
+      shotgunPowder: shotgunPowder ?? this.shotgunPowder,
+      shotgunPowderCharge: shotgunPowderCharge ?? this.shotgunPowderCharge,
+      wad: wad ?? this.wad,
+      shotWeight: shotWeight ?? this.shotWeight,
+      shotSize: shotSize ?? this.shotSize,
+      shotType: shotType ?? this.shotType,
+      crimpType: crimpType ?? this.crimpType,
+      dramEquivalent: dramEquivalent ?? this.dramEquivalent,
+      muzzleloaderCaliber: muzzleloaderCaliber ?? this.muzzleloaderCaliber,
+      ignitionType: ignitionType ?? this.ignitionType,
+      muzzleloaderPowderType: muzzleloaderPowderType ?? this.muzzleloaderPowderType,
+      powderGranulation: powderGranulation ?? this.powderGranulation,
+      muzzleloaderPowderCharge:
+          muzzleloaderPowderCharge ?? this.muzzleloaderPowderCharge,
+      projectileType: projectileType ?? this.projectileType,
+      projectileSizeWeight: projectileSizeWeight ?? this.projectileSizeWeight,
+      patchMaterial: patchMaterial ?? this.patchMaterial,
+      patchThickness: patchThickness ?? this.patchThickness,
+      patchLube: patchLube ?? this.patchLube,
+      sabotType: sabotType ?? this.sabotType,
+      cleanedBetweenShots: cleanedBetweenShots ?? this.cleanedBetweenShots,
       isKeeper: isKeeper ?? this.isKeeper,
       isDangerous: isDangerous ?? this.isDangerous,
       dangerConfirmedAt: dangerConfirmedAt ?? this.dangerConfirmedAt,
@@ -148,6 +290,32 @@
       'seatingDepth': seatingDepth,
       'notes': notes,
       'firearmId': firearmId,
+      'loadType': loadType.storageValue,
+      'gauge': gauge,
+      'shellLength': shellLength,
+      'hull': hull,
+      'shotgunPrimer': shotgunPrimer,
+      'shotgunPowder': shotgunPowder,
+      'shotgunPowderCharge': shotgunPowderCharge,
+      'wad': wad,
+      'shotWeight': shotWeight,
+      'shotSize': shotSize,
+      'shotType': shotType,
+      'crimpType': crimpType,
+      'dramEquivalent': dramEquivalent,
+      'muzzleloaderCaliber': muzzleloaderCaliber,
+      'ignitionType': ignitionType,
+      'muzzleloaderPowderType': muzzleloaderPowderType,
+      'powderGranulation': powderGranulation,
+      'muzzleloaderPowderCharge': muzzleloaderPowderCharge,
+      'projectileType': projectileType,
+      'projectileSizeWeight': projectileSizeWeight,
+      'patchMaterial': patchMaterial,
+      'patchThickness': patchThickness,
+      'patchLube': patchLube,
+      'sabotType': sabotType,
+      'cleanedBetweenShots':
+          cleanedBetweenShots == null ? null : (cleanedBetweenShots! ? 1 : 0),
       'isKeeper': isKeeper ? 1 : 0,
       'isDangerous': isDangerous ? 1 : 0,
       'dangerConfirmedAt': dangerConfirmedAtMillis,
@@ -185,6 +353,34 @@
       seatingDepth: (map['seatingDepth'] as num?)?.toDouble(),
       notes: map['notes'] as String?,
       firearmId: map['firearmId'] as String?,
+      loadType: LoadTypeX.fromStorage(map['loadType'] as String?),
+      gauge: map['gauge'] as String?,
+      shellLength: map['shellLength'] as String?,
+      hull: map['hull'] as String?,
+      shotgunPrimer: map['shotgunPrimer'] as String?,
+      shotgunPowder: map['shotgunPowder'] as String?,
+      shotgunPowderCharge: (map['shotgunPowderCharge'] as num?)?.toDouble(),
+      wad: map['wad'] as String?,
+      shotWeight: map['shotWeight'] as String?,
+      shotSize: map['shotSize'] as String?,
+      shotType: map['shotType'] as String?,
+      crimpType: map['crimpType'] as String?,
+      dramEquivalent: (map['dramEquivalent'] as num?)?.toDouble(),
+      muzzleloaderCaliber: map['muzzleloaderCaliber'] as String?,
+      ignitionType: map['ignitionType'] as String?,
+      muzzleloaderPowderType: map['muzzleloaderPowderType'] as String?,
+      powderGranulation: map['powderGranulation'] as String?,
+      muzzleloaderPowderCharge:
+          (map['muzzleloaderPowderCharge'] as num?)?.toDouble(),
+      projectileType: map['projectileType'] as String?,
+      projectileSizeWeight: map['projectileSizeWeight'] as String?,
+      patchMaterial: map['patchMaterial'] as String?,
+      patchThickness: map['patchThickness'] as String?,
+      patchLube: map['patchLube'] as String?,
+      sabotType: map['sabotType'] as String?,
+      cleanedBetweenShots: map['cleanedBetweenShots'] == null
+          ? null
+          : (map['cleanedBetweenShots'] as int) == 1,
       isKeeper: (map['isKeeper'] as int? ?? 0) == 1,
       isDangerous: (map['isDangerous'] as int? ?? 0) == 1,
       dangerConfirmedAt: dangerConfirmedAt,

@@ -147,43 +147,91 @@ ReportContent buildReportContent({
   required List<TargetPhoto> photos,
 }) {
   final loadLines = <String>[
+    'Load Type: ${load.loadType.label}',
     'Recipe: ${load.recipeName}',
-    'Cartridge: ${load.cartridge}',
-    'Powder: ${load.powder} ${load.powderChargeGr} gr',
   ];
-  if (load.annealingTimeSec != null) {
-    loadLines.add('Annealing Time: ${load.annealingTimeSec} sec');
-  }
-  loadLines.add(
-    'Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''}',
-  );
-  if (load.bulletDiameter != null) {
-    loadLines.add('Bullet Diameter: ${load.bulletDiameter}');
-  }
-  if (load.caseResize != null && load.caseResize!.isNotEmpty) {
-    loadLines.add('Case Resize: ${load.caseResize}');
-  }
-  if (load.gasCheckMaterial != null && load.gasCheckMaterial!.isNotEmpty) {
-    loadLines.add('Gas Check Material: ${load.gasCheckMaterial}');
-  }
-  if (load.gasCheckInstallMethod != null &&
-      load.gasCheckInstallMethod!.isNotEmpty) {
-    loadLines.add('Gas Check Install: ${load.gasCheckInstallMethod}');
-  }
-  if (load.bulletCoating != null && load.bulletCoating!.isNotEmpty) {
-    loadLines.add('Bullet Coating: ${load.bulletCoating}');
-  }
-  if (load.coal != null ||
-      load.baseToOgive != null ||
-      load.seatingDepth != null) {
-    final coalText = load.coal != null ? load.coal.toString() : '-';
-    final btoText = load.baseToOgive != null
-        ? load.baseToOgive.toString()
-        : '-';
-    final seatingText = load.seatingDepth != null
-        ? load.seatingDepth.toString()
-        : '-';
-    loadLines.add('COAL: $coalText | BTO: $btoText | Seating: $seatingText');
+  switch (load.loadType) {
+    case LoadType.rifle:
+      loadLines.addAll([
+        'Cartridge: ${load.cartridge}',
+        'Powder: ${load.powder} ${load.powderChargeGr} gr',
+      ]);
+      if (load.annealingTimeSec != null) {
+        loadLines.add('Annealing Time: ${load.annealingTimeSec} sec');
+      }
+      loadLines.add(
+        'Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''}',
+      );
+      if (load.bulletDiameter != null) {
+        loadLines.add('Bullet Diameter: ${load.bulletDiameter}');
+      }
+      if (load.caseResize != null && load.caseResize!.isNotEmpty) {
+        loadLines.add('Case Resize: ${load.caseResize}');
+      }
+      if (load.gasCheckMaterial != null && load.gasCheckMaterial!.isNotEmpty) {
+        loadLines.add('Gas Check Material: ${load.gasCheckMaterial}');
+      }
+      if (load.gasCheckInstallMethod != null &&
+          load.gasCheckInstallMethod!.isNotEmpty) {
+        loadLines.add('Gas Check Install: ${load.gasCheckInstallMethod}');
+      }
+      if (load.bulletCoating != null && load.bulletCoating!.isNotEmpty) {
+        loadLines.add('Bullet Coating: ${load.bulletCoating}');
+      }
+      if (load.coal != null ||
+          load.baseToOgive != null ||
+          load.seatingDepth != null) {
+        final coalText = load.coal != null ? load.coal.toString() : '-';
+        final btoText = load.baseToOgive != null
+            ? load.baseToOgive.toString()
+            : '-';
+        final seatingText = load.seatingDepth != null
+            ? load.seatingDepth.toString()
+            : '-';
+        loadLines.add('COAL: $coalText | BTO: $btoText | Seating: $seatingText');
+      }
+      break;
+    case LoadType.shotgun:
+      loadLines.addAll([
+        'Gauge: ${load.gauge ?? '-'}',
+        'Shell Length: ${load.shellLength ?? '-'}',
+        'Hull: ${load.hull ?? '-'}',
+        'Primer: ${load.shotgunPrimer ?? '-'}',
+        'Powder: ${load.shotgunPowder ?? '-'} ${load.shotgunPowderCharge ?? '-'} gr',
+        'Wad: ${load.wad ?? '-'}',
+        'Shot Weight: ${load.shotWeight ?? '-'}',
+        'Shot Size: ${load.shotSize ?? '-'}',
+        'Shot Type: ${load.shotType ?? '-'}',
+        'Crimp Type: ${load.crimpType ?? '-'}',
+      ]);
+      if (load.dramEquivalent != null) {
+        loadLines.add('Dram Equivalent: ${load.dramEquivalent}');
+      }
+      break;
+    case LoadType.muzzleloader:
+      loadLines.addAll([
+        'Caliber: ${load.muzzleloaderCaliber ?? '-'}',
+        'Ignition Type: ${load.ignitionType ?? '-'}',
+        'Powder: ${load.muzzleloaderPowderType ?? '-'} (${load.powderGranulation ?? '-'})',
+        'Powder Charge: ${load.muzzleloaderPowderCharge ?? '-'} gr (by volume)',
+        'Projectile: ${load.projectileType ?? '-'} ${load.projectileSizeWeight ?? ''}',
+      ]);
+      if (load.patchMaterial != null && load.patchMaterial!.isNotEmpty) {
+        loadLines.add('Patch Material: ${load.patchMaterial}');
+      }
+      if (load.patchThickness != null && load.patchThickness!.isNotEmpty) {
+        loadLines.add('Patch Thickness: ${load.patchThickness}');
+      }
+      if (load.patchLube != null && load.patchLube!.isNotEmpty) {
+        loadLines.add('Patch Lube: ${load.patchLube}');
+      }
+      if (load.sabotType != null && load.sabotType!.isNotEmpty) {
+        loadLines.add('Sabot Type: ${load.sabotType}');
+      }
+      loadLines.add(
+        'Cleaned Between Shots: ${load.cleanedBetweenShots == true ? 'Yes' : 'No'}',
+      );
+      break;
   }
   loadLines.add('Keeper: ${load.isKeeper ? 'YES' : 'No'}');
   loadLines.add('Dangerous: ${load.isDangerous ? 'YES' : 'No'}');

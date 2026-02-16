@@ -435,41 +435,32 @@ class ExportService {
 
   String _buildLoadsCsv(List<LoadRecipe> loads) {
     final buffer = StringBuffer();
-    buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,baseToOgive,seatingDepth,notes,firearmId,isKeeper,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
-    );
+    final grouped = <LoadType, List<LoadRecipe>>{
+      LoadType.rifle: [],
+      LoadType.shotgun: [],
+      LoadType.muzzleloader: [],
+    };
     for (final load in loads) {
-      buffer.writeln(
-        [
-          load.id,
-          load.recipeName,
-          load.cartridge,
-          load.bulletBrand,
-          load.bulletWeightGr,
-          load.bulletDiameter,
-          load.bulletType,
-          load.brass,
-          load.brassTrimLength,
-          load.annealingTimeSec,
-          load.primer,
-          load.caseResize,
-          load.gasCheckMaterial,
-          load.gasCheckInstallMethod,
-          load.bulletCoating,
-          load.powder,
-          load.powderChargeGr,
-          load.coal,
-          load.baseToOgive,
-          load.seatingDepth,
-          load.notes,
-          load.firearmId ?? '',
-          load.isKeeper ? 1 : 0,
-          load.isDangerous ? 1 : 0,
-          load.dangerConfirmedAt?.toIso8601String(),
-          load.createdAt.toIso8601String(),
-          load.updatedAt.toIso8601String(),
-        ].map(_csvEscape).join(','),
-      );
+      grouped[load.loadType]?.add(load);
+    }
+
+    for (final type in [
+      LoadType.rifle,
+      LoadType.shotgun,
+      LoadType.muzzleloader,
+    ]) {
+      final sectionLoads = grouped[type] ?? [];
+      if (sectionLoads.isEmpty) {
+        continue;
+      }
+      buffer.writeln(_sectionTitleForType(type));
+      buffer.writeln(_headersForType(type).join(','));
+      for (final load in sectionLoads) {
+        buffer.writeln(
+          _valuesForType(load).map(_csvEscape).join(','),
+        );
+      }
+      buffer.writeln();
     }
     return buffer.toString();
   }
@@ -509,6 +500,190 @@ class ExportService {
       return '"$escaped"';
     }
     return text;
+  }
+
+  String _sectionTitleForType(LoadType type) {
+    switch (type) {
+      case LoadType.rifle:
+        return 'Rifle/Pistol Loads';
+      case LoadType.shotgun:
+        return 'Shotgun Loads';
+      case LoadType.muzzleloader:
+        return 'Muzzleloader Loads';
+    }
+  }
+
+  List<String> _headersForType(LoadType type) {
+    switch (type) {
+      case LoadType.rifle:
+        return [
+          'id',
+          'recipeName',
+          'cartridge',
+          'bulletBrand',
+          'bulletWeightGr',
+          'bulletDiameter',
+          'bulletType',
+          'brass',
+          'brassTrimLength',
+          'annealingTimeSec',
+          'primer',
+          'caseResize',
+          'gasCheckMaterial',
+          'gasCheckInstallMethod',
+          'bulletCoating',
+          'powder',
+          'powderChargeGr',
+          'coal',
+          'baseToOgive',
+          'seatingDepth',
+          'notes',
+          'firearmId',
+          'isKeeper',
+          'isDangerous',
+          'dangerConfirmedAt',
+          'createdAt',
+          'updatedAt',
+        ];
+      case LoadType.shotgun:
+        return [
+          'id',
+          'recipeName',
+          'gauge',
+          'shellLength',
+          'hull',
+          'shotgunPrimer',
+          'shotgunPowder',
+          'shotgunPowderCharge',
+          'wad',
+          'shotWeight',
+          'shotSize',
+          'shotType',
+          'crimpType',
+          'dramEquivalent',
+          'notes',
+          'firearmId',
+          'isKeeper',
+          'isDangerous',
+          'dangerConfirmedAt',
+          'createdAt',
+          'updatedAt',
+        ];
+      case LoadType.muzzleloader:
+        return [
+          'id',
+          'recipeName',
+          'muzzleloaderCaliber',
+          'ignitionType',
+          'muzzleloaderPowderType',
+          'powderGranulation',
+          'muzzleloaderPowderCharge',
+          'projectileType',
+          'projectileSizeWeight',
+          'patchMaterial',
+          'patchThickness',
+          'patchLube',
+          'sabotType',
+          'cleanedBetweenShots',
+          'notes',
+          'firearmId',
+          'isKeeper',
+          'isDangerous',
+          'dangerConfirmedAt',
+          'createdAt',
+          'updatedAt',
+        ];
+    }
+  }
+
+  List<Object?> _valuesForType(LoadRecipe load) {
+    switch (load.loadType) {
+      case LoadType.rifle:
+        return [
+          load.id,
+          load.recipeName,
+          load.cartridge,
+          load.bulletBrand,
+          load.bulletWeightGr,
+          load.bulletDiameter,
+          load.bulletType,
+          load.brass,
+          load.brassTrimLength,
+          load.annealingTimeSec,
+          load.primer,
+          load.caseResize,
+          load.gasCheckMaterial,
+          load.gasCheckInstallMethod,
+          load.bulletCoating,
+          load.powder,
+          load.powderChargeGr,
+          load.coal,
+          load.baseToOgive,
+          load.seatingDepth,
+          load.notes,
+          load.firearmId ?? '',
+          load.isKeeper ? 1 : 0,
+          load.isDangerous ? 1 : 0,
+          load.dangerConfirmedAt?.toIso8601String(),
+          load.createdAt.toIso8601String(),
+          load.updatedAt.toIso8601String(),
+        ];
+      case LoadType.shotgun:
+        return [
+          load.id,
+          load.recipeName,
+          load.gauge,
+          load.shellLength,
+          load.hull,
+          load.shotgunPrimer,
+          load.shotgunPowder,
+          load.shotgunPowderCharge,
+          load.wad,
+          load.shotWeight,
+          load.shotSize,
+          load.shotType,
+          load.crimpType,
+          load.dramEquivalent,
+          load.notes,
+          load.firearmId ?? '',
+          load.isKeeper ? 1 : 0,
+          load.isDangerous ? 1 : 0,
+          load.dangerConfirmedAt?.toIso8601String(),
+          load.createdAt.toIso8601String(),
+          load.updatedAt.toIso8601String(),
+        ];
+      case LoadType.muzzleloader:
+        return [
+          load.id,
+          load.recipeName,
+          load.muzzleloaderCaliber,
+          load.ignitionType,
+          load.muzzleloaderPowderType,
+          load.powderGranulation,
+          load.muzzleloaderPowderCharge,
+          load.projectileType,
+          load.projectileSizeWeight,
+          load.patchMaterial,
+          load.patchThickness,
+          load.patchLube,
+          load.sabotType,
+          _boolToInt(load.cleanedBetweenShots),
+          load.notes,
+          load.firearmId ?? '',
+          load.isKeeper ? 1 : 0,
+          load.isDangerous ? 1 : 0,
+          load.dangerConfirmedAt?.toIso8601String(),
+          load.createdAt.toIso8601String(),
+          load.updatedAt.toIso8601String(),
+        ];
+    }
+  }
+
+  int? _boolToInt(bool? value) {
+    if (value == null) {
+      return null;
+    }
+    return value ? 1 : 0;
   }
 
   Uint8List _encodeCsvForExcel(String csvText) {
@@ -724,40 +899,8 @@ class ExportService {
   String _buildSingleLoadCsv(LoadRecipe load, List<RangeResult> results) {
     final buffer = StringBuffer();
     buffer.writeln('Load');
-    buffer.writeln(
-      'id,recipeName,cartridge,bulletBrand,bulletWeightGr,bulletDiameter,bulletType,brass,brassTrimLength,annealingTimeSec,primer,caseResize,gasCheckMaterial,gasCheckInstallMethod,bulletCoating,powder,powderChargeGr,coal,baseToOgive,seatingDepth,notes,firearmId,isKeeper,isDangerous,dangerConfirmedAt,createdAt,updatedAt',
-    );
-    buffer.writeln(
-      [
-        load.id,
-        load.recipeName,
-        load.cartridge,
-        load.bulletBrand,
-        load.bulletWeightGr,
-        load.bulletDiameter,
-        load.bulletType,
-        load.brass,
-        load.brassTrimLength,
-        load.annealingTimeSec,
-        load.primer,
-        load.caseResize,
-        load.gasCheckMaterial,
-        load.gasCheckInstallMethod,
-        load.bulletCoating,
-        load.powder,
-        load.powderChargeGr,
-        load.coal,
-        load.baseToOgive,
-        load.seatingDepth,
-        load.notes,
-        load.firearmId ?? '',
-        load.isKeeper ? 1 : 0,
-        load.isDangerous ? 1 : 0,
-        load.dangerConfirmedAt?.toIso8601String(),
-        load.createdAt.toIso8601String(),
-        load.updatedAt.toIso8601String(),
-      ].map(_csvEscape).join(','),
-    );
+    buffer.writeln(_headersForType(load.loadType).join(','));
+    buffer.writeln(_valuesForType(load).map(_csvEscape).join(','));
     buffer.writeln();
     buffer.writeln('Results');
     buffer.writeln(
@@ -789,64 +932,15 @@ class ExportService {
   Uint8List _buildSingleLoadXlsx(LoadRecipe load, List<RangeResult> results) {
     final excel = Excel.createExcel();
     final loadSheet = excel['Load'];
-    loadSheet.appendRow([
-      TextCellValue('id'),
-      TextCellValue('recipeName'),
-      TextCellValue('cartridge'),
-      TextCellValue('bulletBrand'),
-      TextCellValue('bulletWeightGr'),
-      TextCellValue('bulletDiameter'),
-      TextCellValue('bulletType'),
-      TextCellValue('brass'),
-      TextCellValue('brassTrimLength'),
-      TextCellValue('annealingTimeSec'),
-      TextCellValue('primer'),
-      TextCellValue('caseResize'),
-      TextCellValue('gasCheckMaterial'),
-      TextCellValue('gasCheckInstallMethod'),
-      TextCellValue('bulletCoating'),
-      TextCellValue('powder'),
-      TextCellValue('powderChargeGr'),
-      TextCellValue('coal'),
-      TextCellValue('baseToOgive'),
-      TextCellValue('seatingDepth'),
-      TextCellValue('notes'),
-      TextCellValue('firearmId'),
-      TextCellValue('isKeeper'),
-      TextCellValue('isDangerous'),
-      TextCellValue('dangerConfirmedAt'),
-      TextCellValue('createdAt'),
-      TextCellValue('updatedAt'),
-    ]);
-    loadSheet.appendRow([
-      TextCellValue(load.id),
-      TextCellValue(load.recipeName),
-      TextCellValue(load.cartridge),
-      TextCellValue(load.bulletBrand ?? ''),
-      TextCellValue(load.bulletWeightGr?.toString() ?? ''),
-      TextCellValue(load.bulletDiameter?.toString() ?? ''),
-      TextCellValue(load.bulletType ?? ''),
-      TextCellValue(load.brass ?? ''),
-      TextCellValue(load.brassTrimLength?.toString() ?? ''),
-      TextCellValue(load.annealingTimeSec?.toString() ?? ''),
-      TextCellValue(load.primer ?? ''),
-      TextCellValue(load.caseResize ?? ''),
-      TextCellValue(load.gasCheckMaterial ?? ''),
-      TextCellValue(load.gasCheckInstallMethod ?? ''),
-      TextCellValue(load.bulletCoating ?? ''),
-      TextCellValue(load.powder),
-      TextCellValue(load.powderChargeGr.toString()),
-      TextCellValue(load.coal?.toString() ?? ''),
-      TextCellValue(load.baseToOgive?.toString() ?? ''),
-      TextCellValue(load.seatingDepth?.toString() ?? ''),
-      TextCellValue(load.notes ?? ''),
-      TextCellValue(load.firearmId ?? ''),
-      TextCellValue(load.isKeeper ? '1' : '0'),
-      TextCellValue(load.isDangerous ? '1' : '0'),
-      TextCellValue(load.dangerConfirmedAt?.toIso8601String() ?? ''),
-      TextCellValue(load.createdAt.toIso8601String()),
-      TextCellValue(load.updatedAt.toIso8601String()),
-    ]);
+    final loadHeaders = _headersForType(load.loadType);
+    loadSheet.appendRow(
+      loadHeaders.map((value) => TextCellValue(value)).toList(),
+    );
+    loadSheet.appendRow(
+      _valuesForType(load)
+          .map((value) => TextCellValue(value?.toString() ?? ''))
+          .toList(),
+    );
 
     final resultsSheet = excel['Results'];
     resultsSheet.appendRow([
@@ -898,19 +992,70 @@ class ExportService {
   ) {
     final buffer = StringBuffer();
     buffer.writeln('Load Intel - Load Card');
+    buffer.writeln('Load Type: ${load.loadType.label}');
     buffer.writeln('Recipe: ${load.recipeName}');
-    buffer.writeln('Cartridge: ${load.cartridge}');
-    buffer.writeln(
-      'Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''} ${load.bulletType ?? ''}',
-    );
-    buffer.writeln('Powder: ${load.powder} ${load.powderChargeGr} gr');
-    buffer.writeln('Brass: ${load.brass ?? '-'}');
-    buffer.writeln('Brass Trim Length: ${load.brassTrimLength ?? '-'}');
-    buffer.writeln('Annealing Time: ${load.annealingTimeSec ?? '-'} sec');
-    buffer.writeln('Primer: ${load.primer ?? '-'}');
-    buffer.writeln('COAL: ${load.coal ?? '-'}');
-    buffer.writeln('Base to Ogive: ${load.baseToOgive ?? '-'}');
-    buffer.writeln('Seating Depth: ${load.seatingDepth ?? '-'}');
+    switch (load.loadType) {
+      case LoadType.rifle:
+        buffer.writeln('Cartridge: ${load.cartridge}');
+        buffer.writeln(
+          'Bullet: ${load.bulletBrand ?? '-'} ${load.bulletWeightGr ?? ''} ${load.bulletType ?? ''}',
+        );
+        buffer.writeln('Powder: ${load.powder} ${load.powderChargeGr} gr');
+        buffer.writeln('Brass: ${load.brass ?? '-'}');
+        buffer.writeln('Brass Trim Length: ${load.brassTrimLength ?? '-'}');
+        buffer.writeln('Annealing Time: ${load.annealingTimeSec ?? '-'} sec');
+        buffer.writeln('Primer: ${load.primer ?? '-'}');
+        buffer.writeln('COAL: ${load.coal ?? '-'}');
+        buffer.writeln('Base to Ogive: ${load.baseToOgive ?? '-'}');
+        buffer.writeln('Seating Depth: ${load.seatingDepth ?? '-'}');
+        break;
+      case LoadType.shotgun:
+        buffer.writeln('Gauge: ${load.gauge ?? '-'}');
+        buffer.writeln('Shell Length: ${load.shellLength ?? '-'}');
+        buffer.writeln('Hull: ${load.hull ?? '-'}');
+        buffer.writeln('Primer: ${load.shotgunPrimer ?? '-'}');
+        buffer.writeln(
+          'Powder: ${load.shotgunPowder ?? '-'} ${load.shotgunPowderCharge ?? '-'} gr',
+        );
+        buffer.writeln('Wad: ${load.wad ?? '-'}');
+        buffer.writeln('Shot Weight: ${load.shotWeight ?? '-'}');
+        buffer.writeln('Shot Size: ${load.shotSize ?? '-'}');
+        buffer.writeln('Shot Type: ${load.shotType ?? '-'}');
+        buffer.writeln('Crimp Type: ${load.crimpType ?? '-'}');
+        if (load.dramEquivalent != null) {
+          buffer.writeln('Dram Equivalent: ${load.dramEquivalent}');
+        }
+        break;
+      case LoadType.muzzleloader:
+        buffer.writeln('Caliber: ${load.muzzleloaderCaliber ?? '-'}');
+        buffer.writeln('Ignition Type: ${load.ignitionType ?? '-'}');
+        buffer.writeln(
+          'Powder: ${load.muzzleloaderPowderType ?? '-'} (${load.powderGranulation ?? '-'})',
+        );
+        buffer.writeln(
+          'Powder Charge: ${load.muzzleloaderPowderCharge ?? '-'} gr (by volume)',
+        );
+        buffer.writeln('Projectile Type: ${load.projectileType ?? '-'}');
+        buffer.writeln(
+          'Projectile Size/Weight: ${load.projectileSizeWeight ?? '-'}',
+        );
+        if (load.patchMaterial != null && load.patchMaterial!.isNotEmpty) {
+          buffer.writeln('Patch Material: ${load.patchMaterial}');
+        }
+        if (load.patchThickness != null && load.patchThickness!.isNotEmpty) {
+          buffer.writeln('Patch Thickness: ${load.patchThickness}');
+        }
+        if (load.patchLube != null && load.patchLube!.isNotEmpty) {
+          buffer.writeln('Patch Lube: ${load.patchLube}');
+        }
+        if (load.sabotType != null && load.sabotType!.isNotEmpty) {
+          buffer.writeln('Sabot Type: ${load.sabotType}');
+        }
+        buffer.writeln(
+          'Cleaned Between Shots: ${load.cleanedBetweenShots == true ? 'Yes' : 'No'}',
+        );
+        break;
+    }
     buffer.writeln('Keeper: ${load.isKeeper ? 'YES' : 'No'}');
     buffer.writeln('Dangerous: ${load.isDangerous ? 'YES' : 'No'}');
     if (load.notes != null && load.notes!.trim().isNotEmpty) {

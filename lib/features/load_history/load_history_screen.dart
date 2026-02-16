@@ -49,6 +49,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
   String? _filterNotesQuery;
   bool? _filterIsDangerous;
   bool _filterKeeperOnly = false;
+  LoadType? _filterLoadType;
 
   @override
   void initState() {
@@ -79,6 +80,9 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
   List<LoadRecipe> _applyRecipeFilters(List<LoadRecipe> recipes) {
     return recipes.where((recipe) {
       if (_filterCartridge != null && recipe.cartridge != _filterCartridge) {
+        return false;
+      }
+      if (_filterLoadType != null && recipe.loadType != _filterLoadType) {
         return false;
       }
       if (_filterRecipeName != null && recipe.recipeName != _filterRecipeName) {
@@ -166,6 +170,9 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
     return loads.where((entry) {
       final recipe = entry.recipe;
       if (_filterCartridge != null && recipe.cartridge != _filterCartridge) {
+        return false;
+      }
+      if (_filterLoadType != null && recipe.loadType != _filterLoadType) {
         return false;
       }
       if (_filterRecipeName != null && recipe.recipeName != _filterRecipeName) {
@@ -495,6 +502,7 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                         selectedBaseToOgive: _filterBaseToOgive,
                         selectedSeatingDepth: _filterSeatingDepth,
                         selectedIsDangerous: _filterIsDangerous,
+                        selectedLoadType: _filterLoadType,
                         keeperOnly: _filterKeeperOnly,
                         notesQuery: _filterNotesQuery ?? '',
                         onRecipeNameChanged: (value) =>
@@ -530,6 +538,8 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                             setState(() => _filterNotesQuery = value),
                         onIsDangerousChanged: (value) =>
                             setState(() => _filterIsDangerous = value),
+                        onLoadTypeChanged: (value) =>
+                            setState(() => _filterLoadType = value),
                         onKeeperOnlyChanged: (value) => setState(
                           () => _filterKeeperOnly = value ?? false,
                         ),
@@ -1292,6 +1302,7 @@ class _MoreFiltersSheet extends StatelessWidget {
     required this.selectedBaseToOgive,
     required this.selectedSeatingDepth,
     required this.selectedIsDangerous,
+    required this.selectedLoadType,
     required this.keeperOnly,
     required this.notesQuery,
     required this.onRecipeNameChanged,
@@ -1310,6 +1321,7 @@ class _MoreFiltersSheet extends StatelessWidget {
     required this.onSeatingDepthChanged,
     required this.onNotesQueryChanged,
     required this.onIsDangerousChanged,
+    required this.onLoadTypeChanged,
     required this.onKeeperOnlyChanged,
   });
 
@@ -1342,6 +1354,7 @@ class _MoreFiltersSheet extends StatelessWidget {
   final double? selectedBaseToOgive;
   final double? selectedSeatingDepth;
   final bool? selectedIsDangerous;
+  final LoadType? selectedLoadType;
   final bool keeperOnly;
   final String notesQuery;
   final ValueChanged<String?> onRecipeNameChanged;
@@ -1360,6 +1373,7 @@ class _MoreFiltersSheet extends StatelessWidget {
   final ValueChanged<double?> onSeatingDepthChanged;
   final ValueChanged<String> onNotesQueryChanged;
   final ValueChanged<bool?> onIsDangerousChanged;
+  final ValueChanged<LoadType?> onLoadTypeChanged;
   final ValueChanged<bool?> onKeeperOnlyChanged;
 
   @override
@@ -1381,6 +1395,24 @@ class _MoreFiltersSheet extends StatelessWidget {
             decoration: const InputDecoration(labelText: 'Recipe Name'),
             items: _stringItems(recipeNames),
             onChanged: onRecipeNameChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<LoadType?>(
+            value: selectedLoadType,
+            decoration: const InputDecoration(labelText: 'Load Type'),
+            items: [
+              const DropdownMenuItem<LoadType?>(
+                value: null,
+                child: Text('Any'),
+              ),
+              ...LoadType.values.map(
+                (type) => DropdownMenuItem<LoadType?>(
+                  value: type,
+                  child: Text(type.label),
+                ),
+              ),
+            ],
+            onChanged: onLoadTypeChanged,
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(

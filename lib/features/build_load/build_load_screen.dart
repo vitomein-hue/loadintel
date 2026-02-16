@@ -56,6 +56,21 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   late final TextEditingController _baseToOgiveController;
   late final TextEditingController _seatingDepthController;
   late final TextEditingController _notesController;
+  late final TextEditingController _shotgunHullController;
+  late final TextEditingController _shotgunPrimerController;
+  late final TextEditingController _shotgunPowderController;
+  late final TextEditingController _shotgunPowderChargeController;
+  late final TextEditingController _shotgunWadController;
+  late final TextEditingController _shotgunShotWeightController;
+  late final TextEditingController _shotgunShotSizeController;
+  late final TextEditingController _shotgunDramEquivalentController;
+  late final TextEditingController _muzzleloaderCaliberController;
+  late final TextEditingController _muzzleloaderPowderChargeController;
+  late final TextEditingController _projectileSizeWeightController;
+  late final TextEditingController _patchMaterialController;
+  late final TextEditingController _patchThicknessController;
+  late final TextEditingController _patchLubeController;
+  late final TextEditingController _sabotTypeController;
 
   String? _selectedFirearmId;
   String? _selectedBrass;
@@ -66,6 +81,17 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   String? _selectedGasCheckMaterial;
   String? _selectedGasCheckInstallMethod;
   String? _selectedBulletCoating;
+  String? _selectedWad;
+  String? _selectedGauge;
+  String? _selectedShellLength;
+  String? _selectedShotType;
+  String? _selectedCrimpType;
+  String? _selectedIgnitionType;
+  String? _selectedMuzzleloaderPowderType;
+  String? _selectedPowderGranulation;
+  String? _selectedProjectileType;
+  bool _cleanedBetweenShots = false;
+  LoadType _selectedLoadType = LoadType.rifle;
 
   bool _isDangerous = false;
   DateTime? _dangerConfirmedAt;
@@ -127,6 +153,47 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       text: recipe?.seatingDepth?.toString() ?? '',
     );
     _notesController = TextEditingController(text: recipe?.notes ?? '');
+    _shotgunHullController = TextEditingController(text: recipe?.hull ?? '');
+    _shotgunPrimerController = TextEditingController(
+      text: recipe?.shotgunPrimer ?? '',
+    );
+    _shotgunPowderController = TextEditingController(
+      text: recipe?.shotgunPowder ?? '',
+    );
+    _shotgunPowderChargeController = TextEditingController(
+      text: recipe?.shotgunPowderCharge?.toString() ?? '',
+    );
+    _shotgunWadController = TextEditingController(text: recipe?.wad ?? '');
+    _shotgunShotWeightController = TextEditingController(
+      text: recipe?.shotWeight ?? '',
+    );
+    _shotgunShotSizeController = TextEditingController(
+      text: recipe?.shotSize ?? '',
+    );
+    _shotgunDramEquivalentController = TextEditingController(
+      text: recipe?.dramEquivalent?.toString() ?? '',
+    );
+    _muzzleloaderCaliberController = TextEditingController(
+      text: recipe?.muzzleloaderCaliber ?? '',
+    );
+    _muzzleloaderPowderChargeController = TextEditingController(
+      text: recipe?.muzzleloaderPowderCharge?.toString() ?? '',
+    );
+    _projectileSizeWeightController = TextEditingController(
+      text: recipe?.projectileSizeWeight ?? '',
+    );
+    _patchMaterialController = TextEditingController(
+      text: recipe?.patchMaterial ?? '',
+    );
+    _patchThicknessController = TextEditingController(
+      text: recipe?.patchThickness ?? '',
+    );
+    _patchLubeController = TextEditingController(
+      text: recipe?.patchLube ?? '',
+    );
+    _sabotTypeController = TextEditingController(
+      text: recipe?.sabotType ?? '',
+    );
 
     _selectedFirearmId = recipe?.firearmId;
     _selectedBrass = recipe?.brass;
@@ -137,6 +204,17 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _selectedGasCheckMaterial = recipe?.gasCheckMaterial;
     _selectedGasCheckInstallMethod = recipe?.gasCheckInstallMethod;
     _selectedBulletCoating = recipe?.bulletCoating;
+    _selectedWad = recipe?.wad;
+    _selectedGauge = recipe?.gauge;
+    _selectedShellLength = recipe?.shellLength;
+    _selectedShotType = recipe?.shotType;
+    _selectedCrimpType = recipe?.crimpType;
+    _selectedIgnitionType = recipe?.ignitionType;
+    _selectedMuzzleloaderPowderType = recipe?.muzzleloaderPowderType;
+    _selectedPowderGranulation = recipe?.powderGranulation;
+    _selectedProjectileType = recipe?.projectileType;
+    _cleanedBetweenShots = recipe?.cleanedBetweenShots ?? false;
+    _selectedLoadType = recipe?.loadType ?? LoadType.rifle;
 
     _isDangerous = recipe?.isDangerous ?? false;
     _dangerConfirmedAt = recipe?.dangerConfirmedAt;
@@ -166,6 +244,21 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _baseToOgiveController.dispose();
     _seatingDepthController.dispose();
     _notesController.dispose();
+    _shotgunHullController.dispose();
+    _shotgunPrimerController.dispose();
+    _shotgunPowderController.dispose();
+    _shotgunPowderChargeController.dispose();
+    _shotgunWadController.dispose();
+    _shotgunShotWeightController.dispose();
+    _shotgunShotSizeController.dispose();
+    _shotgunDramEquivalentController.dispose();
+    _muzzleloaderCaliberController.dispose();
+    _muzzleloaderPowderChargeController.dispose();
+    _projectileSizeWeightController.dispose();
+    _patchMaterialController.dispose();
+    _patchThicknessController.dispose();
+    _patchLubeController.dispose();
+    _sabotTypeController.dispose();
     super.dispose();
   }
 
@@ -248,6 +341,18 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     return exists ? value : '$value (missing)';
   }
 
+  String? _optionalText(TextEditingController controller) {
+    final trimmed = controller.text.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String _buildShotgunCartridge() {
+    final gauge = _selectedGauge ?? '';
+    final shell = _selectedShellLength ?? '';
+    final parts = [gauge, shell].where((value) => value.isNotEmpty).toList();
+    return parts.join(' ');
+  }
+
   void _syncInventoryControllers(
     Map<String, List<InventoryItem>> inventoryByType,
   ) {
@@ -266,6 +371,10 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _powderController.text = _displayInventoryValue(
       _selectedPowder,
       inventoryByType['powder'] ?? [],
+    );
+    _shotgunWadController.text = _displayInventoryValue(
+      _selectedWad,
+      inventoryByType['wads'] ?? [],
     );
   }
 
@@ -616,6 +725,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
         return 'Primer';
       case 'powder':
         return 'Powder';
+      case 'wads':
+        return 'Wad';
       default:
         return 'Item';
     }
@@ -626,41 +737,124 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       return;
     }
 
-    if (_selectedPowder == null || _selectedPowder!.isEmpty) {
+    final isRifle = _selectedLoadType == LoadType.rifle;
+    final isShotgun = _selectedLoadType == LoadType.shotgun;
+    final isMuzzleloader = _selectedLoadType == LoadType.muzzleloader;
+
+    if (isRifle && (_selectedPowder == null || _selectedPowder!.isEmpty)) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Select a powder.')));
       return;
     }
 
+    final shotgunPowderCharge = isShotgun
+        ? double.parse(_shotgunPowderChargeController.text.trim())
+        : null;
+    final muzzlePowderCharge = isMuzzleloader
+        ? double.parse(_muzzleloaderPowderChargeController.text.trim())
+        : null;
+    final powderChargeValue = isRifle
+        ? double.parse(_powderChargeController.text.trim())
+        : isShotgun
+        ? shotgunPowderCharge!
+        : muzzlePowderCharge!;
+    final cartridgeValue = isRifle
+        ? _cartridgeController.text.trim()
+        : isShotgun
+        ? _buildShotgunCartridge()
+        : _muzzleloaderCaliberController.text.trim();
+    final muzzleloaderPowderType = _selectedMuzzleloaderPowderType ?? '';
+    final powderValue = isRifle
+        ? _selectedPowder!
+        : isShotgun
+        ? _shotgunPowderController.text.trim()
+        : muzzleloaderPowderType;
+    final notesValue = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
+
     final now = DateTime.now();
     final recipe = LoadRecipe(
       id: _isEditing ? widget.recipe!.id : _uuid.v4(),
       recipeName: _recipeNameController.text.trim(),
-      cartridge: _cartridgeController.text.trim(),
-      bulletBrand: _selectedBullet,
-      bulletWeightGr: double.tryParse(_bulletWeightController.text.trim()),
-      bulletDiameter: double.tryParse(_bulletDiameterController.text.trim()),
-      bulletType: _bulletTypeController.text.trim().isEmpty
-          ? null
-          : _bulletTypeController.text.trim(),
-      brass: _selectedBrass,
-      brassTrimLength: double.tryParse(_brassTrimLengthController.text.trim()),
-      annealingTimeSec: double.tryParse(_annealingTimeController.text.trim()),
-      primer: _selectedPrimer,
-      caseResize: _selectedCaseResize,
-      gasCheckMaterial: _selectedGasCheckMaterial,
-      gasCheckInstallMethod: _selectedGasCheckInstallMethod,
-      bulletCoating: _selectedBulletCoating,
-      powder: _selectedPowder!,
-      powderChargeGr: double.parse(_powderChargeController.text.trim()),
-      coal: double.tryParse(_coalController.text.trim()),
-      baseToOgive: double.tryParse(_baseToOgiveController.text.trim()),
-      seatingDepth: double.tryParse(_seatingDepthController.text.trim()),
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
+      cartridge: cartridgeValue,
+      bulletBrand: isRifle ? _selectedBullet : null,
+      bulletWeightGr: isRifle
+          ? double.tryParse(_bulletWeightController.text.trim())
+          : null,
+      bulletDiameter: isRifle
+          ? double.tryParse(_bulletDiameterController.text.trim())
+          : null,
+      bulletType: isRifle && _bulletTypeController.text.trim().isNotEmpty
+          ? _bulletTypeController.text.trim()
+          : null,
+      brass: isRifle ? _selectedBrass : null,
+      brassTrimLength: isRifle
+          ? double.tryParse(_brassTrimLengthController.text.trim())
+          : null,
+      annealingTimeSec: isRifle
+          ? double.tryParse(_annealingTimeController.text.trim())
+          : null,
+      primer: isRifle ? _selectedPrimer : null,
+      caseResize: isRifle ? _selectedCaseResize : null,
+      gasCheckMaterial: isRifle ? _selectedGasCheckMaterial : null,
+      gasCheckInstallMethod: isRifle ? _selectedGasCheckInstallMethod : null,
+      bulletCoating: isRifle ? _selectedBulletCoating : null,
+      powder: powderValue,
+      powderChargeGr: powderChargeValue,
+      coal: isRifle ? double.tryParse(_coalController.text.trim()) : null,
+      baseToOgive:
+          isRifle ? double.tryParse(_baseToOgiveController.text.trim()) : null,
+      seatingDepth:
+          isRifle ? double.tryParse(_seatingDepthController.text.trim()) : null,
+      notes: notesValue,
       firearmId: _selectedFirearmId,
+      loadType: _selectedLoadType,
+      gauge: isShotgun ? _selectedGauge : null,
+      shellLength: isShotgun ? _selectedShellLength : null,
+      hull: isShotgun ? _optionalText(_shotgunHullController) : null,
+      shotgunPrimer:
+          isShotgun ? _optionalText(_shotgunPrimerController) : null,
+      shotgunPowder:
+          isShotgun ? _optionalText(_shotgunPowderController) : null,
+      shotgunPowderCharge: isShotgun ? shotgunPowderCharge : null,
+      wad: isShotgun ? _selectedWad : null,
+      shotWeight:
+          isShotgun ? _optionalText(_shotgunShotWeightController) : null,
+      shotSize: isShotgun ? _optionalText(_shotgunShotSizeController) : null,
+      shotType: isShotgun ? _selectedShotType : null,
+      crimpType: isShotgun ? _selectedCrimpType : null,
+      dramEquivalent: isShotgun
+          ? double.tryParse(_shotgunDramEquivalentController.text.trim())
+          : null,
+      muzzleloaderCaliber: isMuzzleloader
+          ? _optionalText(_muzzleloaderCaliberController)
+          : null,
+      ignitionType: isMuzzleloader ? _selectedIgnitionType : null,
+      muzzleloaderPowderType:
+          isMuzzleloader ? muzzleloaderPowderType : null,
+      powderGranulation:
+          isMuzzleloader ? _selectedPowderGranulation : null,
+      muzzleloaderPowderCharge:
+          isMuzzleloader ? muzzlePowderCharge : null,
+      projectileType: isMuzzleloader ? _selectedProjectileType : null,
+      projectileSizeWeight: isMuzzleloader
+          ? _optionalText(_projectileSizeWeightController)
+          : null,
+      patchMaterial: isMuzzleloader && _selectedProjectileType == 'Round Ball'
+          ? _optionalText(_patchMaterialController)
+          : null,
+      patchThickness: isMuzzleloader && _selectedProjectileType == 'Round Ball'
+          ? _optionalText(_patchThicknessController)
+          : null,
+      patchLube: isMuzzleloader && _selectedProjectileType == 'Round Ball'
+          ? _optionalText(_patchLubeController)
+          : null,
+      sabotType: isMuzzleloader && _selectedProjectileType == 'Sabot'
+          ? _optionalText(_sabotTypeController)
+          : null,
+      cleanedBetweenShots: isMuzzleloader ? _cleanedBetweenShots : null,
       isKeeper: false,
       isDangerous: _isDangerous,
       dangerConfirmedAt: _dangerConfirmedAt,
@@ -712,6 +906,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
 
             final brassItems = inventoryByType['brass'] ?? [];
             final bulletItems = inventoryByType['bullets'] ?? [];
+            final wadItems = inventoryByType['wads'] ?? [];
             final powderItems = inventoryByType['powder'] ?? [];
             final primerItems = inventoryByType['primers'] ?? [];
             final customCaseResize = data?.customCaseResize ?? [];
@@ -727,19 +922,84 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    if (trialService.shouldShowBanner()) TrialBanner(trialService: trialService),
-                      TextFormField(
-                        controller: _recipeNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Recipe Name *',
-                        ),
-                        textInputAction: TextInputAction.next,
-                        validator: (value) =>
-                            value == null || value.trim().isEmpty
-                            ? 'Required'
-                            : null,
+                    if (trialService.shouldShowBanner())
+                      TrialBanner(trialService: trialService),
+                    TextFormField(
+                      controller: _recipeNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Recipe Name *',
                       ),
-                      const SizedBox(height: 12),
+                      textInputAction: TextInputAction.next,
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                          ? 'Required'
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                    SegmentedButton<LoadType>(
+                      segments: const [
+                        ButtonSegment(
+                          value: LoadType.rifle,
+                          label: Text('Rifle/Pistol'),
+                        ),
+                        ButtonSegment(
+                          value: LoadType.shotgun,
+                          label: Text('Shotgun'),
+                        ),
+                        ButtonSegment(
+                          value: LoadType.muzzleloader,
+                          label: Text('Muzzleloader'),
+                        ),
+                      ],
+                      selected: {_selectedLoadType},
+                      showSelectedIcon: false,
+                      onSelectionChanged: (selected) {
+                        if (selected.isEmpty) {
+                          return;
+                        }
+                        setState(() {
+                          _selectedLoadType = selected.first;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String?>(
+                            value:
+                                firearms.any(
+                                  (firearm) => firearm.id == _selectedFirearmId,
+                                )
+                                ? _selectedFirearmId
+                                : null,
+                            items: firearms
+                                .map(
+                                  (firearm) => DropdownMenuItem<String?>(
+                                    value: firearm.id,
+                                    child: Text(firearm.name),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedFirearmId = value;
+                              });
+                            },
+                            decoration: const InputDecoration(
+                              labelText: 'Firearm',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton(
+                          onPressed: _addFirearm,
+                          child: const Text('Add'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (_selectedLoadType == LoadType.rifle) ...[
                       TextFormField(
                         controller: _cartridgeController,
                         decoration: const InputDecoration(
@@ -750,43 +1010,6 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                             value == null || value.trim().isEmpty
                             ? 'Required'
                             : null,
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String?>(
-                              value:
-                                  firearms.any(
-                                    (firearm) =>
-                                        firearm.id == _selectedFirearmId,
-                                  )
-                                  ? _selectedFirearmId
-                                  : null,
-                              items: firearms
-                                  .map(
-                                    (firearm) => DropdownMenuItem<String?>(
-                                      value: firearm.id,
-                                      child: Text(firearm.name),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedFirearmId = value;
-                                });
-                              },
-                              decoration: const InputDecoration(
-                                labelText: 'Firearm',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          OutlinedButton(
-                            onPressed: _addFirearm,
-                            child: const Text('Add'),
-                          ),
-                        ],
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -1112,17 +1335,432 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _notesController,
-                        decoration: const InputDecoration(labelText: 'Notes'),
-                        textCapitalization: TextCapitalization.sentences,
-                        maxLines: 3,
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) =>
-                            FocusScope.of(context).unfocus(),
+                    ],
+                    if (_selectedLoadType == LoadType.shotgun) ...[
+                      DropdownButtonFormField<String>(
+                        value: _selectedGauge,
+                        decoration: const InputDecoration(
+                          labelText: 'Gauge *',
+                        ),
+                        items: _shotgunGaugeOptions
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedGauge = value;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
                       const SizedBox(height: 12),
-                      Row(
+                      DropdownButtonFormField<String>(
+                        value: _selectedShellLength,
+                        decoration: const InputDecoration(
+                          labelText: 'Shell Length *',
+                        ),
+                        items: _shotgunShellLengthOptions
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedShellLength = value;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _shotgunHullController,
+                        decoration: const InputDecoration(
+                          labelText: 'Hull *',
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _shotgunPrimerController,
+                        decoration: const InputDecoration(
+                          labelText: 'Primer *',
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _shotgunPowderController,
+                        decoration: const InputDecoration(
+                          labelText: 'Powder *',
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _shotgunPowderChargeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Powder Charge (gr) *',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Required';
+                          }
+                          if (double.tryParse(value.trim()) == null) {
+                            return 'Invalid number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _shotgunWadController,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Wad *',
+                          suffixIcon: Icon(Icons.arrow_drop_down),
+                        ),
+                        validator: (_) =>
+                            _selectedWad == null || _selectedWad!.isEmpty
+                            ? 'Required'
+                            : null,
+                        onTap: () async {
+                          final selected = await _pickInventoryItem(
+                            title: 'Select Wad',
+                            items: wadItems,
+                            type: 'wads',
+                            allowClear: true,
+                          );
+                          if (selected == null) {
+                            return;
+                          }
+                          setState(() {
+                            _selectedWad = selected.isEmpty ? null : selected;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _shotgunShotWeightController,
+                        decoration: const InputDecoration(
+                          labelText: 'Shot Weight *',
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _shotgunShotSizeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Shot Size *',
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _selectedShotType,
+                        decoration: const InputDecoration(
+                          labelText: 'Shot Type *',
+                        ),
+                        items: _shotgunShotTypeOptions
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedShotType = value;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _selectedCrimpType,
+                        decoration: const InputDecoration(
+                          labelText: 'Crimp Type *',
+                        ),
+                        items: _shotgunCrimpTypeOptions
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCrimpType = value;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _shotgunDramEquivalentController,
+                        decoration: const InputDecoration(
+                          labelText: 'Dram Equivalent',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
+                          if (double.tryParse(value.trim()) == null) {
+                            return 'Invalid number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    if (_selectedLoadType == LoadType.muzzleloader) ...[
+                      TextFormField(
+                        controller: _muzzleloaderCaliberController,
+                        decoration: const InputDecoration(
+                          labelText: 'Caliber *',
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _selectedIgnitionType,
+                        decoration: const InputDecoration(
+                          labelText: 'Ignition Type *',
+                        ),
+                        items: _muzzleloaderIgnitionOptions
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedIgnitionType = value;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _selectedMuzzleloaderPowderType,
+                        decoration: const InputDecoration(
+                          labelText: 'Powder Type *',
+                        ),
+                        items: _muzzleloaderPowderTypeOptions
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedMuzzleloaderPowderType = value;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _selectedPowderGranulation,
+                        decoration: const InputDecoration(
+                          labelText: 'Powder Granulation *',
+                        ),
+                        items: _muzzleloaderGranulationOptions
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedPowderGranulation = value;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _muzzleloaderPowderChargeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Powder Charge (gr by volume) *',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Required';
+                          }
+                          if (double.tryParse(value.trim()) == null) {
+                            return 'Invalid number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: _selectedProjectileType,
+                        decoration: const InputDecoration(
+                          labelText: 'Projectile Type *',
+                        ),
+                        items: _muzzleloaderProjectileTypeOptions
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedProjectileType = value;
+                          });
+                        },
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _projectileSizeWeightController,
+                        decoration: const InputDecoration(
+                          labelText: 'Projectile Size/Weight *',
+                        ),
+                        textInputAction: TextInputAction.next,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      if (_selectedProjectileType == 'Round Ball') ...[
+                        TextFormField(
+                          controller: _patchMaterialController,
+                          decoration: const InputDecoration(
+                            labelText: 'Patch Material',
+                          ),
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _patchThicknessController,
+                          decoration: const InputDecoration(
+                            labelText: 'Patch Thickness',
+                          ),
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _patchLubeController,
+                          decoration: const InputDecoration(
+                            labelText: 'Patch Lube',
+                          ),
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (_selectedProjectileType == 'Sabot') ...[
+                        TextFormField(
+                          controller: _sabotTypeController,
+                          decoration: const InputDecoration(
+                            labelText: 'Sabot Type',
+                          ),
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      CheckboxListTile(
+                        value: _cleanedBetweenShots,
+                        onChanged: (value) {
+                          setState(() {
+                            _cleanedBetweenShots = value ?? false;
+                          });
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Cleaned between shots'),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    TextFormField(
+                      controller: _notesController,
+                      decoration: const InputDecoration(labelText: 'Notes'),
+                      textCapitalization: TextCapitalization.sentences,
+                      maxLines: 3,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) =>
+                          FocusScope.of(context).unfocus(),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
                       children: [
                         Expanded(
                           child: ElevatedButton(
@@ -1304,4 +1942,57 @@ const List<String> _bulletCoatingOptions = [
   'Jacketed Soft Point (JSP)',
   'Jacketed Hollow Point (JHP)',
   'Experimental / Custom',
+];
+
+const List<String> _shotgunGaugeOptions = [
+  '10',
+  '12',
+  '16',
+  '20',
+  '28',
+  '.410',
+];
+
+const List<String> _shotgunShellLengthOptions = [
+  '2 3/4"',
+  '3"',
+  '3 1/2"',
+];
+
+const List<String> _shotgunShotTypeOptions = [
+  'Lead',
+  'Steel',
+  'Bismuth',
+  'Tungsten',
+];
+
+const List<String> _shotgunCrimpTypeOptions = [
+  'Star',
+  'Roll',
+];
+
+const List<String> _muzzleloaderIgnitionOptions = [
+  'Flintlock',
+  'Percussion Cap',
+];
+
+const List<String> _muzzleloaderPowderTypeOptions = [
+  'Black Powder (Real)',
+  'Pyrodex',
+  'Triple 7',
+  'Blackhorn 209',
+];
+
+const List<String> _muzzleloaderGranulationOptions = [
+  'Fg',
+  'FFg',
+  'FFFg',
+  'FFFFg',
+  'Pellet',
+];
+
+const List<String> _muzzleloaderProjectileTypeOptions = [
+  'Round Ball',
+  'Conical',
+  'Sabot',
 ];
