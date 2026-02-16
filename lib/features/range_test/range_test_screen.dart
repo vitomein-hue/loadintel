@@ -282,7 +282,8 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   Future<void> _captureWeather() async {
     debugPrint('🌦️ Weather UI: Opening weather capture sheet');
-    await showModalBottomSheet(
+    String zipValue = '';
+    final result = await showModalBottomSheet<dynamic>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -305,11 +306,42 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: () async {
-                  Navigator.of(sheetContext).pop();
-                  await _fetchWeatherFromGPS();
+                  Navigator.of(sheetContext).pop(true);
                 },
                 icon: const Icon(Icons.my_location),
                 label: const Text('Use My Location'),
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+              const Text('Or enter ZIP code:'),
+              const SizedBox(height: 8),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Zip code',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: TextButton(
+                    onPressed: () {
+                      final cleaned = zipValue.trim();
+                      if (cleaned.length == 5) {
+                        Navigator.of(sheetContext).pop(cleaned);
+                      }
+                    },
+                    child: const Text('Done'),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                maxLength: 5,
+                textInputAction: TextInputAction.done,
+                onChanged: (value) {
+                  zipValue = value;
+                },
+                onSubmitted: (zipCode) {
+                  final cleaned = zipCode.trim();
+                  if (cleaned.length == 5) {
+                    Navigator.of(sheetContext).pop(cleaned);
+                  }
+                },
               ),
               const SizedBox(height: 8),
             ],
@@ -317,6 +349,75 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         ),
       ),
     );
+    if (!mounted || result == null) {
+      return;
+    }
+    if (result is String) {
+      await _fetchWeatherFromZip(result);
+    } else {
+      await _fetchWeatherFromGPS();
+    }
+  }
+
+  Future<void> _fetchWeatherFromZip(String zipCode) async {
+    if (!mounted) {
+      debugPrint('⚠️ Widget not mounted, aborting ZIP fetch');
+      return;
+    }
+
+    final cleaned = zipCode.trim();
+    if (cleaned.length != 5) {
+      debugPrint('⚠️ ZIP: Invalid zip code: $zipCode');
+      _showWeatherSnack('Enter a valid ZIP code');
+      return;
+    }
+
+    final requestId = _startWeatherRequest('ZIP weather fetch');
+
+    try {
+      debugPrint('📮 Fetching weather for zip: $cleaned');
+
+      final weather = await _weatherService.fetchWeather(
+        zipCode: cleaned,
+      );
+
+      if (!mounted) return;
+      if (!_isWeatherRequestActive(requestId, 'ZIP weather API call')) return;
+
+      debugPrint('📮 Weather received: ${weather != null ? "Success" : "Null"}');
+
+      if (weather == null) {
+        _showWeatherSnack('Weather not available');
+        _safeSetState('ZIP unavailable #$requestId', () {
+          _isLoadingWeather = false;
+        });
+        return;
+      }
+
+      final activeEntry = _activeEntry();
+      if (activeEntry != null) {
+        activeEntry.temperatureF = weather.temperatureF;
+        activeEntry.humidity = weather.humidity;
+        activeEntry.barometricPressureInHg = weather.barometricPressureInHg;
+        activeEntry.windDirection = weather.windDirection;
+        activeEntry.windSpeedMph = weather.windSpeedMph;
+        activeEntry.weatherConditions = weather.weatherConditions;
+      }
+
+      _safeSetState('ZIP success #$requestId', () {
+        _isLoadingWeather = false;
+        _weatherExpanded = true;
+        _weatherCaptured = true;
+      });
+    } catch (e) {
+      debugPrint('❌ ZIP error: $e');
+      if (mounted) {
+        _showWeatherSnack('Weather fetch failed');
+        _safeSetState('ZIP error', () {
+          _isLoadingWeather = false;
+        });
+      }
+    }
   }
 
   Future<void> _fetchWeatherFromGPS() async {

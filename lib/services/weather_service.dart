@@ -39,16 +39,19 @@ class WeatherService {
   };
 
   Future<WeatherData?> fetchWeather({
-    required String latitude,
-    required String longitude,
+    String? latitude,
+    String? longitude,
+    String? zipCode,
   }) async {
     debugPrint(
       'WeatherService: fetchWeather called with '
-      'latitude=$latitude, longitude=$longitude',
+      'zip=$zipCode, latitude=$latitude, longitude=$longitude',
     );
 
-    final hasCoords = latitude.trim().isNotEmpty && longitude.trim().isNotEmpty;
-    if (!hasCoords) {
+    final hasZip = zipCode != null && zipCode.trim().isNotEmpty;
+    final hasCoords =
+        latitude != null && longitude != null && latitude.trim().isNotEmpty && longitude.trim().isNotEmpty;
+    if (!hasZip && !hasCoords) {
       debugPrint('WeatherService: No location provided');
       return null;
     }
@@ -59,6 +62,7 @@ class WeatherService {
         final weather = await _fetchWeatherOnce(
           latitude: latitude,
           longitude: longitude,
+          zipCode: zipCode,
         );
         if (weather != null && weather.isValid) {
           debugPrint('WeatherService: Valid weather data received on attempt ${attempt + 1}');
@@ -81,12 +85,14 @@ class WeatherService {
   }
 
   Future<WeatherData?> _fetchWeatherOnce({
-    required String latitude,
-    required String longitude,
+    String? latitude,
+    String? longitude,
+    String? zipCode,
   }) async {
     final latLng = await _resolveLatLng(
       latitude: latitude,
       longitude: longitude,
+      zipCode: zipCode,
     );
     if (latLng == null) {
       debugPrint('WeatherService: Unable to resolve location to lat/lon');
@@ -115,16 +121,118 @@ class WeatherService {
   }
 
   Future<_LatLng?> _resolveLatLng({
-    required String latitude,
-    required String longitude,
+    String? latitude,
+    String? longitude,
+    String? zipCode,
   }) async {
-    final lat = double.tryParse(latitude);
-    final lon = double.tryParse(longitude);
-    if (lat == null || lon == null) {
-      debugPrint('WeatherService: Invalid lat/lon values: $latitude, $longitude');
+    if (latitude != null && longitude != null) {
+      final lat = double.tryParse(latitude);
+      final lon = double.tryParse(longitude);
+      if (lat == null || lon == null) {
+        debugPrint('WeatherService: Invalid lat/lon values: $latitude, $longitude');
+        return null;
+      }
+      debugPrint('WeatherService: Using coordinates: $lat,$lon');
+      return _LatLng(lat: lat, lon: lon);
+    }
+
+    if (zipCode == null || zipCode.trim().isEmpty) {
+      debugPrint('WeatherService: No location provided');
       return null;
     }
-    debugPrint('WeatherService: Using coordinates: $lat,$lon');
+
+    final trimmedZip = zipCode.trim();
+    debugPrint('WeatherService: Resolving zip code: $trimmedZip');
+    return _geocodeZip(trimmedZip);
+  }
+
+  Future<_LatLng?> _geocodeZip(String zipCode) async {
+    final zippo = await _geocodeZipWithZippopotam(zipCode);
+    if (zippo != null) {
+      return zippo;
+    }
+    return _geocodeZipWithNominatim(zipCode);
+  }
+
+  Future<_LatLng?> _geocodeZipWithZippopotam(String zipCode) async {
+    final url = Uri.parse('https://api.zippopotam.us/us/$zipCode');
+    debugPrint('WeatherService: Zippopotam URL: $url');
+
+    final response = await http.get(url, headers: _headers).timeout(
+      requestTimeout,
+      onTimeout: () => http.Response('Timeout', 408),
+    );
+
+    debugPrint('WeatherService: Zippopotam response status: ${response.statusCode}');
+    if (response.statusCode != 200) {
+      debugPrint('WeatherService: Zippopotam bad status code: ${response.statusCode}');
+      _logBodySnippet('Zippopotam', response.body);
+      return null;
+    }
+    if (response.body.trim().isEmpty) {
+      debugPrint('WeatherService: Zippopotam empty response body');
+      return null;
+    }
+
+    final data = json.decode(response.body) as Map<String, dynamic>;
+    final places = data['places'] as List?;
+    if (places == null || places.isEmpty) {
+      debugPrint('WeatherService: Zippopotam places empty');
+      return null;
+    }
+
+    final first = places.first as Map<String, dynamic>;
+    final lat = double.tryParse(first['latitude']?.toString() ?? '');
+    final lon = double.tryParse(first['longitude']?.toString() ?? '');
+    if (lat == null || lon == null) {
+      debugPrint('WeatherService: Zippopotam parse failed for zip $zipCode');
+      return null;
+    }
+
+    debugPrint('WeatherService: Zippopotam resolved $zipCode -> $lat,$lon');
+    return _LatLng(lat: lat, lon: lon);
+  }
+
+  Future<_LatLng?> _geocodeZipWithNominatim(String zipCode) async {
+    final url = Uri.https('nominatim.openstreetmap.org', '/search', {
+      'postalcode': zipCode,
+      'country': 'US',
+      'format': 'json',
+      'limit': '1',
+    });
+    debugPrint('WeatherService: Geocoding URL: $url');
+
+    final response = await http.get(url, headers: _headers).timeout(
+      requestTimeout,
+      onTimeout: () => http.Response('Timeout', 408),
+    );
+
+    debugPrint('WeatherService: Geocode response status: ${response.statusCode}');
+    if (response.statusCode != 200) {
+      debugPrint('WeatherService: Geocode bad status code: ${response.statusCode}');
+      _logBodySnippet('Geocode', response.body);
+      return null;
+    }
+    if (response.body.trim().isEmpty) {
+      debugPrint('WeatherService: Geocode empty response body');
+      return null;
+    }
+
+    final data = json.decode(response.body);
+    if (data is! List || data.isEmpty) {
+      debugPrint('WeatherService: Geocode result empty');
+      return null;
+    }
+
+    final first = data.first as Map<String, dynamic>;
+    final lat = double.tryParse(first['lat']?.toString() ?? '');
+    final lon = double.tryParse(first['lon']?.toString() ?? '');
+    if (lat == null || lon == null) {
+      debugPrint('WeatherService: Geocode parse failed for zip $zipCode');
+      return null;
+    }
+
+    debugPrint('WeatherService: Geocode resolved $zipCode -> $lat,$lon');
     return _LatLng(lat: lat, lon: lon);
   }
 
