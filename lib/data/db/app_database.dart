@@ -16,7 +16,7 @@ class AppDatabase {
     final fullPath = path.join(dbPath, 'loadintel.db');
     final db = await openDatabase(
       fullPath,
-      version: 9,
+      version: 10,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -67,7 +67,7 @@ class AppDatabase {
         baseToOgive REAL,
         seatingDepth REAL,
         notes TEXT,
-        firearmId TEXT NOT NULL,
+        firearmId TEXT,
         isKeeper INTEGER NOT NULL DEFAULT 0,
         isDangerous INTEGER NOT NULL DEFAULT 0,
         dangerConfirmedAt INTEGER,
@@ -203,6 +203,104 @@ class AppDatabase {
       await db.execute(
         'ALTER TABLE load_recipes ADD COLUMN isKeeper INTEGER NOT NULL DEFAULT 0',
       );
+    }
+    if (oldVersion < 10) {
+      await db.execute('PRAGMA foreign_keys = OFF');
+      await db.execute('''
+        CREATE TABLE load_recipes_new (
+          id TEXT PRIMARY KEY,
+          recipeName TEXT NOT NULL,
+          cartridge TEXT NOT NULL,
+          bulletBrand TEXT,
+          bulletWeightGr REAL,
+          bulletDiameter REAL,
+          bulletType TEXT,
+          brass TEXT,
+          brassTrimLength REAL,
+          annealingTimeSec REAL,
+          primer TEXT,
+          caseResize TEXT,
+          gasCheckMaterial TEXT,
+          gasCheckInstallMethod TEXT,
+          bulletCoating TEXT,
+          powder TEXT NOT NULL,
+          powderChargeGr REAL NOT NULL,
+          coal REAL,
+          baseToOgive REAL,
+          seatingDepth REAL,
+          notes TEXT,
+          firearmId TEXT,
+          isKeeper INTEGER NOT NULL DEFAULT 0,
+          isDangerous INTEGER NOT NULL DEFAULT 0,
+          dangerConfirmedAt INTEGER,
+          createdAt INTEGER NOT NULL,
+          updatedAt INTEGER NOT NULL,
+          FOREIGN KEY (firearmId) REFERENCES firearms(id) ON DELETE RESTRICT
+        )
+      ''');
+      await db.execute('''
+        INSERT INTO load_recipes_new (
+          id,
+          recipeName,
+          cartridge,
+          bulletBrand,
+          bulletWeightGr,
+          bulletDiameter,
+          bulletType,
+          brass,
+          brassTrimLength,
+          annealingTimeSec,
+          primer,
+          caseResize,
+          gasCheckMaterial,
+          gasCheckInstallMethod,
+          bulletCoating,
+          powder,
+          powderChargeGr,
+          coal,
+          baseToOgive,
+          seatingDepth,
+          notes,
+          firearmId,
+          isKeeper,
+          isDangerous,
+          dangerConfirmedAt,
+          createdAt,
+          updatedAt
+        )
+        SELECT
+          id,
+          recipeName,
+          cartridge,
+          bulletBrand,
+          bulletWeightGr,
+          bulletDiameter,
+          bulletType,
+          brass,
+          brassTrimLength,
+          annealingTimeSec,
+          primer,
+          caseResize,
+          gasCheckMaterial,
+          gasCheckInstallMethod,
+          bulletCoating,
+          powder,
+          powderChargeGr,
+          coal,
+          baseToOgive,
+          seatingDepth,
+          notes,
+          firearmId,
+          isKeeper,
+          isDangerous,
+          dangerConfirmedAt,
+          createdAt,
+          updatedAt
+        FROM load_recipes
+      ''');
+      await db.execute('DROP TABLE load_recipes');
+      await db.execute('ALTER TABLE load_recipes_new RENAME TO load_recipes');
+      await db.execute('PRAGMA foreign_keys = ON');
     }
   }
 }

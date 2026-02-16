@@ -44,6 +44,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
   LoadRecipe? _recipe;
   bool _isKeeper = false;
   bool _shotsMode = false;
+  bool _noChronoData = false;
   final List<TextEditingController> _shotControllers = [];
   final List<TargetPhoto> _photos = [];
   late Future<List<Firearm>> _firearmsFuture;
@@ -66,6 +67,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
     _testedAt = widget.result.testedAt;
     _firearmId = widget.result.firearmId;
     _shotsMode = widget.result.fpsShots != null && widget.result.fpsShots!.isNotEmpty;
+    _noChronoData = !_shotsMode && widget.result.avgFps == null;
     _initShotControllers(widget.result.fpsShots);
 
     _firearmsFuture = context.read<FirearmRepository>().listFirearms();
@@ -188,6 +190,7 @@ class _EditResultScreenState extends State<EditResultScreen> {
 
     setState(() {
       _shotsMode = shotsMode;
+      _noChronoData = false;
       _avgController.clear();
       _sdController.clear();
       _esController.clear();
@@ -312,15 +315,11 @@ class _EditResultScreenState extends State<EditResultScreen> {
       sdFps = stats?.sd;
       esFps = stats?.es;
     } else {
-      avgFps = double.tryParse(_avgController.text.trim());
+      avgFps = _noChronoData
+          ? null
+          : double.tryParse(_avgController.text.trim());
       sdFps = double.tryParse(_sdController.text.trim());
       esFps = double.tryParse(_esController.text.trim());
-      if (avgFps == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Enter AVG FPS.')),
-        );
-        return;
-      }
     }
 
     final groupSize = double.parse(_groupController.text.trim());
@@ -586,15 +585,31 @@ class _EditResultScreenState extends State<EditResultScreen> {
                           else
                             Column(
                               children: [
+                                CheckboxListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('No chrono data'),
+                                  value: _noChronoData,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _noChronoData = value ?? false;
+                                      if (_noChronoData) {
+                                        _avgController.clear();
+                                      }
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 8),
                                 TextFormField(
                                   controller: _avgController,
+                                  enabled: !_noChronoData,
                                   keyboardType:
                                       const TextInputType.numberWithOptions(decimal: true),
                                   textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(labelText: 'AVG FPS *'),
+                                  decoration:
+                                      const InputDecoration(labelText: 'Average FPS'),
                                   validator: (value) {
                                     if (value == null || value.trim().isEmpty) {
-                                      return 'Required';
+                                      return null;
                                     }
                                     if (double.tryParse(value.trim()) == null) {
                                       return 'Invalid number';

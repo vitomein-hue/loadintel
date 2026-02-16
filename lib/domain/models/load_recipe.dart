@@ -1,4 +1,6 @@
 ﻿class LoadRecipe {
+  static const Object _unset = Object();
+
   const LoadRecipe({
     required this.id,
     required this.recipeName,
@@ -21,7 +23,7 @@
     this.baseToOgive,
     this.seatingDepth,
     this.notes,
-    required this.firearmId,
+    this.firearmId,
     required this.isKeeper,
     required this.isDangerous,
     this.dangerConfirmedAt,
@@ -50,7 +52,7 @@
   final double? baseToOgive;
   final double? seatingDepth;
   final String? notes;
-  final String firearmId;
+  final String? firearmId;
   final bool isKeeper;
   final bool isDangerous;
   final DateTime? dangerConfirmedAt;
@@ -79,7 +81,7 @@
     double? baseToOgive,
     double? seatingDepth,
     String? notes,
-    String? firearmId,
+    Object? firearmId = _unset,
     bool? isKeeper,
     bool? isDangerous,
     DateTime? dangerConfirmedAt,
@@ -100,8 +102,7 @@
       primer: primer ?? this.primer,
       caseResize: caseResize ?? this.caseResize,
       gasCheckMaterial: gasCheckMaterial ?? this.gasCheckMaterial,
-      gasCheckInstallMethod:
-          gasCheckInstallMethod ?? this.gasCheckInstallMethod,
+      gasCheckInstallMethod: gasCheckInstallMethod ?? this.gasCheckInstallMethod,
       bulletCoating: bulletCoating ?? this.bulletCoating,
       powder: powder ?? this.powder,
       powderChargeGr: powderChargeGr ?? this.powderChargeGr,
@@ -109,7 +110,8 @@
       baseToOgive: baseToOgive ?? this.baseToOgive,
       seatingDepth: seatingDepth ?? this.seatingDepth,
       notes: notes ?? this.notes,
-      firearmId: firearmId ?? this.firearmId,
+      firearmId:
+          identical(firearmId, _unset) ? this.firearmId : firearmId as String?,
       isKeeper: isKeeper ?? this.isKeeper,
       isDangerous: isDangerous ?? this.isDangerous,
       dangerConfirmedAt: dangerConfirmedAt ?? this.dangerConfirmedAt,
@@ -182,7 +184,7 @@
       baseToOgive: (map['baseToOgive'] as num?)?.toDouble(),
       seatingDepth: (map['seatingDepth'] as num?)?.toDouble(),
       notes: map['notes'] as String?,
-      firearmId: map['firearmId'] as String,
+      firearmId: map['firearmId'] as String?,
       isKeeper: (map['isKeeper'] as int? ?? 0) == 1,
       isDangerous: (map['isDangerous'] as int? ?? 0) == 1,
       dangerConfirmedAt: dangerConfirmedAt,

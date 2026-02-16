@@ -1122,7 +1122,9 @@ class _TestedLoadsGrouped extends StatelessWidget {
       widgets.add(
         _TestedLoadTile(
           entry: entry,
-          firearm: firearmsById[entry.recipe.firearmId],
+          firearm: entry.recipe.firearmId == null
+              ? null
+              : firearmsById[entry.recipe.firearmId!],
           photoRepo: photoRepo,
           onEditRecipe: () => onEditRecipe(entry.recipe),
           onRefresh: onRefresh,

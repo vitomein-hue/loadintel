@@ -626,13 +626,6 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       return;
     }
 
-    if (_selectedFirearmId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Select a firearm.')));
-      return;
-    }
-
     if (_selectedPowder == null || _selectedPowder!.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -667,7 +660,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       notes: _notesController.text.trim().isEmpty
           ? null
           : _notesController.text.trim(),
-      firearmId: _selectedFirearmId!,
+      firearmId: _selectedFirearmId,
       isKeeper: false,
       isDangerous: _isDangerous,
       dangerConfirmedAt: _dangerConfirmedAt,
@@ -784,7 +777,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                 });
                               },
                               decoration: const InputDecoration(
-                                labelText: 'Firearm *',
+                                labelText: 'Firearm',
                               ),
                             ),
                           ),

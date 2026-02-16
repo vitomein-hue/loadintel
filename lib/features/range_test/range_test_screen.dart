@@ -232,6 +232,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       entry.avgFps = null;
       entry.sdFps = null;
       entry.esFps = null;
+      entry.noChronoData = false;
       entry.shots = [];
     });
   }
@@ -242,7 +243,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       return;
     }
     setState(() {
-      entry.avgFps = double.tryParse(controller.avgController.text.trim());
+      entry.avgFps = entry.noChronoData
+          ? null
+          : double.tryParse(controller.avgController.text.trim());
       entry.sdFps = double.tryParse(controller.sdController.text.trim());
       entry.esFps = double.tryParse(controller.esController.text.trim());
     });
@@ -587,7 +590,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       return false;
     }
     if (entry.fpsMode == FpsEntryMode.manual) {
-      return entry.avgFps != null;
+      return true;
     }
     return entry.shots.isNotEmpty;
   }
@@ -938,11 +941,26 @@ class _BenchEntryCard extends StatelessWidget {
             if (entry.fpsMode == FpsEntryMode.manual)
               Column(
                 children: [
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('No chrono data'),
+                    value: entry.noChronoData,
+                    onChanged: (value) {
+                      entry.noChronoData = value ?? false;
+                      if (entry.noChronoData) {
+                        controller.avgController.clear();
+                        entry.avgFps = null;
+                      }
+                      onManualChanged();
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   TextField(
                     controller: controller.avgController,
+                    enabled: !entry.noChronoData,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'AVG FPS *'),
+                    decoration: const InputDecoration(labelText: 'Average FPS'),
                     onChanged: (_) => onManualChanged(),
                     onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                   ),

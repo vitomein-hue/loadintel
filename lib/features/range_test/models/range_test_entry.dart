@@ -15,6 +15,7 @@ class RangeTestLoadEntry {
   double? avgFps;
   double? sdFps;
   double? esFps;
+  bool noChronoData = false;
   bool isDangerous = false;
   String? dangerReason;
   
