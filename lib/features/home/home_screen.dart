@@ -14,7 +14,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leadingWidth: 120,
+        leadingWidth: 160,
         leading: TextButton.icon(
           onPressed: () {
             Navigator.of(context).push(
@@ -22,9 +22,17 @@ class HomeScreen extends StatelessWidget {
             );
           },
           icon: const Icon(Icons.inventory_2),
-          label: const Text('Inventory'),
+          label: const FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'Inventory',
+              maxLines: 1,
+              softWrap: false,
+            ),
+          ),
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
           ),
         ),
         actions: [

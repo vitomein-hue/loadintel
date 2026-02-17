@@ -93,12 +93,18 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
   DateTime? _dangerConfirmedAt;
   late Future<_BuildLoadData> _dataFuture;
 
-  bool get _isEditing => widget.recipe != null && !widget.isDuplicate;
+  bool _isEditing = false;
+  String? _editingRecipeId;
+  DateTime? _editingCreatedAt;
+  bool _isDuplicateSaving = false;
 
   @override
   void initState() {
     super.initState();
     final recipe = widget.recipe;
+    _isEditing = recipe != null && !widget.isDuplicate;
+    _editingRecipeId = _isEditing ? recipe!.id : null;
+    _editingCreatedAt = _isEditing ? recipe!.createdAt : null;
     _recipeNameController = TextEditingController(
       text: recipe?.recipeName ?? '',
     );
@@ -216,6 +222,77 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _dangerConfirmedAt = recipe?.dangerConfirmedAt;
 
     _dataFuture = _loadData();
+  }
+
+  void _applyRecipeToForm(LoadRecipe recipe) {
+    _recipeNameController.text = recipe.recipeName;
+    _cartridgeController.text = recipe.cartridge;
+    _bulletBrandController.text = recipe.bulletBrand ?? '';
+    _bulletWeightController.text =
+        recipe.bulletWeightGr?.toString() ?? '';
+    _bulletDiameterController.text =
+        recipe.bulletDiameter?.toString() ?? '';
+    _bulletTypeController.text = recipe.bulletType ?? '';
+    _caseResizeController.text = recipe.caseResize ?? '';
+    _gasCheckMaterialController.text = recipe.gasCheckMaterial ?? '';
+    _gasCheckInstallMethodController.text = recipe.gasCheckInstallMethod ?? '';
+    _bulletCoatingController.text = recipe.bulletCoating ?? '';
+    _brassController.text = recipe.brass ?? '';
+    _brassTrimLengthController.text =
+        recipe.brassTrimLength?.toString() ?? '';
+    _annealingTimeController.text =
+        recipe.annealingTimeSec?.toString() ?? '';
+    _primerController.text = recipe.primer ?? '';
+    _powderController.text = recipe.powder;
+    _powderChargeController.text =
+        recipe.powderChargeGr.toString();
+    _coalController.text = recipe.coal?.toString() ?? '';
+    _baseToOgiveController.text = recipe.baseToOgive?.toString() ?? '';
+    _seatingDepthController.text = recipe.seatingDepth?.toString() ?? '';
+    _notesController.text = recipe.notes ?? '';
+    _shotgunHullController.text = recipe.hull ?? '';
+    _shotgunPrimerController.text = recipe.shotgunPrimer ?? '';
+    _shotgunPowderController.text = recipe.shotgunPowder ?? '';
+    _shotgunPowderChargeController.text =
+        recipe.shotgunPowderCharge?.toString() ?? '';
+    _shotgunWadController.text = recipe.wad ?? '';
+    _shotgunShotWeightController.text = recipe.shotWeight ?? '';
+    _shotgunShotSizeController.text = recipe.shotSize ?? '';
+    _shotgunDramEquivalentController.text =
+        recipe.dramEquivalent?.toString() ?? '';
+    _muzzleloaderCaliberController.text = recipe.muzzleloaderCaliber ?? '';
+    _muzzleloaderPowderChargeController.text =
+        recipe.muzzleloaderPowderCharge?.toString() ?? '';
+    _projectileSizeWeightController.text =
+        recipe.projectileSizeWeight ?? '';
+    _patchMaterialController.text = recipe.patchMaterial ?? '';
+    _patchThicknessController.text = recipe.patchThickness ?? '';
+    _patchLubeController.text = recipe.patchLube ?? '';
+    _sabotTypeController.text = recipe.sabotType ?? '';
+
+    _selectedFirearmId = recipe.firearmId;
+    _selectedBrass = recipe.brass;
+    _selectedBullet = recipe.bulletBrand;
+    _selectedPowder = recipe.powder;
+    _selectedPrimer = recipe.primer;
+    _selectedCaseResize = recipe.caseResize;
+    _selectedGasCheckMaterial = recipe.gasCheckMaterial;
+    _selectedGasCheckInstallMethod = recipe.gasCheckInstallMethod;
+    _selectedBulletCoating = recipe.bulletCoating;
+    _selectedWad = recipe.wad;
+    _selectedGauge = recipe.gauge;
+    _selectedShellLength = recipe.shellLength;
+    _selectedShotType = recipe.shotType;
+    _selectedCrimpType = recipe.crimpType;
+    _selectedIgnitionType = recipe.ignitionType;
+    _selectedMuzzleloaderPowderType = recipe.muzzleloaderPowderType;
+    _selectedPowderGranulation = recipe.powderGranulation;
+    _selectedProjectileType = recipe.projectileType;
+    _cleanedBetweenShots = recipe.cleanedBetweenShots ?? false;
+    _selectedLoadType = recipe.loadType;
+
+    _isDangerous = recipe.isDangerous;
+    _dangerConfirmedAt = recipe.dangerConfirmedAt;
   }
 
   @override
@@ -719,9 +796,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     }
   }
 
-  Future<void> _saveRecipe() async {
+  Future<LoadRecipe?> _saveRecipe({bool popOnSave = true}) async {
     if (!_formKey.currentState!.validate()) {
-      return;
+      return null;
     }
 
     final isRifle = _selectedLoadType == LoadType.rifle;
@@ -732,7 +809,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Select a powder.')));
-      return;
+      return null;
     }
 
     final shotgunPowderCharge = isShotgun
@@ -763,7 +840,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
 
     final now = DateTime.now();
     final recipe = LoadRecipe(
-      id: _isEditing ? widget.recipe!.id : _uuid.v4(),
+      id: _isEditing ? _editingRecipeId! : _uuid.v4(),
       recipeName: _recipeNameController.text.trim(),
       cartridge: cartridgeValue,
       bulletBrand: isRifle ? _selectedBullet : null,
@@ -845,7 +922,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       isKeeper: false,
       isDangerous: _isDangerous,
       dangerConfirmedAt: _dangerConfirmedAt,
-      createdAt: _isEditing ? widget.recipe!.createdAt : now,
+      createdAt: _isEditing ? _editingCreatedAt! : now,
       updatedAt: now,
     );
 
@@ -854,9 +931,45 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     await repo.upsertRecipe(recipe);
 
     if (!mounted) {
+      return recipe;
+    }
+    if (popOnSave) {
+      Navigator.of(context).pop();
+    }
+    return recipe;
+  }
+
+  Future<void> _duplicateAndSave() async {
+    if (_isDuplicateSaving) {
       return;
     }
-    Navigator.of(context).pop();
+    setState(() {
+      _isDuplicateSaving = true;
+    });
+    final saved = await _saveRecipe(popOnSave: false);
+    if (!mounted) {
+      return;
+    }
+    if (saved == null) {
+      setState(() {
+        _isDuplicateSaving = false;
+      });
+      return;
+    }
+    final nextRecipe = saved.duplicateForNextEntry(
+      newId: _uuid.v4(),
+      now: DateTime.now(),
+    );
+    setState(() {
+      _isEditing = false;
+      _editingRecipeId = null;
+      _editingCreatedAt = null;
+      _applyRecipeToForm(nextRecipe);
+      _isDuplicateSaving = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Saved. Ready for next load.')),
+    );
   }
 
   void _duplicateRecipe() {
@@ -1747,23 +1860,40 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                           FocusScope.of(context).unfocus(),
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    Column(
                       children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: _saveRecipe,
-                            child: const Text('Save'),
-                          ),
-                        ),
-                        if (_isEditing) ...[
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: _duplicateRecipe,
-                              child: const Text('Duplicate Load'),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _isDuplicateSaving
+                                    ? null
+                                    : _duplicateAndSave,
+                                child: const Text('Duplicate & Save'),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _saveRecipe,
+                                child: const Text('Save'),
+                              ),
+                            ),
+                            if (_isEditing) ...[
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: _duplicateRecipe,
+                                  child: const Text('Duplicate Load'),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ],
                     ),
                   ],

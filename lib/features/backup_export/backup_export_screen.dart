@@ -105,29 +105,70 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       builder: (dialogContext) => SimpleDialog(
         title: const Text('Backup/Restore'),
         children: [
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              _exportBackup(parentContext);
-            },
-            child: Row(
-              children: const [
-                Icon(Icons.file_download),
-                SizedBox(width: 12),
-                Text('Export Backup'),
-              ],
-            ),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              _importBackup(parentContext);
-            },
-            child: Row(
-              children: const [
-                Icon(Icons.file_upload),
-                SizedBox(width: 12),
-                Text('Import Backup'),
+          SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SimpleDialogOption(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    _exportBackup(parentContext);
+                  },
+                  child: Row(
+                    children: const [
+                      Icon(Icons.file_download),
+                      SizedBox(width: 12),
+                      Text('Export Backup'),
+                    ],
+                  ),
+                ),
+                SimpleDialogOption(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    _importBackup(parentContext);
+                  },
+                  child: Row(
+                    children: const [
+                      Icon(Icons.file_upload),
+                      SizedBox(width: 12),
+                      Text('Import Backup'),
+                    ],
+                  ),
+                ),
+                // --- Added section: Media files info ---
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(dialogContext)
+                          .colorScheme
+                          .surfaceVariant
+                          .withValues(alpha: 0.6),
+                      border: Border.all(
+                        color: Theme.of(dialogContext).dividerColor,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Media files are not included in backups',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'To maintain fast and reliable backups, photos and videos are not included in export files.\nPlease use your device’s native backup services (iCloud, Google Backup, etc.) to ensure your media is preserved.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // --- End added section ---
               ],
             ),
           ),

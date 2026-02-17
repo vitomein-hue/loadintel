@@ -38,6 +38,8 @@ extension LoadTypeX on LoadType {
 
 class LoadRecipe {
   static const Object _unset = Object();
+  static final RegExp _duplicateSuffixPattern =
+      RegExp(r'^(.*?)(?:\s*\((\d+)\))$');
 
   const LoadRecipe({
     required this.id,
@@ -260,6 +262,78 @@ class LoadRecipe {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
+  }
+
+  LoadRecipe duplicateForNextEntry({
+    required String newId,
+    required DateTime now,
+  }) {
+    return LoadRecipe(
+      id: newId,
+      recipeName: _nextDuplicateName(recipeName),
+      cartridge: cartridge,
+      bulletBrand: bulletBrand,
+      bulletWeightGr: bulletWeightGr,
+      bulletDiameter: bulletDiameter,
+      bulletType: bulletType,
+      brass: brass,
+      brassTrimLength: brassTrimLength,
+      annealingTimeSec: annealingTimeSec,
+      primer: primer,
+      caseResize: caseResize,
+      gasCheckMaterial: gasCheckMaterial,
+      gasCheckInstallMethod: gasCheckInstallMethod,
+      bulletCoating: bulletCoating,
+      powder: powder,
+      powderChargeGr: powderChargeGr,
+      coal: coal,
+      baseToOgive: baseToOgive,
+      seatingDepth: seatingDepth,
+      notes: null,
+      firearmId: firearmId,
+      loadType: loadType,
+      gauge: gauge,
+      shellLength: shellLength,
+      hull: hull,
+      shotgunPrimer: shotgunPrimer,
+      shotgunPowder: shotgunPowder,
+      shotgunPowderCharge: shotgunPowderCharge,
+      wad: wad,
+      shotWeight: shotWeight,
+      shotSize: shotSize,
+      shotType: shotType,
+      crimpType: crimpType,
+      dramEquivalent: dramEquivalent,
+      muzzleloaderCaliber: muzzleloaderCaliber,
+      ignitionType: ignitionType,
+      muzzleloaderPowderType: muzzleloaderPowderType,
+      powderGranulation: powderGranulation,
+      muzzleloaderPowderCharge: muzzleloaderPowderCharge,
+      projectileType: projectileType,
+      projectileSizeWeight: projectileSizeWeight,
+      patchMaterial: patchMaterial,
+      patchThickness: patchThickness,
+      patchLube: patchLube,
+      sabotType: sabotType,
+      cleanedBetweenShots: cleanedBetweenShots,
+      isKeeper: false,
+      isDangerous: isDangerous,
+      dangerConfirmedAt: dangerConfirmedAt,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  static String _nextDuplicateName(String name) {
+    final trimmed = name.trim();
+    final match = _duplicateSuffixPattern.firstMatch(trimmed);
+    if (match == null) {
+      return '$trimmed (1)';
+    }
+    final base = match.group(1)!.trimRight();
+    final current = int.tryParse(match.group(2) ?? '') ?? 0;
+    final next = current + 1;
+    return '${base.isEmpty ? trimmed : base} ($next)';
   }
 
   Map<String, Object?> toMap({
