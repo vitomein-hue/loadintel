@@ -1862,19 +1862,21 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                     const SizedBox(height: 12),
                     Column(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: _isDuplicateSaving
-                                    ? null
-                                    : _duplicateAndSave,
-                                child: const Text('Duplicate & Save'),
+                        if (!_isEditing) ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: _isDuplicateSaving
+                                      ? null
+                                      : _duplicateAndSave,
+                                  child: const Text('Duplicate & Save'),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         Row(
                           children: [
                             Expanded(
