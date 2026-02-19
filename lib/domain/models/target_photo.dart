@@ -1,4 +1,4 @@
-﻿class TargetPhoto {
+class TargetPhoto {
   const TargetPhoto({
     required this.id,
     required this.rangeResultId,
@@ -43,4 +43,3 @@
     );
   }
 }
-

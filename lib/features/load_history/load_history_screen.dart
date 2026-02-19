@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:loadintel/core/theme/app_colors.dart';
@@ -348,12 +348,13 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
             );
 
           final bottomInset = MediaQuery.of(context).padding.bottom;
-          
+
           final trialService = context.watch<TrialService>();
-          
+
           return Column(
             children: [
-              if (trialService.shouldShowBanner()) TrialBanner(trialService: trialService),
+              if (trialService.shouldShowBanner())
+                TrialBanner(trialService: trialService),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Align(
@@ -540,9 +541,8 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                             setState(() => _filterIsDangerous = value),
                         onLoadTypeChanged: (value) =>
                             setState(() => _filterLoadType = value),
-                        onKeeperOnlyChanged: (value) => setState(
-                          () => _filterKeeperOnly = value ?? false,
-                        ),
+                        onKeeperOnlyChanged: (value) =>
+                            setState(() => _filterKeeperOnly = value ?? false),
                       ),
                     );
                   },
@@ -579,7 +579,9 @@ class _LoadHistoryScreenState extends State<LoadHistoryScreen> {
                                   : null,
                             ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                              ),
                               child: Row(
                                 children: [
                                   TextButton.icon(
@@ -751,11 +753,7 @@ class _TestedLoadTile extends StatelessWidget {
             ],
             if (recipe.isKeeper) ...[
               const SizedBox(width: 8),
-              const Icon(
-                Icons.gps_fixed,
-                color: Colors.red,
-                size: 20,
-              ),
+              const Icon(Icons.gps_fixed, color: Colors.red, size: 20),
             ],
           ],
         ),
@@ -839,15 +837,17 @@ class _TestedLoadTile extends StatelessWidget {
                                         width: 64,
                                         height: 64,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) => Container(
-                                          width: 64,
-                                          height: 64,
-                                          color: AppColors.card,
-                                          alignment: Alignment.center,
-                                          child: const Icon(
-                                            Icons.image_not_supported,
-                                          ),
-                                        ),
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Container(
+                                                  width: 64,
+                                                  height: 64,
+                                                  color: AppColors.card,
+                                                  alignment: Alignment.center,
+                                                  child: const Icon(
+                                                    Icons.image_not_supported,
+                                                  ),
+                                                ),
                                       ),
                                     ),
                                   ),
@@ -1383,173 +1383,185 @@ class _MoreFiltersSheet extends StatelessWidget {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset + keyboardInset),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          16 + bottomInset + keyboardInset,
+        ),
         child: ListView(
           shrinkWrap: true,
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           children: [
-          Text('More Filters', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedRecipeName,
-            decoration: const InputDecoration(labelText: 'Recipe Name'),
-            items: _stringItems(recipeNames),
-            onChanged: onRecipeNameChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<LoadType?>(
-            initialValue: selectedLoadType,
-            decoration: const InputDecoration(labelText: 'Load Type'),
-            items: [
-              const DropdownMenuItem<LoadType?>(
-                value: null,
-                child: Text('Any'),
-              ),
-              ...LoadType.values.map(
-                (type) => DropdownMenuItem<LoadType?>(
-                  value: type,
-                  child: Text(type.label),
-                ),
-              ),
-            ],
-            onChanged: onLoadTypeChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedFirearmId,
-            decoration: const InputDecoration(labelText: 'Firearm'),
-            items: [
-              const DropdownMenuItem<String?>(value: null, child: Text('Any')),
-              ...firearms.map(
-                (firearm) => DropdownMenuItem<String?>(
-                  value: firearm.id,
-                  child: Text(firearm.name),
-                ),
-              ),
-            ],
-            onChanged: onFirearmChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedBulletBrand,
-            decoration: const InputDecoration(labelText: 'Bullet'),
-            items: _stringItems(bulletBrands),
-            onChanged: onBulletBrandChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<double?>(
-            initialValue: selectedBulletDiameter,
-            decoration: const InputDecoration(labelText: 'Bullet Diameter'),
-            items: _doubleItems(bulletDiameters, decimals: 3),
-            onChanged: onBulletDiameterChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedBulletType,
-            decoration: const InputDecoration(labelText: 'Bullet Type'),
-            items: _stringItems(bulletTypes),
-            onChanged: onBulletTypeChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedCaseResize,
-            decoration: const InputDecoration(labelText: 'Case Resize'),
-            items: _stringItems(caseResize),
-            onChanged: onCaseResizeChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedGasCheckMaterial,
-            decoration: const InputDecoration(labelText: 'Gas Check Material'),
-            items: _stringItems(gasCheckMaterials),
-            onChanged: onGasCheckMaterialChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedGasCheckInstallMethod,
-            decoration: const InputDecoration(
-              labelText: 'Gas Check Install Method',
+            Text('More Filters', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedRecipeName,
+              decoration: const InputDecoration(labelText: 'Recipe Name'),
+              items: _stringItems(recipeNames),
+              onChanged: onRecipeNameChanged,
             ),
-            items: _stringItems(gasCheckInstallMethods),
-            onChanged: onGasCheckInstallMethodChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedBulletCoating,
-            decoration: const InputDecoration(labelText: 'Bullet Coating'),
-            items: _stringItems(bulletCoatings),
-            onChanged: onBulletCoatingChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedBrass,
-            decoration: const InputDecoration(labelText: 'Brass'),
-            items: _stringItems(brass),
-            onChanged: onBrassChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedPrimer,
-            decoration: const InputDecoration(labelText: 'Primer'),
-            items: _stringItems(primers),
-            onChanged: onPrimerChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<double?>(
-            initialValue: selectedCoal,
-            decoration: const InputDecoration(labelText: 'COAL'),
-            items: _doubleItems(coalValues, decimals: 3),
-            onChanged: onCoalChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<double?>(
-            initialValue: selectedBaseToOgive,
-            decoration: const InputDecoration(labelText: 'Base to Ogive (BTO)'),
-            items: _doubleItems(baseToOgiveValues, decimals: 3),
-            onChanged: onBaseToOgiveChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<double?>(
-            initialValue: selectedSeatingDepth,
-            decoration: const InputDecoration(labelText: 'Seating Depth'),
-            items: _doubleItems(seatingDepthValues, decimals: 3),
-            onChanged: onSeatingDepthChanged,
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<bool?>(
-            initialValue: selectedIsDangerous,
-            decoration: const InputDecoration(labelText: 'Dangerous'),
-            items: const [
-              DropdownMenuItem<bool?>(value: null, child: Text('Any')),
-              DropdownMenuItem<bool?>(value: true, child: Text('Yes')),
-              DropdownMenuItem<bool?>(value: false, child: Text('No')),
-            ],
-            onChanged: onIsDangerousChanged,
-          ),
-          const SizedBox(height: 12),
-          CheckboxListTile(
-            value: keeperOnly,
-            onChanged: onKeeperOnlyChanged,
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Keeper'),
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            initialValue: notesQuery,
-            decoration: const InputDecoration(labelText: 'Notes contains'),
-            textCapitalization: TextCapitalization.sentences,
-            textInputAction: TextInputAction.done,
-            onChanged: onNotesQueryChanged,
-            onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
-          ),
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<LoadType?>(
+              initialValue: selectedLoadType,
+              decoration: const InputDecoration(labelText: 'Load Type'),
+              items: [
+                const DropdownMenuItem<LoadType?>(
+                  value: null,
+                  child: Text('Any'),
+                ),
+                ...LoadType.values.map(
+                  (type) => DropdownMenuItem<LoadType?>(
+                    value: type,
+                    child: Text(type.label),
+                  ),
+                ),
+              ],
+              onChanged: onLoadTypeChanged,
             ),
-          ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedFirearmId,
+              decoration: const InputDecoration(labelText: 'Firearm'),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('Any'),
+                ),
+                ...firearms.map(
+                  (firearm) => DropdownMenuItem<String?>(
+                    value: firearm.id,
+                    child: Text(firearm.name),
+                  ),
+                ),
+              ],
+              onChanged: onFirearmChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedBulletBrand,
+              decoration: const InputDecoration(labelText: 'Bullet'),
+              items: _stringItems(bulletBrands),
+              onChanged: onBulletBrandChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<double?>(
+              initialValue: selectedBulletDiameter,
+              decoration: const InputDecoration(labelText: 'Bullet Diameter'),
+              items: _doubleItems(bulletDiameters, decimals: 3),
+              onChanged: onBulletDiameterChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedBulletType,
+              decoration: const InputDecoration(labelText: 'Bullet Type'),
+              items: _stringItems(bulletTypes),
+              onChanged: onBulletTypeChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedCaseResize,
+              decoration: const InputDecoration(labelText: 'Case Resize'),
+              items: _stringItems(caseResize),
+              onChanged: onCaseResizeChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedGasCheckMaterial,
+              decoration: const InputDecoration(
+                labelText: 'Gas Check Material',
+              ),
+              items: _stringItems(gasCheckMaterials),
+              onChanged: onGasCheckMaterialChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedGasCheckInstallMethod,
+              decoration: const InputDecoration(
+                labelText: 'Gas Check Install Method',
+              ),
+              items: _stringItems(gasCheckInstallMethods),
+              onChanged: onGasCheckInstallMethodChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedBulletCoating,
+              decoration: const InputDecoration(labelText: 'Bullet Coating'),
+              items: _stringItems(bulletCoatings),
+              onChanged: onBulletCoatingChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedBrass,
+              decoration: const InputDecoration(labelText: 'Brass'),
+              items: _stringItems(brass),
+              onChanged: onBrassChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedPrimer,
+              decoration: const InputDecoration(labelText: 'Primer'),
+              items: _stringItems(primers),
+              onChanged: onPrimerChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<double?>(
+              initialValue: selectedCoal,
+              decoration: const InputDecoration(labelText: 'COAL'),
+              items: _doubleItems(coalValues, decimals: 3),
+              onChanged: onCoalChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<double?>(
+              initialValue: selectedBaseToOgive,
+              decoration: const InputDecoration(
+                labelText: 'Base to Ogive (BTO)',
+              ),
+              items: _doubleItems(baseToOgiveValues, decimals: 3),
+              onChanged: onBaseToOgiveChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<double?>(
+              initialValue: selectedSeatingDepth,
+              decoration: const InputDecoration(labelText: 'Seating Depth'),
+              items: _doubleItems(seatingDepthValues, decimals: 3),
+              onChanged: onSeatingDepthChanged,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<bool?>(
+              initialValue: selectedIsDangerous,
+              decoration: const InputDecoration(labelText: 'Dangerous'),
+              items: const [
+                DropdownMenuItem<bool?>(value: null, child: Text('Any')),
+                DropdownMenuItem<bool?>(value: true, child: Text('Yes')),
+                DropdownMenuItem<bool?>(value: false, child: Text('No')),
+              ],
+              onChanged: onIsDangerousChanged,
+            ),
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              value: keeperOnly,
+              onChanged: onKeeperOnlyChanged,
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Keeper'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              initialValue: notesQuery,
+              decoration: const InputDecoration(labelText: 'Notes contains'),
+              textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.done,
+              onChanged: onNotesQueryChanged,
+              onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ),
           ],
         ),
       ),

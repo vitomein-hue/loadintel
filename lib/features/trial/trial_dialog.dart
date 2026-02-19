@@ -9,7 +9,8 @@ class TrialDialog {
       barrierDismissible: false,
       builder: (dialogContext) => _UpgradeDialog(
         title: 'Trial Ends Tomorrow',
-        message: 'Your 14-day trial expires in 24 hours. Upgrade now to lifetime access for just {price}.',
+        message:
+            'Your 14-day trial expires in 24 hours. Upgrade now to lifetime access for just {price}.',
         remindText: 'Remind Me Tomorrow',
         upgradeText: 'Upgrade for {price}',
       ),
@@ -22,7 +23,8 @@ class TrialDialog {
       barrierDismissible: false,
       builder: (dialogContext) => _UpgradeDialog(
         title: 'Trial Expired',
-        message: 'Your trial has ended. You have 1 grace day to upgrade for {price} and keep your data.',
+        message:
+            'Your trial has ended. You have 1 grace day to upgrade for {price} and keep your data.',
         remindText: 'Continue for 1 More Day',
         upgradeText: 'Upgrade for {price}',
       ),
@@ -34,7 +36,8 @@ class TrialDialog {
       context: context,
       builder: (dialogContext) => _UpgradeDialog(
         title: 'Upgrade to Lifetime Access',
-        message: 'Get lifetime access to Load Intel for just {price} - a one-time purchase.',
+        message:
+            'Get lifetime access to Load Intel for just {price} - a one-time purchase.',
         remindText: 'Not Now',
         upgradeText: 'Upgrade for {price}',
         showRestore: true,
@@ -73,14 +76,14 @@ class _UpgradeDialogState extends State<_UpgradeDialog> {
 
     try {
       final service = context.read<PurchaseService>();
-      
+
       if (!service.canPurchase) {
         _showError('Store unavailable right now. Please try again later.');
         return;
       }
-      
+
       final success = await service.buyLifetimeAccess();
-      
+
       if (mounted) {
         if (success) {
           Navigator.of(context).pop();
@@ -108,14 +111,14 @@ class _UpgradeDialogState extends State<_UpgradeDialog> {
 
     try {
       final service = context.read<PurchaseService>();
-      
+
       if (!service.isAvailable) {
         _showError('Store unavailable right now. Please try again later.');
         return;
       }
-      
+
       await service.restorePurchases();
-      
+
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -136,12 +139,9 @@ class _UpgradeDialogState extends State<_UpgradeDialog> {
 
   void _showError(String message) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 

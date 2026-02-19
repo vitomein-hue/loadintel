@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/core/utils/date_time_codec.dart';
+import 'package:loadintel/core/utils/date_time_codec.dart';
 import 'package:loadintel/data/db/app_database.dart';
 import 'package:loadintel/domain/models/inventory_item.dart';
 import 'package:loadintel/domain/repositories/inventory_repository.dart';
@@ -53,4 +53,3 @@ class InventoryRepositorySqlite implements InventoryRepository {
     );
   }
 }
-

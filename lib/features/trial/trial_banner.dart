@@ -4,10 +4,7 @@ import 'package:loadintel/services/purchase_service.dart';
 import 'package:provider/provider.dart';
 
 class TrialBanner extends StatefulWidget {
-  const TrialBanner({
-    super.key,
-    required this.trialService,
-  });
+  const TrialBanner({super.key, required this.trialService});
 
   final TrialService trialService;
 
@@ -25,7 +22,7 @@ class _TrialBannerState extends State<TrialBanner> {
 
     try {
       final purchaseService = context.read<PurchaseService>();
-      
+
       if (!purchaseService.canPurchase) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -38,7 +35,7 @@ class _TrialBannerState extends State<TrialBanner> {
       }
 
       final success = await purchaseService.buyLifetimeAccess();
-      
+
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -104,8 +101,9 @@ class _TrialBannerState extends State<TrialBanner> {
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, 
-                color: Colors.blue.shade800, 
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.blue.shade800,
                 size: 16,
               ),
             ],

@@ -188,7 +188,9 @@ ReportContent buildReportContent({
         final seatingText = load.seatingDepth != null
             ? load.seatingDepth.toString()
             : '-';
-        loadLines.add('COAL: $coalText | BTO: $btoText | Seating: $seatingText');
+        loadLines.add(
+          'COAL: $coalText | BTO: $btoText | Seating: $seatingText',
+        );
       }
       break;
     case LoadType.shotgun:

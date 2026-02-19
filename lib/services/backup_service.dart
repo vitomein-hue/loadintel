@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:loadintel/data/db/app_database.dart';
@@ -29,7 +29,10 @@ class BackupService {
       await exportDir.create(recursive: true);
     }
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final filePath = path.join(exportDir.path, 'loadintel_backup_$timestamp.json');
+    final filePath = path.join(
+      exportDir.path,
+      'loadintel_backup_$timestamp.json',
+    );
     final file = File(filePath);
     await file.writeAsString(jsonEncode(payload));
     return filePath;
@@ -41,12 +44,24 @@ class BackupService {
     final payload = jsonDecode(raw) as Map<String, dynamic>;
     final db = await _db.database;
 
-    final firearms = List<Map<String, dynamic>>.from(payload['firearms'] as List);
-    final loadRecipes = List<Map<String, dynamic>>.from(payload['loadRecipes'] as List);
-    final rangeResults = List<Map<String, dynamic>>.from(payload['rangeResults'] as List);
-    final targetPhotos = List<Map<String, dynamic>>.from(payload['targetPhotos'] as List);
-    final inventory = List<Map<String, dynamic>>.from(payload['inventory'] as List);
-    final settings = List<Map<String, dynamic>>.from(payload['settings'] as List);
+    final firearms = List<Map<String, dynamic>>.from(
+      payload['firearms'] as List,
+    );
+    final loadRecipes = List<Map<String, dynamic>>.from(
+      payload['loadRecipes'] as List,
+    );
+    final rangeResults = List<Map<String, dynamic>>.from(
+      payload['rangeResults'] as List,
+    );
+    final targetPhotos = List<Map<String, dynamic>>.from(
+      payload['targetPhotos'] as List,
+    );
+    final inventory = List<Map<String, dynamic>>.from(
+      payload['inventory'] as List,
+    );
+    final settings = List<Map<String, dynamic>>.from(
+      payload['settings'] as List,
+    );
 
     await db.transaction((txn) async {
       await txn.delete('target_photos');

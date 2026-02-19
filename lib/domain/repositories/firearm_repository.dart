@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/domain/models/firearm.dart';
+import 'package:loadintel/domain/models/firearm.dart';
 
 abstract class FirearmRepository {
   Future<void> upsertFirearm(Firearm firearm);
@@ -6,4 +6,3 @@ abstract class FirearmRepository {
   Future<Firearm?> getFirearm(String id);
   Future<List<Firearm>> listFirearms();
 }
-

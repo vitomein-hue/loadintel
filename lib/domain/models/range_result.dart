@@ -1,4 +1,4 @@
-﻿class RangeResult {
+class RangeResult {
   const RangeResult({
     required this.id,
     required this.loadId,
@@ -80,7 +80,8 @@
       notes: notes ?? this.notes,
       temperatureF: temperatureF ?? this.temperatureF,
       humidity: humidity ?? this.humidity,
-      barometricPressureInHg: barometricPressureInHg ?? this.barometricPressureInHg,
+      barometricPressureInHg:
+          barometricPressureInHg ?? this.barometricPressureInHg,
       windDirection: windDirection ?? this.windDirection,
       windSpeedMph: windSpeedMph ?? this.windSpeedMph,
       weatherConditions: weatherConditions ?? this.weatherConditions,
@@ -141,7 +142,8 @@
       notes: map['notes'] as String?,
       temperatureF: (map['temperatureF'] as num?)?.toDouble(),
       humidity: (map['humidity'] as num?)?.toDouble(),
-      barometricPressureInHg: (map['barometricPressureInHg'] as num?)?.toDouble(),
+      barometricPressureInHg: (map['barometricPressureInHg'] as num?)
+          ?.toDouble(),
       windDirection: map['windDirection'] as String?,
       windSpeedMph: (map['windSpeedMph'] as num?)?.toDouble(),
       weatherConditions: map['weatherConditions'] as String?,
@@ -150,4 +152,3 @@
     );
   }
 }
-

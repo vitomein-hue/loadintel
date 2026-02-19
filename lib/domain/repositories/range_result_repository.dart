@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/domain/models/range_result.dart';
+import 'package:loadintel/domain/models/range_result.dart';
 
 abstract class RangeResultRepository {
   Future<void> addResult(RangeResult result);
@@ -8,4 +8,3 @@ abstract class RangeResultRepository {
   Future<List<RangeResult>> listResultsByLoad(String loadId);
   Future<RangeResult?> getBestResultForLoad(String loadId);
 }
-

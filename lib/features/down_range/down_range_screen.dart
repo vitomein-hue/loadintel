@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
@@ -57,10 +57,15 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
     if (_activeLoadId == null) {
       return null;
     }
-    return _states.firstWhere((state) => state.benchEntry.recipe.id == _activeLoadId);
+    return _states.firstWhere(
+      (state) => state.benchEntry.recipe.id == _activeLoadId,
+    );
   }
 
-  Future<void> _addPhoto(_DownRangeEntryState entry, Future<String?> Function() pick) async {
+  Future<void> _addPhoto(
+    _DownRangeEntryState entry,
+    Future<String?> Function() pick,
+  ) async {
     final sourcePath = await pick();
     if (sourcePath == null) {
       return;
@@ -77,17 +82,17 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
   Future<void> _saveResult(_DownRangeEntryState entry) async {
     final groupSize = double.tryParse(entry.groupSizeController.text.trim());
     if (groupSize == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter group size.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter group size.')));
       return;
     }
     final bench = entry.benchEntry;
     final firearmId = bench.firearmId;
     if (firearmId == null || bench.distanceYds == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bench data incomplete.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Bench data incomplete.')));
       return;
     }
 
@@ -144,7 +149,7 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
         ),
       );
     }
-    
+
     if (!mounted) {
       return;
     }
@@ -174,9 +179,9 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
         return;
       }
       Navigator.of(context).popUntil((route) => route.isFirst);
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const LoadHistoryScreen()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const LoadHistoryScreen()));
     }
   }
 
@@ -209,18 +214,13 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
   Widget build(BuildContext context) {
     final activeState = _activeState();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Down Range'),
-      ),
+      appBar: AppBar(title: const Text('Down Range')),
       resizeToAvoidBottomInset: true,
       body: KeyboardSafePage(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Select Load',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Select Load', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             SizedBox(
               height: 68,
@@ -260,7 +260,9 @@ class _DownRangeScreenState extends State<DownRangeScreen> {
                     activeState.photoPaths.remove(path);
                   });
                 },
-                onSave: activeState.isSaved ? null : () => _saveResult(activeState),
+                onSave: activeState.isSaved
+                    ? null
+                    : () => _saveResult(activeState),
               ),
           ],
         ),
@@ -298,7 +300,9 @@ class _DownRangeEntryCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 4),
-            Text('Distance: ${bench.distanceYds?.toStringAsFixed(0) ?? '-'} yds'),
+            Text(
+              'Distance: ${bench.distanceYds?.toStringAsFixed(0) ?? '-'} yds',
+            ),
             Text('Rounds tested: ${bench.roundsTested?.toString() ?? '-'}'),
             Text(
               'AVG ${bench.avgFps?.toStringAsFixed(1) ?? '-'} '
@@ -339,13 +343,16 @@ class _DownRangeEntryCard extends StatelessWidget {
                                 width: 72,
                                 height: 72,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  width: 72,
-                                  height: 72,
-                                  color: Colors.black12,
-                                  alignment: Alignment.center,
-                                  child: const Icon(Icons.image_not_supported),
-                                ),
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      width: 72,
+                                      height: 72,
+                                      color: Colors.black12,
+                                      alignment: Alignment.center,
+                                      child: const Icon(
+                                        Icons.image_not_supported,
+                                      ),
+                                    ),
                               ),
                             ),
                             Positioned(
@@ -365,7 +372,9 @@ class _DownRangeEntryCard extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: entryState.groupSizeController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Group Size (in)'),
               onSubmitted: (_) => FocusScope.of(context).nextFocus(),

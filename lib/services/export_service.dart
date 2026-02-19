@@ -212,7 +212,9 @@ class ExportService {
     }
 
     final filePath = await _writeLocalExportFile(fileName, bytes);
-    debugPrint('Exported $fileName -> $filePath');
+    if (kDebugMode) {
+      debugPrint('Exported $fileName -> $filePath');
+    }
     return filePath;
   }
 
@@ -235,7 +237,9 @@ class ExportService {
         'bytes': bytes,
       });
       if (location != null) {
-        debugPrint('Exported $fileName -> $location');
+        if (kDebugMode) {
+          debugPrint('Exported $fileName -> $location');
+        }
       }
       return location;
     } on PlatformException {
@@ -252,7 +256,9 @@ class ExportService {
         'bytes': bytes,
       });
       if (location != null) {
-        debugPrint('Exported $fileName -> $location');
+        if (kDebugMode) {
+          debugPrint('Exported $fileName -> $location');
+        }
       }
       return location;
     }
@@ -440,9 +446,7 @@ class ExportService {
       buffer.writeln(_sectionTitleForType(type));
       buffer.writeln(_headersForType(type).join(','));
       for (final load in sectionLoads) {
-        buffer.writeln(
-          _valuesForType(load).map(_csvEscape).join(','),
-        );
+        buffer.writeln(_valuesForType(load).map(_csvEscape).join(','));
       }
       buffer.writeln();
     }
@@ -713,19 +717,21 @@ class ExportService {
         bytes[1] == 0xBB &&
         bytes[2] == 0xBF;
 
-    debugPrint('----- BEGIN CSV DEBUG (Single Load) -----');
-    debugPrint('CSV export path: $exportPath');
-    debugPrint('CSV debug path: $debugPath');
-    debugPrint('Delimiter: "$delimiter"');
-    debugPrint('Encoding: $encodingLabel');
-    debugPrint(
-      'Line endings: ${usesCrLf ? 'CRLF' : 'LF'} (CRLF=$crlfCount, LF=$lfCount)',
-    );
-    debugPrint('Has UTF-8 BOM: $hasBom');
-    debugPrint('First 200 chars: $first200');
-    debugPrint('Last 200 chars: $last200');
-    debugPrint('First 20 bytes (hex): $firstBytes');
-    _debugPrintBlock('CSV TEXT', csvText);
+    if (kDebugMode) {
+      debugPrint('----- BEGIN CSV DEBUG (Single Load) -----');
+      debugPrint('CSV export path: $exportPath');
+      debugPrint('CSV debug path: $debugPath');
+      debugPrint('Delimiter: "$delimiter"');
+      debugPrint('Encoding: $encodingLabel');
+      debugPrint(
+        'Line endings: ${usesCrLf ? 'CRLF' : 'LF'} (CRLF=$crlfCount, LF=$lfCount)',
+      );
+      debugPrint('Has UTF-8 BOM: $hasBom');
+      debugPrint('First 200 chars: $first200');
+      debugPrint('Last 200 chars: $last200');
+      debugPrint('First 20 bytes (hex): $firstBytes');
+      _debugPrintBlock('CSV TEXT', csvText);
+    }
 
     final warnings = _lintCsv(
       csvText: csvText,
@@ -734,25 +740,37 @@ class ExportService {
       usesOnlyLf: usesOnlyLf,
     );
     if (warnings.isEmpty) {
-      debugPrint('CSV Lint: no issues detected.');
+      if (kDebugMode) {
+        debugPrint('CSV Lint: no issues detected.');
+      }
     } else {
       for (final warning in warnings) {
-        debugPrint('CSV Lint Warning: $warning');
+        if (kDebugMode) {
+          debugPrint('CSV Lint Warning: $warning');
+        }
       }
     }
-    debugPrint('----- END CSV DEBUG (Single Load) -----');
+    if (kDebugMode) {
+      debugPrint('----- END CSV DEBUG (Single Load) -----');
+    }
   }
 
   void _debugPrintBlock(String label, String content) {
     const chunkSize = 800;
-    debugPrint('----- BEGIN $label -----');
+    if (kDebugMode) {
+      debugPrint('----- BEGIN $label -----');
+    }
     for (var i = 0; i < content.length; i += chunkSize) {
       final end = (i + chunkSize < content.length)
           ? i + chunkSize
           : content.length;
-      debugPrint(content.substring(i, end));
+      if (kDebugMode) {
+        debugPrint(content.substring(i, end));
+      }
     }
-    debugPrint('----- END $label -----');
+    if (kDebugMode) {
+      debugPrint('----- END $label -----');
+    }
   }
 
   List<String> _lintCsv({
@@ -921,9 +939,9 @@ class ExportService {
       loadHeaders.map((value) => TextCellValue(value)).toList(),
     );
     loadSheet.appendRow(
-      _valuesForType(load)
-          .map((value) => TextCellValue(value?.toString() ?? ''))
-          .toList(),
+      _valuesForType(
+        load,
+      ).map((value) => TextCellValue(value?.toString() ?? '')).toList(),
     );
 
     final resultsSheet = excel['Results'];

@@ -1,34 +1,43 @@
-﻿import 'package:loadintel/domain/models/load_with_best_result.dart';
+import 'package:loadintel/domain/models/load_with_best_result.dart';
 
-List<LoadWithBestResult> sortTestedLoads(
-  List<LoadWithBestResult> loads,
-) {
+List<LoadWithBestResult> sortTestedLoads(List<LoadWithBestResult> loads) {
   loads.sort((a, b) {
-    final cartridgeCompare = _compareText(a.recipe.cartridge, b.recipe.cartridge);
+    final cartridgeCompare = _compareText(
+      a.recipe.cartridge,
+      b.recipe.cartridge,
+    );
     if (cartridgeCompare != 0) {
       return cartridgeCompare;
     }
 
-    final bulletBrandCompare =
-        _compareText(a.recipe.bulletBrand, b.recipe.bulletBrand);
+    final bulletBrandCompare = _compareText(
+      a.recipe.bulletBrand,
+      b.recipe.bulletBrand,
+    );
     if (bulletBrandCompare != 0) {
       return bulletBrandCompare;
     }
 
-    final bulletWeightCompare =
-        _compareNumber(a.recipe.bulletWeightGr, b.recipe.bulletWeightGr);
+    final bulletWeightCompare = _compareNumber(
+      a.recipe.bulletWeightGr,
+      b.recipe.bulletWeightGr,
+    );
     if (bulletWeightCompare != 0) {
       return bulletWeightCompare;
     }
 
-    final bulletDiameterCompare =
-        _compareNumber(a.recipe.bulletDiameter, b.recipe.bulletDiameter);
+    final bulletDiameterCompare = _compareNumber(
+      a.recipe.bulletDiameter,
+      b.recipe.bulletDiameter,
+    );
     if (bulletDiameterCompare != 0) {
       return bulletDiameterCompare;
     }
 
-    final bulletTypeCompare =
-        _compareText(a.recipe.bulletType, b.recipe.bulletType);
+    final bulletTypeCompare = _compareText(
+      a.recipe.bulletType,
+      b.recipe.bulletType,
+    );
     if (bulletTypeCompare != 0) {
       return bulletTypeCompare;
     }

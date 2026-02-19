@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:loadintel/core/theme/app_colors.dart';
 import 'package:loadintel/domain/models/inventory_item.dart';
 import 'package:loadintel/domain/repositories/inventory_repository.dart';
@@ -49,7 +49,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
     });
   }
 
-  Future<void> _showItemDialog({InventoryItem? item, required InventoryCategory category}) async {
+  Future<void> _showItemDialog({
+    InventoryItem? item,
+    required InventoryCategory category,
+  }) async {
     final nameController = TextEditingController(text: item?.name ?? '');
     final notesController = TextEditingController(text: item?.notes ?? '');
     final formKey = GlobalKey<FormState>();
@@ -70,7 +73,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(item == null ? 'Add ${category.label}' : 'Edit ${category.label}'),
+        title: Text(
+          item == null ? 'Add ${category.label}' : 'Edit ${category.label}',
+        ),
         content: Form(
           key: formKey,
           child: SingleChildScrollView(
@@ -136,7 +141,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
       name: nameController.text.trim(),
       qty: item?.qty,
       unit: item?.unit,
-      notes: notesController.text.trim().isEmpty ? null : notesController.text.trim(),
+      notes: notesController.text.trim().isEmpty
+          ? null
+          : notesController.text.trim(),
       createdAt: item?.createdAt ?? now,
       updatedAt: now,
     );
@@ -174,9 +181,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inventory'),
-      ),
+      appBar: AppBar(title: const Text('Inventory')),
       body: SafeArea(
         child: FutureBuilder<List<InventoryItem>>(
           future: _itemsFuture,
@@ -194,9 +199,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     (category) => _InventorySection(
                       key: _sectionKeys[category.type],
                       category: category,
-                      items: items.where((item) => item.type == category.type).toList(),
+                      items: items
+                          .where((item) => item.type == category.type)
+                          .toList(),
                       onAdd: () => _showItemDialog(category: category),
-                      onEdit: (item) => _showItemDialog(item: item, category: category),
+                      onEdit: (item) =>
+                          _showItemDialog(item: item, category: category),
                       onDelete: _deleteItem,
                     ),
                   )
@@ -258,7 +266,9 @@ class _InventorySection extends StatelessWidget {
             backgroundColor: AppColors.burntCopper,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           child: const Text(' + '),
         ),

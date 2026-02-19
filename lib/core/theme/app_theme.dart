@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:loadintel/core/theme/app_colors.dart';
 
@@ -68,10 +68,7 @@ ThemeData buildAppTheme() {
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.secondary,
-      ),
+      style: TextButton.styleFrom(foregroundColor: AppColors.secondary),
     ),
   );
 }
-

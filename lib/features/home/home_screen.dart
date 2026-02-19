@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:loadintel/core/theme/app_colors.dart';
 import 'package:loadintel/features/backup_export/backup_export_screen.dart';
 import 'package:loadintel/features/build_load/build_load_screen.dart';
@@ -17,18 +17,14 @@ class HomeScreen extends StatelessWidget {
         leadingWidth: 160,
         leading: TextButton.icon(
           onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const InventoryScreen()),
-            );
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const InventoryScreen()));
           },
           icon: const Icon(Icons.inventory_2),
           label: const FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(
-              'Inventory',
-              maxLines: 1,
-              softWrap: false,
-            ),
+            child: Text('Inventory', maxLines: 1, softWrap: false),
           ),
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,
@@ -69,7 +65,9 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.edit_note,
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const BuildLoadScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const BuildLoadScreen(),
+                      ),
                     );
                   },
                 ),
@@ -79,7 +77,9 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.my_location,
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const RangeTestScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const RangeTestScreen(),
+                      ),
                     );
                   },
                 ),
@@ -89,7 +89,9 @@ class HomeScreen extends StatelessWidget {
                   icon: Icons.history,
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const LoadHistoryScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const LoadHistoryScreen(),
+                      ),
                     );
                   },
                 ),
@@ -113,8 +115,9 @@ class _BetaBanner extends StatelessWidget {
       future: _infoFuture,
       builder: (context, snapshot) {
         final info = snapshot.data;
-        final versionText =
-            info == null ? 'v--' : 'v${info.version} (${info.buildNumber})';
+        final versionText = info == null
+            ? 'v--'
+            : 'v${info.version} (${info.buildNumber})';
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
@@ -171,7 +174,9 @@ class _HomeNavButton extends StatelessWidget {
           backgroundColor: AppColors.burntCopper,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -181,9 +186,9 @@ class _HomeNavButton extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),

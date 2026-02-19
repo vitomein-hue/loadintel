@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/core/utils/date_time_codec.dart';
+import 'package:loadintel/core/utils/date_time_codec.dart';
 import 'package:loadintel/core/utils/double_list_codec.dart';
 import 'package:loadintel/core/utils/load_sort.dart';
 import 'package:loadintel/data/db/app_database.dart';
@@ -21,8 +21,9 @@ class LoadRecipeRepositorySqlite implements LoadRecipeRepository {
       recipe.toMap(
         createdAtMillis: encodeDateTime(recipe.createdAt),
         updatedAtMillis: encodeDateTime(recipe.updatedAt),
-        dangerConfirmedAtMillis:
-            recipe.dangerConfirmedAt == null ? null : encodeDateTime(recipe.dangerConfirmedAt!),
+        dangerConfirmedAtMillis: recipe.dangerConfirmedAt == null
+            ? null
+            : encodeDateTime(recipe.dangerConfirmedAt!),
       ),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -51,7 +52,11 @@ class LoadRecipeRepositorySqlite implements LoadRecipeRepository {
   @override
   Future<LoadRecipe?> getRecipe(String id) async {
     final db = await _db.database;
-    final rows = await db.query('load_recipes', where: 'id = ?', whereArgs: [id]);
+    final rows = await db.query(
+      'load_recipes',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     if (rows.isEmpty) {
       return null;
     }
@@ -68,7 +73,9 @@ class LoadRecipeRepositorySqlite implements LoadRecipeRepository {
   @override
   Future<int> countRecipes() async {
     final db = await _db.database;
-    final rows = await db.rawQuery('SELECT COUNT(*) as count FROM load_recipes');
+    final rows = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM load_recipes',
+    );
     return Sqflite.firstIntValue(rows) ?? 0;
   }
 

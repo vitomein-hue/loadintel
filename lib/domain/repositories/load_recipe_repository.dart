@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/domain/models/load_recipe.dart';
+import 'package:loadintel/domain/models/load_recipe.dart';
 import 'package:loadintel/domain/models/load_with_best_result.dart';
 
 abstract class LoadRecipeRepository {
@@ -11,4 +11,3 @@ abstract class LoadRecipeRepository {
   Future<List<LoadRecipe>> listNewLoads();
   Future<List<LoadWithBestResult>> listTestedLoads();
 }
-

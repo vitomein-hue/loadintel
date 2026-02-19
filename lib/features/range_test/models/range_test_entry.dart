@@ -1,10 +1,7 @@
-﻿import 'package:loadintel/domain/models/load_recipe.dart';
+import 'package:loadintel/domain/models/load_recipe.dart';
 
 class RangeTestLoadEntry {
-  RangeTestLoadEntry({
-    required this.recipe,
-    required this.firearmId,
-  });
+  RangeTestLoadEntry({required this.recipe, required this.firearmId});
 
   final LoadRecipe recipe;
   String? firearmId;
@@ -18,7 +15,7 @@ class RangeTestLoadEntry {
   bool noChronoData = false;
   bool isDangerous = false;
   String? dangerReason;
-  
+
   // Weather fields
   double? temperatureF;
   double? humidity;

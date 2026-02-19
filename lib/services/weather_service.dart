@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -43,44 +43,67 @@ class WeatherService {
     String? longitude,
     String? zipCode,
   }) async {
-    debugPrint(
-      'WeatherService: fetchWeather called with '
-      'zip=$zipCode, latitude=$latitude, longitude=$longitude',
-    );
+    if (kDebugMode) {
+      debugPrint(
+        'WeatherService: fetchWeather called with '
+        'zip=$zipCode, latitude=$latitude, longitude=$longitude',
+      );
+    }
 
     final hasZip = zipCode != null && zipCode.trim().isNotEmpty;
     final hasCoords =
-        latitude != null && longitude != null && latitude.trim().isNotEmpty && longitude.trim().isNotEmpty;
+        latitude != null &&
+        longitude != null &&
+        latitude.trim().isNotEmpty &&
+        longitude.trim().isNotEmpty;
     if (!hasZip && !hasCoords) {
-      debugPrint('WeatherService: No location provided');
+      if (kDebugMode) {
+        debugPrint('WeatherService: No location provided');
+      }
       return null;
     }
 
     for (int attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        debugPrint('WeatherService: Attempt ${attempt + 1}/$maxRetries');
+        if (kDebugMode) {
+          debugPrint('WeatherService: Attempt ${attempt + 1}/$maxRetries');
+        }
         final weather = await _fetchWeatherOnce(
           latitude: latitude,
           longitude: longitude,
           zipCode: zipCode,
         );
         if (weather != null && weather.isValid) {
-          debugPrint('WeatherService: Valid weather data received on attempt ${attempt + 1}');
+          if (kDebugMode) {
+            debugPrint(
+              'WeatherService: Valid weather data received on attempt ${attempt + 1}',
+            );
+          }
           return weather;
         }
-        debugPrint('WeatherService: Attempt ${attempt + 1} failed validation');
+        if (kDebugMode) {
+          debugPrint(
+            'WeatherService: Attempt ${attempt + 1} failed validation',
+          );
+        }
         if (attempt < maxRetries - 1) {
           await Future.delayed(retryDelay);
         }
       } catch (e, st) {
-        debugPrint('WeatherService: Attempt ${attempt + 1} error: $e');
-        debugPrint('WeatherService: Attempt ${attempt + 1} stack trace: $st');
+        if (kDebugMode) {
+          debugPrint('WeatherService: Attempt ${attempt + 1} error: $e');
+        }
+        if (kDebugMode) {
+          debugPrint('WeatherService: Attempt ${attempt + 1} stack trace: $st');
+        }
         if (attempt < maxRetries - 1) {
           await Future.delayed(retryDelay);
         }
       }
     }
-    debugPrint('WeatherService: All $maxRetries attempts failed');
+    if (kDebugMode) {
+      debugPrint('WeatherService: All $maxRetries attempts failed');
+    }
     return null;
   }
 
@@ -95,25 +118,33 @@ class WeatherService {
       zipCode: zipCode,
     );
     if (latLng == null) {
-      debugPrint('WeatherService: Unable to resolve location to lat/lon');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Unable to resolve location to lat/lon');
+      }
       return null;
     }
 
     final gridPoint = await _fetchGridPoint(latLng);
     if (gridPoint == null) {
-      debugPrint('WeatherService: Failed to resolve NOAA grid point');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Failed to resolve NOAA grid point');
+      }
       return null;
     }
 
     final stationUrl = await _fetchStationUrl(gridPoint);
     if (stationUrl == null) {
-      debugPrint('WeatherService: Failed to get NOAA station URL');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Failed to get NOAA station URL');
+      }
       return null;
     }
 
     final observation = await _fetchLatestObservation(stationUrl);
     if (observation == null) {
-      debugPrint('WeatherService: Failed to get latest observation');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Failed to get latest observation');
+      }
       return null;
     }
 
@@ -129,20 +160,30 @@ class WeatherService {
       final lat = double.tryParse(latitude);
       final lon = double.tryParse(longitude);
       if (lat == null || lon == null) {
-        debugPrint('WeatherService: Invalid lat/lon values: $latitude, $longitude');
+        if (kDebugMode) {
+          debugPrint(
+            'WeatherService: Invalid lat/lon values: $latitude, $longitude',
+          );
+        }
         return null;
       }
-      debugPrint('WeatherService: Using coordinates: $lat,$lon');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Using coordinates: $lat,$lon');
+      }
       return _LatLng(lat: lat, lon: lon);
     }
 
     if (zipCode == null || zipCode.trim().isEmpty) {
-      debugPrint('WeatherService: No location provided');
+      if (kDebugMode) {
+        debugPrint('WeatherService: No location provided');
+      }
       return null;
     }
 
     final trimmedZip = zipCode.trim();
-    debugPrint('WeatherService: Resolving zip code: $trimmedZip');
+    if (kDebugMode) {
+      debugPrint('WeatherService: Resolving zip code: $trimmedZip');
+    }
     return _geocodeZip(trimmedZip);
   }
 
@@ -156,28 +197,44 @@ class WeatherService {
 
   Future<_LatLng?> _geocodeZipWithZippopotam(String zipCode) async {
     final url = Uri.parse('https://api.zippopotam.us/us/$zipCode');
-    debugPrint('WeatherService: Zippopotam URL: $url');
+    if (kDebugMode) {
+      debugPrint('WeatherService: Zippopotam URL: $url');
+    }
 
-    final response = await http.get(url, headers: _headers).timeout(
-      requestTimeout,
-      onTimeout: () => http.Response('Timeout', 408),
-    );
+    final response = await http
+        .get(url, headers: _headers)
+        .timeout(
+          requestTimeout,
+          onTimeout: () => http.Response('Timeout', 408),
+        );
 
-    debugPrint('WeatherService: Zippopotam response status: ${response.statusCode}');
+    if (kDebugMode) {
+      debugPrint(
+        'WeatherService: Zippopotam response status: ${response.statusCode}',
+      );
+    }
     if (response.statusCode != 200) {
-      debugPrint('WeatherService: Zippopotam bad status code: ${response.statusCode}');
+      if (kDebugMode) {
+        debugPrint(
+          'WeatherService: Zippopotam bad status code: ${response.statusCode}',
+        );
+      }
       _logBodySnippet('Zippopotam', response.body);
       return null;
     }
     if (response.body.trim().isEmpty) {
-      debugPrint('WeatherService: Zippopotam empty response body');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Zippopotam empty response body');
+      }
       return null;
     }
 
     final data = json.decode(response.body) as Map<String, dynamic>;
     final places = data['places'] as List?;
     if (places == null || places.isEmpty) {
-      debugPrint('WeatherService: Zippopotam places empty');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Zippopotam places empty');
+      }
       return null;
     }
 
@@ -185,11 +242,15 @@ class WeatherService {
     final lat = double.tryParse(first['latitude']?.toString() ?? '');
     final lon = double.tryParse(first['longitude']?.toString() ?? '');
     if (lat == null || lon == null) {
-      debugPrint('WeatherService: Zippopotam parse failed for zip $zipCode');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Zippopotam parse failed for zip $zipCode');
+      }
       return null;
     }
 
-    debugPrint('WeatherService: Zippopotam resolved $zipCode -> $lat,$lon');
+    if (kDebugMode) {
+      debugPrint('WeatherService: Zippopotam resolved $zipCode -> $lat,$lon');
+    }
     return _LatLng(lat: lat, lon: lon);
   }
 
@@ -200,27 +261,43 @@ class WeatherService {
       'format': 'json',
       'limit': '1',
     });
-    debugPrint('WeatherService: Geocoding URL: $url');
+    if (kDebugMode) {
+      debugPrint('WeatherService: Geocoding URL: $url');
+    }
 
-    final response = await http.get(url, headers: _headers).timeout(
-      requestTimeout,
-      onTimeout: () => http.Response('Timeout', 408),
-    );
+    final response = await http
+        .get(url, headers: _headers)
+        .timeout(
+          requestTimeout,
+          onTimeout: () => http.Response('Timeout', 408),
+        );
 
-    debugPrint('WeatherService: Geocode response status: ${response.statusCode}');
+    if (kDebugMode) {
+      debugPrint(
+        'WeatherService: Geocode response status: ${response.statusCode}',
+      );
+    }
     if (response.statusCode != 200) {
-      debugPrint('WeatherService: Geocode bad status code: ${response.statusCode}');
+      if (kDebugMode) {
+        debugPrint(
+          'WeatherService: Geocode bad status code: ${response.statusCode}',
+        );
+      }
       _logBodySnippet('Geocode', response.body);
       return null;
     }
     if (response.body.trim().isEmpty) {
-      debugPrint('WeatherService: Geocode empty response body');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Geocode empty response body');
+      }
       return null;
     }
 
     final data = json.decode(response.body);
     if (data is! List || data.isEmpty) {
-      debugPrint('WeatherService: Geocode result empty');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Geocode result empty');
+      }
       return null;
     }
 
@@ -228,37 +305,57 @@ class WeatherService {
     final lat = double.tryParse(first['lat']?.toString() ?? '');
     final lon = double.tryParse(first['lon']?.toString() ?? '');
     if (lat == null || lon == null) {
-      debugPrint('WeatherService: Geocode parse failed for zip $zipCode');
+      if (kDebugMode) {
+        debugPrint('WeatherService: Geocode parse failed for zip $zipCode');
+      }
       return null;
     }
 
-    debugPrint('WeatherService: Geocode resolved $zipCode -> $lat,$lon');
+    if (kDebugMode) {
+      debugPrint('WeatherService: Geocode resolved $zipCode -> $lat,$lon');
+    }
     return _LatLng(lat: lat, lon: lon);
   }
 
   Future<_GridPoint?> _fetchGridPoint(_LatLng latLng) async {
-    final url = Uri.parse('https://api.weather.gov/points/${latLng.lat},${latLng.lon}');
-    debugPrint('WeatherService: NOAA points URL: $url');
-    final response = await http.get(url, headers: _headers).timeout(
-      requestTimeout,
-      onTimeout: () => http.Response('Timeout', 408),
+    final url = Uri.parse(
+      'https://api.weather.gov/points/${latLng.lat},${latLng.lon}',
     );
+    if (kDebugMode) {
+      debugPrint('WeatherService: NOAA points URL: $url');
+    }
+    final response = await http
+        .get(url, headers: _headers)
+        .timeout(
+          requestTimeout,
+          onTimeout: () => http.Response('Timeout', 408),
+        );
 
-    debugPrint('WeatherService: NOAA points status: ${response.statusCode}');
+    if (kDebugMode) {
+      debugPrint('WeatherService: NOAA points status: ${response.statusCode}');
+    }
     if (response.statusCode != 200) {
-      debugPrint('WeatherService: NOAA points bad status code: ${response.statusCode}');
+      if (kDebugMode) {
+        debugPrint(
+          'WeatherService: NOAA points bad status code: ${response.statusCode}',
+        );
+      }
       _logBodySnippet('NOAA points', response.body);
       return null;
     }
     if (response.body.trim().isEmpty) {
-      debugPrint('WeatherService: NOAA points empty response body');
+      if (kDebugMode) {
+        debugPrint('WeatherService: NOAA points empty response body');
+      }
       return null;
     }
 
     final data = json.decode(response.body) as Map<String, dynamic>;
     final properties = data['properties'] as Map<String, dynamic>?;
     if (properties == null) {
-      debugPrint('WeatherService: NOAA points missing properties');
+      if (kDebugMode) {
+        debugPrint('WeatherService: NOAA points missing properties');
+      }
       return null;
     }
 
@@ -266,11 +363,15 @@ class WeatherService {
     final gridX = (properties['gridX'] as num?)?.toInt();
     final gridY = (properties['gridY'] as num?)?.toInt();
     if (gridId == null || gridX == null || gridY == null) {
-      debugPrint('WeatherService: NOAA points missing grid info');
+      if (kDebugMode) {
+        debugPrint('WeatherService: NOAA points missing grid info');
+      }
       return null;
     }
 
-    debugPrint('WeatherService: NOAA grid: $gridId $gridX,$gridY');
+    if (kDebugMode) {
+      debugPrint('WeatherService: NOAA grid: $gridId $gridX,$gridY');
+    }
     return _GridPoint(gridId: gridId, gridX: gridX, gridY: gridY);
   }
 
@@ -278,81 +379,123 @@ class WeatherService {
     final url = Uri.parse(
       'https://api.weather.gov/gridpoints/${gridPoint.gridId}/${gridPoint.gridX},${gridPoint.gridY}/stations',
     );
-    debugPrint('WeatherService: NOAA stations URL: $url');
-    final response = await http.get(url, headers: _headers).timeout(
-      requestTimeout,
-      onTimeout: () => http.Response('Timeout', 408),
-    );
+    if (kDebugMode) {
+      debugPrint('WeatherService: NOAA stations URL: $url');
+    }
+    final response = await http
+        .get(url, headers: _headers)
+        .timeout(
+          requestTimeout,
+          onTimeout: () => http.Response('Timeout', 408),
+        );
 
-    debugPrint('WeatherService: NOAA stations status: ${response.statusCode}');
+    if (kDebugMode) {
+      debugPrint(
+        'WeatherService: NOAA stations status: ${response.statusCode}',
+      );
+    }
     if (response.statusCode != 200) {
-      debugPrint('WeatherService: NOAA stations bad status code: ${response.statusCode}');
+      if (kDebugMode) {
+        debugPrint(
+          'WeatherService: NOAA stations bad status code: ${response.statusCode}',
+        );
+      }
       _logBodySnippet('NOAA stations', response.body);
       return null;
     }
     if (response.body.trim().isEmpty) {
-      debugPrint('WeatherService: NOAA stations empty response body');
+      if (kDebugMode) {
+        debugPrint('WeatherService: NOAA stations empty response body');
+      }
       return null;
     }
 
     final data = json.decode(response.body) as Map<String, dynamic>;
     final features = data['features'] as List?;
     if (features == null || features.isEmpty) {
-      debugPrint('WeatherService: NOAA stations list empty');
+      if (kDebugMode) {
+        debugPrint('WeatherService: NOAA stations list empty');
+      }
       return null;
     }
 
     final first = features.first as Map<String, dynamic>;
     final stationUrl = first['id']?.toString();
     if (stationUrl != null && stationUrl.isNotEmpty) {
-      debugPrint('WeatherService: NOAA station URL: $stationUrl');
+      if (kDebugMode) {
+        debugPrint('WeatherService: NOAA station URL: $stationUrl');
+      }
       return stationUrl;
     }
 
     final properties = first['properties'] as Map<String, dynamic>?;
     final stationId = properties?['stationIdentifier']?.toString();
     if (stationId == null || stationId.isEmpty) {
-      debugPrint('WeatherService: NOAA station identifier missing');
+      if (kDebugMode) {
+        debugPrint('WeatherService: NOAA station identifier missing');
+      }
       return null;
     }
 
     final fallbackUrl = 'https://api.weather.gov/stations/$stationId';
-    debugPrint('WeatherService: NOAA station fallback URL: $fallbackUrl');
+    if (kDebugMode) {
+      debugPrint('WeatherService: NOAA station fallback URL: $fallbackUrl');
+    }
     return fallbackUrl;
   }
 
-  Future<Map<String, dynamic>?> _fetchLatestObservation(String stationUrl) async {
+  Future<Map<String, dynamic>?> _fetchLatestObservation(
+    String stationUrl,
+  ) async {
     final normalized = stationUrl.endsWith('/observations/latest')
         ? stationUrl
         : '${stationUrl.replaceAll(RegExp(r'/+$'), '')}/observations/latest';
     final url = Uri.parse(normalized);
-    debugPrint('WeatherService: NOAA observation URL: $url');
-    final response = await http.get(url, headers: _headers).timeout(
-      requestTimeout,
-      onTimeout: () => http.Response('Timeout', 408),
-    );
+    if (kDebugMode) {
+      debugPrint('WeatherService: NOAA observation URL: $url');
+    }
+    final response = await http
+        .get(url, headers: _headers)
+        .timeout(
+          requestTimeout,
+          onTimeout: () => http.Response('Timeout', 408),
+        );
 
-    debugPrint('WeatherService: NOAA observation status: ${response.statusCode}');
+    if (kDebugMode) {
+      debugPrint(
+        'WeatherService: NOAA observation status: ${response.statusCode}',
+      );
+    }
     if (response.statusCode != 200) {
-      debugPrint('WeatherService: NOAA observation bad status code: ${response.statusCode}');
+      if (kDebugMode) {
+        debugPrint(
+          'WeatherService: NOAA observation bad status code: ${response.statusCode}',
+        );
+      }
       _logBodySnippet('NOAA observation', response.body);
       return null;
     }
     if (response.body.trim().isEmpty) {
-      debugPrint('WeatherService: NOAA observation empty response body');
+      if (kDebugMode) {
+        debugPrint('WeatherService: NOAA observation empty response body');
+      }
       return null;
     }
     if (kDebugMode) {
       final bodySnippet = response.body.length > 2000
           ? response.body.substring(0, 2000)
           : response.body;
-      debugPrint('WeatherService: NOAA observation body (truncated): $bodySnippet');
+      debugPrint(
+        'WeatherService: NOAA observation body (truncated): $bodySnippet',
+      );
     }
 
     final data = json.decode(response.body) as Map<String, dynamic>;
     final properties = data['properties'] as Map<String, dynamic>?;
     if (properties == null) {
-      debugPrint('WeatherService: NOAA observation missing properties');
+      if (kDebugMode) {
+        debugPrint('WeatherService: NOAA observation missing properties');
+      }
       return null;
     }
     return properties;
@@ -374,7 +517,8 @@ class WeatherService {
         properties['barometricPressure']?['value'],
         label: 'barometricPressure',
       );
-      final pressureUnit = properties['barometricPressure']?['unitCode']?.toString();
+      final pressureUnit = properties['barometricPressure']?['unitCode']
+          ?.toString();
       final pressureInHg = _convertPressureToInHg(pressureValue, pressureUnit);
 
       final windSpeedValue = _parseDoubleOrNull(
@@ -382,7 +526,10 @@ class WeatherService {
         label: 'windSpeed',
       );
       final windSpeedUnit = properties['windSpeed']?['unitCode']?.toString();
-      final windSpeedMph = _convertWindSpeedToMph(windSpeedValue, windSpeedUnit);
+      final windSpeedMph = _convertWindSpeedToMph(
+        windSpeedValue,
+        windSpeedUnit,
+      );
 
       final windDirectionDegrees = _parseDoubleOrNull(
         properties['windDirection']?['value'],
@@ -397,21 +544,26 @@ class WeatherService {
           ? null
           : conditions;
 
-      final hasAny = tempF != null ||
+      final hasAny =
+          tempF != null ||
           humidity != null ||
           pressureInHg != null ||
           windSpeedMph != null ||
           safeConditions != null;
       if (!hasAny) {
-        debugPrint('WeatherService: NOAA observation missing all fields');
+        if (kDebugMode) {
+          debugPrint('WeatherService: NOAA observation missing all fields');
+        }
         return null;
       }
 
-      debugPrint(
-        'WeatherService: Parsed NOAA data - Temp: $tempF°F, Humidity: $humidity%, '
-        'Pressure: $pressureInHg inHg, Wind: $windSpeedMph mph $windDir, '
-        'Conditions: ${safeConditions ?? "N/A"}',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          'WeatherService: Parsed NOAA data - Temp: $tempF°F, Humidity: $humidity%, '
+          'Pressure: $pressureInHg inHg, Wind: $windSpeedMph mph $windDir, '
+          'Conditions: ${safeConditions ?? "N/A"}',
+        );
+      }
 
       return WeatherData(
         temperatureF: tempF,
@@ -422,20 +574,28 @@ class WeatherService {
         weatherConditions: safeConditions,
       );
     } catch (e, st) {
-      debugPrint('Weather parsing error: $e');
-      debugPrint('Weather parsing stack trace: $st');
+      if (kDebugMode) {
+        debugPrint('Weather parsing error: $e');
+      }
+      if (kDebugMode) {
+        debugPrint('Weather parsing stack trace: $st');
+      }
       return null;
     }
   }
 
   void _logBodySnippet(String label, String body) {
     final bodySnippet = body.length > 200 ? body.substring(0, 200) : body;
-    debugPrint('WeatherService: $label response body snippet: $bodySnippet');
+    if (kDebugMode) {
+      debugPrint('WeatherService: $label response body snippet: $bodySnippet');
+    }
   }
 
   double? _parseDoubleOrNull(dynamic value, {required String label}) {
     if (value == null) {
-      debugPrint('WeatherService: $label missing');
+      if (kDebugMode) {
+        debugPrint('WeatherService: $label missing');
+      }
       return null;
     }
     if (value is num) {
@@ -443,7 +603,9 @@ class WeatherService {
     }
     final parsed = double.tryParse(value.toString());
     if (parsed == null) {
-      debugPrint('WeatherService: $label invalid');
+      if (kDebugMode) {
+        debugPrint('WeatherService: $label invalid');
+      }
       return null;
     }
     return parsed;

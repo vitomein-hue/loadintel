@@ -63,8 +63,9 @@ class KeyboardAwareBottomBar extends StatelessWidget {
     final bottomSafeArea = mediaQuery.viewPadding.bottom;
 
     return Padding(
-      padding:
-          padding.add(EdgeInsets.only(bottom: bottomInset + bottomSafeArea)),
+      padding: padding.add(
+        EdgeInsets.only(bottom: bottomInset + bottomSafeArea),
+      ),
       child: child,
     );
   }

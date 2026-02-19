@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/domain/models/load_recipe.dart';
+import 'package:loadintel/domain/models/load_recipe.dart';
 import 'package:loadintel/domain/models/range_result.dart';
 
 class LoadWithBestResult {
@@ -14,4 +14,3 @@ class LoadWithBestResult {
 
   double? get bestGroupSize => bestResult?.groupSizeIn;
 }
-

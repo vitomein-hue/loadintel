@@ -1,5 +1,6 @@
-﻿import 'dart:async';
+import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -40,7 +41,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   void _safeSetState(String source, VoidCallback update) {
     if (!mounted) {
-      debugPrint('⚠️ $source: Skipping setState because widget is unmounted');
+      if (kDebugMode) {
+        debugPrint('?? $source: Skipping setState because widget is unmounted');
+      }
       return;
     }
     setState(update);
@@ -48,7 +51,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   void _showWeatherSnack(String message) {
     if (!mounted) {
-      debugPrint('⚠️ Weather UI: Cannot show SnackBar, widget unmounted');
+      if (kDebugMode) {
+        debugPrint('?? Weather UI: Cannot show SnackBar, widget unmounted');
+      }
       return;
     }
     try {
@@ -56,14 +61,18 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      debugPrint('⚠️ SnackBar failed (context disposed): $e');
+      if (kDebugMode) {
+        debugPrint('?? SnackBar failed (context disposed): $e');
+      }
     }
   }
 
   int _startWeatherRequest(String source) {
     _weatherRequestId += 1;
     final requestId = _weatherRequestId;
-    debugPrint('🌦️ $source: Starting request #$requestId');
+    if (kDebugMode) {
+      debugPrint('??? $source: Starting request #$requestId');
+    }
     _safeSetState('$source start', () {
       _isLoadingWeather = true;
     });
@@ -72,11 +81,15 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   bool _isWeatherRequestActive(int requestId, String source) {
     if (!mounted) {
-      debugPrint('⚠️ $source: request #$requestId aborted (widget unmounted)');
+      if (kDebugMode) {
+        debugPrint('?? $source: request #$requestId aborted (widget unmounted)');
+      }
       return false;
     }
     if (requestId != _weatherRequestId) {
-      debugPrint('⚠️ $source: request #$requestId stale; active request is #$_weatherRequestId');
+      if (kDebugMode) {
+        debugPrint('?? $source: request #$requestId stale; active request is #$_weatherRequestId');
+      }
       return false;
     }
     return true;
@@ -282,7 +295,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   }
 
   Future<void> _captureWeather() async {
-    debugPrint('🌦️ Weather UI: Opening weather capture sheet');
+    if (kDebugMode) {
+      debugPrint('??? Weather UI: Opening weather capture sheet');
+    }
     String zipValue = '';
     final result = await showModalBottomSheet<dynamic>(
       context: context,
@@ -364,13 +379,17 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   Future<void> _fetchWeatherFromZip(String zipCode) async {
     if (!mounted) {
-      debugPrint('⚠️ Widget not mounted, aborting ZIP fetch');
+      if (kDebugMode) {
+        debugPrint('?? Widget not mounted, aborting ZIP fetch');
+      }
       return;
     }
 
     final cleaned = zipCode.trim();
     if (cleaned.length != 5) {
-      debugPrint('⚠️ ZIP: Invalid zip code: $zipCode');
+      if (kDebugMode) {
+        debugPrint('?? ZIP: Invalid zip code: $zipCode');
+      }
       _showWeatherSnack('Enter a valid ZIP code');
       return;
     }
@@ -378,7 +397,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
     final requestId = _startWeatherRequest('ZIP weather fetch');
 
     try {
-      debugPrint('📮 Fetching weather for zip: $cleaned');
+      if (kDebugMode) {
+        debugPrint('?? Fetching weather for zip: $cleaned');
+      }
 
       final weather = await _weatherService.fetchWeather(
         zipCode: cleaned,
@@ -387,7 +408,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       if (!mounted) return;
       if (!_isWeatherRequestActive(requestId, 'ZIP weather API call')) return;
 
-      debugPrint('📮 Weather received: ${weather != null ? "Success" : "Null"}');
+      if (kDebugMode) {
+        debugPrint('?? Weather received: ${weather != null ? "Success" : "Null"}');
+      }
 
       if (weather == null) {
         _showWeatherSnack('Weather not available');
@@ -413,7 +436,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         _weatherCaptured = true;
       });
     } catch (e) {
-      debugPrint('❌ ZIP error: $e');
+      if (kDebugMode) {
+        debugPrint('? ZIP error: $e');
+      }
       if (mounted) {
         _showWeatherSnack('Weather fetch failed');
         _safeSetState('ZIP error', () {
@@ -424,20 +449,28 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   }
 
   Future<void> _fetchWeatherFromGPS() async {
-    debugPrint('🌍 Starting GPS weather fetch...');
+    if (kDebugMode) {
+      debugPrint('?? Starting GPS weather fetch...');
+    }
     
     if (!mounted) {
-      debugPrint('⚠️ Widget not mounted, aborting GPS fetch');
+      if (kDebugMode) {
+        debugPrint('?? Widget not mounted, aborting GPS fetch');
+      }
       return;
     }
     
     final requestId = _startWeatherRequest('GPS weather fetch');
 
     try {
-      debugPrint('🌍 Checking if location services are enabled...');
+      if (kDebugMode) {
+        debugPrint('?? Checking if location services are enabled...');
+      }
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!mounted) return;
-      debugPrint('🌍 Location services enabled: $serviceEnabled');
+      if (kDebugMode) {
+        debugPrint('?? Location services enabled: $serviceEnabled');
+      }
       if (!_isWeatherRequestActive(requestId, 'GPS weather services check')) return;
       if (!serviceEnabled) {
         _showWeatherSnack('Location services are disabled');
@@ -447,17 +480,25 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         return;
       }
 
-      debugPrint('🌍 Checking location permissions...');
+      if (kDebugMode) {
+        debugPrint('?? Checking location permissions...');
+      }
       LocationPermission permission = await Geolocator.checkPermission();
       if (!mounted) return;
-      debugPrint('🌍 Current permission status: $permission');
+      if (kDebugMode) {
+        debugPrint('?? Current permission status: $permission');
+      }
       if (!_isWeatherRequestActive(requestId, 'GPS permission check')) return;
       
       if (permission == LocationPermission.denied) {
-        debugPrint('🌍 Permission denied, requesting permission...');
+        if (kDebugMode) {
+          debugPrint('?? Permission denied, requesting permission...');
+        }
         permission = await Geolocator.requestPermission();
         if (!mounted) return;
-        debugPrint('🌍 Permission after request: $permission');
+        if (kDebugMode) {
+          debugPrint('?? Permission after request: $permission');
+        }
         if (!_isWeatherRequestActive(requestId, 'GPS permission request')) return;
         if (permission == LocationPermission.denied) {
           _showWeatherSnack('Location permission denied');
@@ -476,7 +517,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         return;
       }
 
-      debugPrint('🌍 Getting current GPS position...');
+      if (kDebugMode) {
+        debugPrint('?? Getting current GPS position...');
+      }
       Position? position;
       try {
         position = await Geolocator.getCurrentPosition(
@@ -485,11 +528,19 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         );
         if (!mounted) return;
       } on TimeoutException catch (e, st) {
-        debugPrint('⚠️ GPS: Timed out waiting for current position: $e');
-        debugPrint('⚠️ GPS: Timeout stack trace: $st');
+        if (kDebugMode) {
+          debugPrint('?? GPS: Timed out waiting for current position: $e');
+        }
+        if (kDebugMode) {
+          debugPrint('?? GPS: Timeout stack trace: $st');
+        }
       } catch (e, st) {
-        debugPrint('⚠️ GPS: Current position lookup failed: $e');
-        debugPrint('⚠️ GPS: Current position error stack trace: $st');
+        if (kDebugMode) {
+          debugPrint('?? GPS: Current position lookup failed: $e');
+        }
+        if (kDebugMode) {
+          debugPrint('?? GPS: Current position error stack trace: $st');
+        }
       }
 
       position ??= await Geolocator.getLastKnownPosition();
@@ -502,20 +553,28 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         return;
       }
 
-      debugPrint('🌍 Position acquired: ${position.latitude}, ${position.longitude}');
+      if (kDebugMode) {
+        debugPrint('?? Position acquired: ${position.latitude}, ${position.longitude}');
+      }
       if (!_isWeatherRequestActive(requestId, 'GPS position lookup')) return;
       
-      debugPrint('🌍 Fetching weather for location...');
+      if (kDebugMode) {
+        debugPrint('?? Fetching weather for location...');
+      }
       final weather = await _weatherService.fetchWeather(
         latitude: position.latitude.toString(),
         longitude: position.longitude.toString(),
       );
       if (!mounted) return;
       if (!_isWeatherRequestActive(requestId, 'GPS weather API call')) return;
-      debugPrint('🌍 Weather data received: ${weather != null ? "Success" : "Null"}');
+      if (kDebugMode) {
+        debugPrint('?? Weather data received: ${weather != null ? "Success" : "Null"}');
+      }
 
       if (weather == null) {
-        debugPrint('⚠️ GPS: Weather data is null');
+        if (kDebugMode) {
+          debugPrint('?? GPS: Weather data is null');
+        }
         _showWeatherSnack('Weather currently not available');
         _safeSetState('GPS weather unavailable #$requestId', () {
           _isLoadingWeather = false;
@@ -525,10 +584,14 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         return;
       }
 
-      debugPrint('✅ GPS: Weather data received successfully');
+      if (kDebugMode) {
+        debugPrint('? GPS: Weather data received successfully');
+      }
       final activeEntry = _activeEntry();
       if (activeEntry != null) {
-        debugPrint('✅ GPS: Applying weather to active entry');
+        if (kDebugMode) {
+          debugPrint('? GPS: Applying weather to active entry');
+        }
         activeEntry.temperatureF = weather.temperatureF;
         activeEntry.humidity = weather.humidity;
         activeEntry.barometricPressureInHg = weather.barometricPressureInHg;
@@ -536,17 +599,25 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         activeEntry.windSpeedMph = weather.windSpeedMph;
         activeEntry.weatherConditions = weather.weatherConditions;
       } else {
-        debugPrint('⚠️ GPS: No active entry found');
+        if (kDebugMode) {
+          debugPrint('?? GPS: No active entry found');
+        }
       }
       _safeSetState('GPS weather success #$requestId', () {
         _isLoadingWeather = false;
         _weatherExpanded = true;
         _weatherCaptured = true;
       });
-      debugPrint('✅ GPS: Weather fetch complete');
+      if (kDebugMode) {
+        debugPrint('? GPS: Weather fetch complete');
+      }
     } catch (e, st) {
-      debugPrint('❌ GPS: Error occurred: $e');
-      debugPrint('❌ GPS: Stack trace: $st');
+      if (kDebugMode) {
+        debugPrint('? GPS: Error occurred: $e');
+      }
+      if (kDebugMode) {
+        debugPrint('? GPS: Stack trace: $st');
+      }
       if (!_isWeatherRequestActive(requestId, 'GPS weather error handler')) return;
       _showWeatherSnack('Failed to get location/weather: $e');
       _safeSetState('GPS weather error #$requestId', () {
@@ -558,7 +629,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   void _saveWeather() {
     if (!mounted) {
-      debugPrint('⚠️ Save weather: widget unmounted');
+      if (kDebugMode) {
+        debugPrint('?? Save weather: widget unmounted');
+      }
       return;
     }
     final activeEntry = _activeEntry();
@@ -1277,7 +1350,7 @@ class _WeatherFieldsState extends State<_WeatherFields> {
         TextField(
           controller: _tempController,
           decoration: const InputDecoration(
-            labelText: 'Temperature (°F)',
+            labelText: 'Temperature (�F)',
             hintText: '70',
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),

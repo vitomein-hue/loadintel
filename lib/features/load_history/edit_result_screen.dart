@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -52,21 +52,30 @@ class _EditResultScreenState extends State<EditResultScreen> {
   @override
   void initState() {
     super.initState();
-    _distanceController =
-        TextEditingController(text: widget.result.distanceYds.toString());
+    _distanceController = TextEditingController(
+      text: widget.result.distanceYds.toString(),
+    );
     _roundsTestedController = TextEditingController(
       text: widget.result.roundsTested?.toString() ?? '',
     );
-    _groupController =
-        TextEditingController(text: widget.result.groupSizeIn.toString());
-    _avgController = TextEditingController(text: widget.result.avgFps?.toString() ?? '');
-    _sdController = TextEditingController(text: widget.result.sdFps?.toString() ?? '');
-    _esController = TextEditingController(text: widget.result.esFps?.toString() ?? '');
+    _groupController = TextEditingController(
+      text: widget.result.groupSizeIn.toString(),
+    );
+    _avgController = TextEditingController(
+      text: widget.result.avgFps?.toString() ?? '',
+    );
+    _sdController = TextEditingController(
+      text: widget.result.sdFps?.toString() ?? '',
+    );
+    _esController = TextEditingController(
+      text: widget.result.esFps?.toString() ?? '',
+    );
     _notesController = TextEditingController(text: widget.result.notes ?? '');
 
     _testedAt = widget.result.testedAt;
     _firearmId = widget.result.firearmId;
-    _shotsMode = widget.result.fpsShots != null && widget.result.fpsShots!.isNotEmpty;
+    _shotsMode =
+        widget.result.fpsShots != null && widget.result.fpsShots!.isNotEmpty;
     _noChronoData = !_shotsMode && widget.result.avgFps == null;
     _initShotControllers(widget.result.fpsShots);
 
@@ -132,9 +141,9 @@ class _EditResultScreenState extends State<EditResultScreen> {
       _isKeeper = value;
     });
     await context.read<LoadRecipeRepository>().updateKeeper(
-          widget.result.loadId,
-          value,
-        );
+      widget.result.loadId,
+      value,
+    );
   }
 
   Future<void> _pickTestedAt() async {
@@ -243,7 +252,8 @@ class _EditResultScreenState extends State<EditResultScreen> {
   }
 
   Future<void> _removePhoto(TargetPhoto photo) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed =
+        await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete photo?'),
@@ -281,15 +291,15 @@ class _EditResultScreenState extends State<EditResultScreen> {
 
     final distance = double.tryParse(_distanceController.text.trim());
     if (distance == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter distance.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter distance.')));
       return;
     }
     if (_firearmId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select a firearm.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Select a firearm.')));
       return;
     }
 
@@ -300,9 +310,9 @@ class _EditResultScreenState extends State<EditResultScreen> {
 
     final shots = _shotsMode ? _currentShots() : <double>[];
     if (_shotsMode && shots.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter at least one shot.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Enter at least one shot.')));
       return;
     }
 
@@ -335,7 +345,9 @@ class _EditResultScreenState extends State<EditResultScreen> {
       sdFps: sdFps,
       esFps: esFps,
       groupSizeIn: groupSize,
-      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      notes: _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim(),
       createdAt: widget.result.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -354,18 +366,19 @@ class _EditResultScreenState extends State<EditResultScreen> {
       return;
     }
     if (recipe == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Load recipe not found.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Load recipe not found.')));
       return;
     }
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => BuildLoadScreen(recipe: recipe)),
-  );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => BuildLoadScreen(recipe: recipe)));
   }
 
   Future<void> _deleteResult() async {
-    final confirmed = await showDialog<bool>(
+    final confirmed =
+        await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Delete Result'),
@@ -428,334 +441,389 @@ class _EditResultScreenState extends State<EditResultScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _editLoad,
-                          icon: const Icon(Icons.edit),
-                          label: const Text('Edit Load'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _editLoad,
+                            icon: const Icon(Icons.edit),
+                            label: const Text('Edit Load'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    CheckboxListTile(
+                      value: _isKeeper,
+                      onChanged: _recipe == null
+                          ? null
+                          : (value) {
+                              if (value == null) {
+                                return;
+                              }
+                              _setKeeper(value);
+                            },
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Keeper'),
+                      subtitle: const Text('Mark as a go-to load'),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Tested: ${_formatDateTime(_testedAt)}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleSmall,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _pickTestedAt,
+                                  child: const Text('Change'),
+                                ),
+                              ],
+                            ),
+                            DropdownButtonFormField<String?>(
+                              initialValue:
+                                  firearms.any((f) => f.id == _firearmId)
+                                  ? _firearmId
+                                  : null,
+                              decoration: const InputDecoration(
+                                labelText: 'Firearm',
+                              ),
+                              items: firearms
+                                  .map(
+                                    (firearm) => DropdownMenuItem<String?>(
+                                      value: firearm.id,
+                                      child: Text(firearm.name),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _firearmId = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _distanceController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                labelText: 'Distance (yds)',
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Required';
+                                }
+                                if (double.tryParse(value.trim()) == null) {
+                                  return 'Invalid number';
+                                }
+                                return null;
+                              },
+                              onFieldSubmitted: (_) =>
+                                  FocusScope.of(context).nextFocus(),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _roundsTestedController,
+                              keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.next,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: '# of rounds tested',
+                                helperText:
+                                    'How many rounds were fired in this test',
+                              ),
+                              onFieldSubmitted: (_) =>
+                                  FocusScope.of(context).nextFocus(),
+                            ),
+                            const SizedBox(height: 12),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: _shotsMode
+                                  ? OutlinedButton(
+                                      onPressed: () => _switchMode(false),
+                                      child: const Text('Use Manual Summary'),
+                                    )
+                                  : OutlinedButton(
+                                      onPressed: () => _switchMode(true),
+                                      child: const Text('Use Shot-by-shot'),
+                                    ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (_shotsMode)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ..._shotControllers.asMap().entries.map((
+                                    entry,
+                                  ) {
+                                    final index = entry.key;
+                                    final controller = entry.value;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: TextField(
+                                        controller: controller,
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        textInputAction: TextInputAction.next,
+                                        decoration: InputDecoration(
+                                          labelText: 'Shot ${index + 1}',
+                                        ),
+                                        onChanged: (_) {
+                                          if (index ==
+                                                  _shotControllers.length - 1 &&
+                                              controller.text
+                                                  .trim()
+                                                  .isNotEmpty) {
+                                            setState(() {
+                                              _shotControllers.add(
+                                                TextEditingController(),
+                                              );
+                                            });
+                                            return;
+                                          }
+                                          setState(() {});
+                                        },
+                                        onSubmitted: (_) =>
+                                            FocusScope.of(context).nextFocus(),
+                                      ),
+                                    );
+                                  }),
+                                  if (stats != null)
+                                    Text(
+                                      'AVG ${stats.average.toStringAsFixed(1)} '
+                                      '| SD ${stats.sd.toStringAsFixed(1)} '
+                                      '| ES ${stats.es.toStringAsFixed(1)}',
+                                    ),
+                                ],
+                              )
+                            else
+                              Column(
+                                children: [
+                                  CheckboxListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: const Text('No chrono data'),
+                                    value: _noChronoData,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _noChronoData = value ?? false;
+                                        if (_noChronoData) {
+                                          _avgController.clear();
+                                        }
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextFormField(
+                                    controller: _avgController,
+                                    enabled: !_noChronoData,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    textInputAction: TextInputAction.next,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Average FPS',
+                                    ),
+                                    validator: (value) {
+                                      if (value == null ||
+                                          value.trim().isEmpty) {
+                                        return null;
+                                      }
+                                      if (double.tryParse(value.trim()) ==
+                                          null) {
+                                        return 'Invalid number';
+                                      }
+                                      return null;
+                                    },
+                                    onFieldSubmitted: (_) =>
+                                        FocusScope.of(context).nextFocus(),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextFormField(
+                                    controller: _sdController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    textInputAction: TextInputAction.next,
+                                    decoration: const InputDecoration(
+                                      labelText: 'SD FPS',
+                                    ),
+                                    onFieldSubmitted: (_) =>
+                                        FocusScope.of(context).nextFocus(),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextFormField(
+                                    controller: _esController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    textInputAction: TextInputAction.next,
+                                    decoration: const InputDecoration(
+                                      labelText: 'ES FPS',
+                                    ),
+                                    onFieldSubmitted: (_) =>
+                                        FocusScope.of(context).nextFocus(),
+                                  ),
+                                ],
+                              ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _groupController,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              textInputAction: TextInputAction.next,
+                              decoration: const InputDecoration(
+                                labelText: 'Group Size (in)',
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Required';
+                                }
+                                if (double.tryParse(value.trim()) == null) {
+                                  return 'Invalid number';
+                                }
+                                return null;
+                              },
+                              onFieldSubmitted: (_) =>
+                                  FocusScope.of(context).nextFocus(),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _notesController,
+                              maxLines: 3,
+                              textInputAction: TextInputAction.done,
+                              decoration: const InputDecoration(
+                                labelText: 'Notes',
+                              ),
+                              onSubmitted: (_) =>
+                                  FocusScope.of(context).unfocus(),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  CheckboxListTile(
-                    value: _isKeeper,
-                    onChanged: _recipe == null
-                        ? null
-                        : (value) {
-                            if (value == null) {
-                              return;
-                            }
-                            _setKeeper(value);
-                          },
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Keeper'),
-                    subtitle: const Text('Mark as a go-to load'),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Tested: ${_formatDateTime(_testedAt)}',
-                                  style: Theme.of(context).textTheme.titleSmall,
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: _pickTestedAt,
-                                child: const Text('Change'),
-                              ),
-                            ],
-                          ),
-                          DropdownButtonFormField<String?>(
-                            initialValue: firearms.any((f) => f.id == _firearmId)
-                                ? _firearmId
-                                : null,
-                            decoration: const InputDecoration(labelText: 'Firearm'),
-                            items: firearms
-                                .map(
-                                  (firearm) => DropdownMenuItem<String?>(
-                                    value: firearm.id,
-                                    child: Text(firearm.name),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _firearmId = value;
-                              });
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _distanceController,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(decimal: true),
-                            textInputAction: TextInputAction.next,
-                            decoration:
-                                const InputDecoration(labelText: 'Distance (yds)'),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Required';
-                              }
-                              if (double.tryParse(value.trim()) == null) {
-                                return 'Invalid number';
-                              }
-                              return null;
-                            },
-                            onFieldSubmitted: (_) =>
-                                FocusScope.of(context).nextFocus(),
-                          ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _roundsTestedController,
-                            keyboardType: TextInputType.number,
-                            textInputAction: TextInputAction.next,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            decoration: const InputDecoration(
-                              labelText: '# of rounds tested',
-                              helperText: 'How many rounds were fired in this test',
-                            ),
-                            onFieldSubmitted: (_) =>
-                                FocusScope.of(context).nextFocus(),
-                          ),
-                          const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: _shotsMode
-                                ? OutlinedButton(
-                                    onPressed: () => _switchMode(false),
-                                    child: const Text('Use Manual Summary'),
-                                  )
-                                : OutlinedButton(
-                                    onPressed: () => _switchMode(true),
-                                    child: const Text('Use Shot-by-shot'),
-                                  ),
-                          ),
-                          const SizedBox(height: 8),
-                          if (_shotsMode)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ..._shotControllers.asMap().entries.map((entry) {
-                                  final index = entry.key;
-                                  final controller = entry.value;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
-                                    child: TextField(
-                                      controller: controller,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                          ),
-                                      textInputAction: TextInputAction.next,
-                                      decoration:
-                                          InputDecoration(labelText: 'Shot ${index + 1}'),
-                                      onChanged: (_) {
-                                        if (index == _shotControllers.length - 1 &&
-                                            controller.text.trim().isNotEmpty) {
-                                          setState(() {
-                                            _shotControllers.add(TextEditingController());
-                                          });
-                                          return;
-                                        }
-                                        setState(() {});
-                                      },
-                                      onSubmitted: (_) =>
-                                          FocusScope.of(context).nextFocus(),
-                                    ),
-                                  );
-                                }),
-                                if (stats != null)
-                                  Text(
-                                    'AVG ${stats.average.toStringAsFixed(1)} '
-                                    '| SD ${stats.sd.toStringAsFixed(1)} '
-                                    '| ES ${stats.es.toStringAsFixed(1)}',
-                                  ),
-                              ],
-                            )
-                          else
-                            Column(
-                              children: [
-                                CheckboxListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: const Text('No chrono data'),
-                                  value: _noChronoData,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _noChronoData = value ?? false;
-                                      if (_noChronoData) {
-                                        _avgController.clear();
-                                      }
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _avgController,
-                                  enabled: !_noChronoData,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(decimal: true),
-                                  textInputAction: TextInputAction.next,
-                                  decoration:
-                                      const InputDecoration(labelText: 'Average FPS'),
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return null;
-                                    }
-                                    if (double.tryParse(value.trim()) == null) {
-                                      return 'Invalid number';
-                                    }
-                                    return null;
-                                  },
-                                  onFieldSubmitted: (_) =>
-                                      FocusScope.of(context).nextFocus(),
-                                ),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _sdController,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(decimal: true),
-                                  textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(labelText: 'SD FPS'),
-                                  onFieldSubmitted: (_) =>
-                                      FocusScope.of(context).nextFocus(),
-                                ),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _esController,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(decimal: true),
-                                  textInputAction: TextInputAction.next,
-                                  decoration: const InputDecoration(labelText: 'ES FPS'),
-                                  onFieldSubmitted: (_) =>
-                                      FocusScope.of(context).nextFocus(),
-                                ),
-                              ],
-                            ),
-                          const SizedBox(height: 12),
-                          TextFormField(
-                            controller: _groupController,
-                            keyboardType:
-                                const TextInputType.numberWithOptions(decimal: true),
-                            textInputAction: TextInputAction.next,
-                            decoration:
-                                const InputDecoration(labelText: 'Group Size (in)'),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Required';
-                              }
-                              if (double.tryParse(value.trim()) == null) {
-                                return 'Invalid number';
-                              }
-                              return null;
-                            },
-                            onFieldSubmitted: (_) =>
-                                FocusScope.of(context).nextFocus(),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _notesController,
-                            maxLines: 3,
-                            textInputAction: TextInputAction.done,
-                            decoration: const InputDecoration(labelText: 'Notes'),
-                            onSubmitted: (_) =>
-                                FocusScope.of(context).unfocus(),
-                          ),
-                        ],
-                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Photos',
-                                  style: Theme.of(context).textTheme.titleMedium,
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Photos',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium,
+                                  ),
                                 ),
-                              ),
-                              OutlinedButton.icon(
-                                onPressed: _addPhoto,
-                                icon: const Icon(Icons.photo_library),
-                                label: const Text('Add'),
-                              ),
-                            ],
-                          ),
-                          if (_photos.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 8),
-                              child: Text('No photos yet.'),
-                            )
-                          else
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _photos
-                                    .map(
-                                      (photo) => Stack(
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
-                                            child: Image.file(
-                                              File(photo.thumbPath ?? photo.galleryPath),
-                                              width: 72,
-                                              height: 72,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) => Container(
+                                OutlinedButton.icon(
+                                  onPressed: _addPhoto,
+                                  icon: const Icon(Icons.photo_library),
+                                  label: const Text('Add'),
+                                ),
+                              ],
+                            ),
+                            if (_photos.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.only(top: 8),
+                                child: Text('No photos yet.'),
+                              )
+                            else
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: _photos
+                                      .map(
+                                        (photo) => Stack(
+                                          children: [
+                                            ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.file(
+                                                File(
+                                                  photo.thumbPath ??
+                                                      photo.galleryPath,
+                                                ),
                                                 width: 72,
                                                 height: 72,
-                                                color: Colors.black12,
-                                                alignment: Alignment.center,
-                                                child:
-                                                    const Icon(Icons.image_not_supported),
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) => Container(
+                                                      width: 72,
+                                                      height: 72,
+                                                      color: Colors.black12,
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: const Icon(
+                                                        Icons
+                                                            .image_not_supported,
+                                                      ),
+                                                    ),
                                               ),
                                             ),
-                                          ),
-                                          Positioned(
-                                            right: 0,
-                                            top: 0,
-                                            child: IconButton(
-                                              icon: const Icon(Icons.close, size: 18),
-                                              onPressed: () => _removePhoto(photo),
+                                            Positioned(
+                                              right: 0,
+                                              top: 0,
+                                              child: IconButton(
+                                                icon: const Icon(
+                                                  Icons.close,
+                                                  size: 18,
+                                                ),
+                                                onPressed: () =>
+                                                    _removePhoto(photo),
+                                              ),
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                    .toList(),
+                                          ],
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(onPressed: _save, child: const Text('Save')),
-                ],
-              ),
-            );
-          },
+                    const SizedBox(height: 12),
+                    ElevatedButton(onPressed: _save, child: const Text('Save')),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   String _formatDateTime(DateTime value) {

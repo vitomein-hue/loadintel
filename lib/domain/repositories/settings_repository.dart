@@ -7,7 +7,8 @@ class SettingsKeys {
   static const String exportFolderUri = 'exportFolderUri';
   static const String caseResizeOptions = 'caseResizeOptions';
   static const String gasCheckMaterialOptions = 'gasCheckMaterialOptions';
-  static const String gasCheckInstallMethodOptions = 'gasCheckInstallMethodOptions';
+  static const String gasCheckInstallMethodOptions =
+      'gasCheckInstallMethodOptions';
   static const String bulletCoatingOptions = 'bulletCoatingOptions';
 }
 

@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/data/db/app_database.dart';
+import 'package:loadintel/data/db/app_database.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -10,11 +10,10 @@ class SettingsRepositorySqlite implements SettingsRepository {
   @override
   Future<void> setBool(String key, bool value) async {
     final db = await _db.database;
-    await db.insert(
-      'settings',
-      {'key': key, 'value': value ? '1' : '0'},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('settings', {
+      'key': key,
+      'value': value ? '1' : '0',
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
@@ -34,11 +33,10 @@ class SettingsRepositorySqlite implements SettingsRepository {
   @override
   Future<void> setString(String key, String value) async {
     final db = await _db.database;
-    await db.insert(
-      'settings',
-      {'key': key, 'value': value},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('settings', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
@@ -88,4 +86,3 @@ class SettingsRepositorySqlite implements SettingsRepository {
     return (await getBool(SettingsKeys.lifetimeUnlocked)) ?? false;
   }
 }
-

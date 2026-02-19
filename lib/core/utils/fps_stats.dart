@@ -1,21 +1,14 @@
-﻿import 'dart:math';
+import 'dart:math';
 
 class FpsStats {
-  const FpsStats({
-    required this.average,
-    required this.sd,
-    required this.es,
-  });
+  const FpsStats({required this.average, required this.sd, required this.es});
 
   final double average;
   final double sd;
   final double es;
 }
 
-FpsStats? computeFpsStats(
-  List<double> shots, {
-  bool sampleSd = true,
-}) {
+FpsStats? computeFpsStats(List<double> shots, {bool sampleSd = true}) {
   if (shots.isEmpty) {
     return null;
   }
@@ -37,4 +30,3 @@ FpsStats? computeFpsStats(
 
   return FpsStats(average: average, sd: sd, es: es);
 }
-

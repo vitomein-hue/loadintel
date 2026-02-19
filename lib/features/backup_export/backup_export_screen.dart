@@ -1,4 +1,4 @@
-﻿import 'package:file_picker/file_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loadintel/domain/models/load_with_best_result.dart';
@@ -39,11 +39,15 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       final result = await Share.shareXFiles(
         [XFile(path)],
         subject: 'Load Intel Backup',
-        sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
       );
       if (result.status == ShareResultStatus.unavailable && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sharing is unavailable on this device.')),
+          const SnackBar(
+            content: Text('Sharing is unavailable on this device.'),
+          ),
         );
       }
     } catch (_) {
@@ -93,9 +97,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Backup imported.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Backup imported.')));
   }
 
   Future<void> _showBackupRestoreDialog() async {
@@ -144,10 +148,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Theme.of(dialogContext)
-                          .colorScheme
-                          .surfaceVariant
-                          .withValues(alpha: 0.6),
+                      color: Theme.of(
+                        dialogContext,
+                      ).colorScheme.surfaceVariant.withValues(alpha: 0.6),
                       border: Border.all(
                         color: Theme.of(dialogContext).dividerColor,
                       ),
@@ -294,9 +297,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export ready to share')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Export ready to share')));
     } catch (error) {
       debugPrint('Export failed: $error');
       if (!mounted) {
@@ -390,13 +393,15 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                           : ListView.separated(
                               shrinkWrap: true,
                               itemCount: filtered.length,
-                              separatorBuilder: (context, index) => const Divider(height: 1),
+                              separatorBuilder: (context, index) =>
+                                  const Divider(height: 1),
                               itemBuilder: (context, index) {
                                 final entry = filtered[index];
                                 return ListTile(
                                   title: Text(_loadTitle(entry)),
                                   subtitle: Text(_loadSubtitle(entry)),
-                                  onTap: () => Navigator.of(dialogContext).pop(entry),
+                                  onTap: () =>
+                                      Navigator.of(dialogContext).pop(entry),
                                 );
                               },
                             ),
@@ -457,9 +462,12 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     final bullet = bulletParts.isEmpty ? '-' : bulletParts.join(' ');
     final powder = '${recipe.powder} ${recipe.powderChargeGr} gr';
     final best = entry.bestResult;
-    final bestGroup = best == null ? '-' : '${best.groupSizeIn.toStringAsFixed(2)} in';
-    final testedAt =
-        best == null ? '-' : best.testedAt.toLocal().toString().split(' ').first;
+    final bestGroup = best == null
+        ? '-'
+        : '${best.groupSizeIn.toStringAsFixed(2)} in';
+    final testedAt = best == null
+        ? '-'
+        : best.testedAt.toLocal().toString().split(' ').first;
     return '$bullet | $powder | Best $bestGroup | $testedAt';
   }
 
@@ -481,15 +489,15 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
   Widget _buildTrialStatusCard(BuildContext context) {
     final trialService = context.watch<TrialService>();
     final purchaseService = context.watch<PurchaseService>();
-    
+
     final isPro = purchaseService.isProEntitled;
     final trialStartDate = trialService.trialStartDate;
     final daysRemaining = trialService.getDaysRemaining();
-    
+
     String title;
     String subtitle;
     IconData icon;
-    
+
     if (isPro) {
       title = 'Pro: Lifetime Access';
       subtitle = 'Thank you for supporting Load Intel!';
@@ -499,9 +507,11 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       subtitle = 'Trial will begin on first app use';
       icon = Icons.timer;
     } else if (daysRemaining > 0) {
-      title = 'Trial: $daysRemaining ${daysRemaining == 1 ? "day" : "days"} remaining';
+      title =
+          'Trial: $daysRemaining ${daysRemaining == 1 ? "day" : "days"} remaining';
       final localDate = trialStartDate.toLocal();
-      final startDateStr = '${localDate.month.toString().padLeft(2, '0')}/${localDate.day.toString().padLeft(2, '0')}/${localDate.year}';
+      final startDateStr =
+          '${localDate.month.toString().padLeft(2, '0')}/${localDate.day.toString().padLeft(2, '0')}/${localDate.year}';
       subtitle = 'Trial started on $startDateStr';
       icon = Icons.timer;
     } else {
@@ -509,7 +519,7 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
       subtitle = 'Upgrade to continue using Load Intel';
       icon = Icons.timer_off;
     }
-    
+
     if (kDebugMode) {
       return Card(
         child: Column(
@@ -627,7 +637,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Free trial purchase initiated'),
+                                  content: Text(
+                                    'Free trial purchase initiated',
+                                  ),
                                 ),
                               );
                             } catch (e) {
@@ -636,7 +648,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(e.toString().replaceAll('Exception: ', '')),
+                                  content: Text(
+                                    e.toString().replaceAll('Exception: ', ''),
+                                  ),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -652,7 +666,7 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
         ),
       );
     }
-    
+
     return Card(
       child: ListTile(
         title: Text(title),
@@ -671,7 +685,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           TextButton(
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const LegalDisclaimerScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const LegalDisclaimerScreen(),
+                ),
               );
             },
             child: Text(
@@ -752,18 +768,13 @@ class LegalDisclaimerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Legal'),
-      ),
+      appBar: AppBar(title: const Text('Legal')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: const [
           Text(
             'Legal & Safety Disclaimer',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 12),
           Text(
@@ -786,7 +797,9 @@ class LegalDisclaimerScreen extends StatelessWidget {
           SizedBox(height: 12),
           Text('By using this app, you acknowledge that:'),
           SizedBox(height: 8),
-          Text('You are responsible for the safe use of all firearms and ammunition.'),
+          Text(
+            'You are responsible for the safe use of all firearms and ammunition.',
+          ),
           SizedBox(height: 8),
           Text(
             'You understand that improper or unsafe reloading can result in injury, death, or '

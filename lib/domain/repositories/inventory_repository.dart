@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/domain/models/inventory_item.dart';
+import 'package:loadintel/domain/models/inventory_item.dart';
 
 abstract class InventoryRepository {
   Future<void> upsertItem(InventoryItem item);
@@ -6,4 +6,3 @@ abstract class InventoryRepository {
   Future<InventoryItem?> getItem(String id);
   Future<List<InventoryItem>> listItems();
 }
-

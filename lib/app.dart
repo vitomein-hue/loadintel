@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:loadintel/core/theme/app_theme.dart';
 import 'package:loadintel/data/db/app_database.dart';
 import 'package:loadintel/data/repositories/firearm_repository_sqlite.dart';
@@ -54,10 +54,16 @@ class LoadIntelApp extends StatelessWidget {
         Provider<SettingsRepository>(
           create: (_) => SettingsRepositorySqlite(database),
         ),
-        ProxyProvider4<LoadRecipeRepository, RangeResultRepository,
-            TargetPhotoRepository, SettingsRepository, ExportService>(
+        ProxyProvider4<
+          LoadRecipeRepository,
+          RangeResultRepository,
+          TargetPhotoRepository,
+          SettingsRepository,
+          ExportService
+        >(
           update: (_, loadRepo, rangeRepo, photoRepo, settingsRepo, previous) =>
-              previous ?? ExportService(loadRepo, rangeRepo, photoRepo, settingsRepo),
+              previous ??
+              ExportService(loadRepo, rangeRepo, photoRepo, settingsRepo),
         ),
         ChangeNotifierProxyProvider<SettingsRepository, PurchaseService>(
           create: (context) {
@@ -67,7 +73,11 @@ class LoadIntelApp extends StatelessWidget {
           },
           update: (_, settingsRepo, previous) => previous!,
         ),
-        ChangeNotifierProxyProvider2<SettingsRepository, PurchaseService, TrialService>(
+        ChangeNotifierProxyProvider2<
+          SettingsRepository,
+          PurchaseService,
+          TrialService
+        >(
           create: (context) {
             final service = TrialService(
               context.read<SettingsRepository>(),
@@ -103,26 +113,34 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final purchaseService = context.read<PurchaseService>();
+      await purchaseService.initializationDone;
+      if (!mounted) {
+        return;
+      }
       _checkIntroStatus();
     });
   }
+
   Future<void> _checkIntroStatus() async {
     final settingsRepo = context.read<SettingsRepository>();
     final purchaseService = context.read<PurchaseService>();
-    
+
     // Check if intro has been completed
-    final introCompleted = await settingsRepo.getBool('intro_completed') ?? false;
-    
+    final introCompleted =
+        await settingsRepo.getBool('intro_completed') ?? false;
+
     // Skip intro if already completed, or if user has lifetime access, or if trial already claimed
-    final shouldSkip = introCompleted || 
-                      purchaseService.hasLifetimeAccess() || 
-                      purchaseService.hasClaimedFreeTrial();
-    
+    final shouldSkip =
+        introCompleted ||
+        purchaseService.hasLifetimeAccess() ||
+        purchaseService.hasClaimedFreeTrial();
+
     setState(() {
       _isCheckingIntro = false;
     });
-    
+
     if (!shouldSkip) {
       // Wait for user to complete intro
       if (mounted) {
@@ -132,12 +150,12 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
             fullscreenDialog: true,
           ),
         );
-        
+
         // Mark intro as completed
         if (completed == true) {
           await settingsRepo.setBool('intro_completed', true);
         }
-        
+
         if (mounted) {
           _checkTrialStatus();
         }
@@ -160,7 +178,7 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
 
     // Trial is now automatically tracked via IAP receipts
     // No need to manually start - receipt validation handles everything
-    
+
     // Show appropriate dialog based on trial phase
     if (!mounted) return;
 
@@ -177,13 +195,9 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
   Widget build(BuildContext context) {
     // Show loading while checking intro status
     if (_isCheckingIntro) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    
+
     final purchaseService = context.watch<PurchaseService>();
     final trialService = context.watch<TrialService>();
 
@@ -201,4 +215,3 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
     return const HomeScreen();
   }
 }
-

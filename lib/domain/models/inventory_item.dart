@@ -1,4 +1,4 @@
-﻿class InventoryItem {
+class InventoryItem {
   const InventoryItem({
     required this.id,
     required this.type,
@@ -74,4 +74,3 @@
     );
   }
 }
-

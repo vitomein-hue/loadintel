@@ -1,10 +1,12 @@
-﻿int encodeDateTime(DateTime value) {
+int encodeDateTime(DateTime value) {
   return value.toUtc().millisecondsSinceEpoch;
 }
 
 DateTime decodeDateTime(Object value) {
-  return DateTime.fromMillisecondsSinceEpoch(value as int, isUtc: true)
-      .toLocal();
+  return DateTime.fromMillisecondsSinceEpoch(
+    value as int,
+    isUtc: true,
+  ).toLocal();
 }
 
 DateTime? decodeNullableDateTime(Object? value) {
@@ -13,4 +15,3 @@ DateTime? decodeNullableDateTime(Object? value) {
   }
   return decodeDateTime(value);
 }
-

@@ -1,4 +1,4 @@
-﻿import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
 class AppDatabase {
@@ -208,9 +208,7 @@ class AppDatabase {
       await db.execute(
         'ALTER TABLE range_results ADD COLUMN temperatureF REAL',
       );
-      await db.execute(
-        'ALTER TABLE range_results ADD COLUMN humidity REAL',
-      );
+      await db.execute('ALTER TABLE range_results ADD COLUMN humidity REAL');
       await db.execute(
         'ALTER TABLE range_results ADD COLUMN barometricPressureInHg REAL',
       );
@@ -334,8 +332,12 @@ class AppDatabase {
       await db.execute('ALTER TABLE load_recipes ADD COLUMN gauge TEXT');
       await db.execute('ALTER TABLE load_recipes ADD COLUMN shellLength TEXT');
       await db.execute('ALTER TABLE load_recipes ADD COLUMN hull TEXT');
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN shotgunPrimer TEXT');
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN shotgunPowder TEXT');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN shotgunPrimer TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN shotgunPowder TEXT',
+      );
       await db.execute(
         'ALTER TABLE load_recipes ADD COLUMN shotgunPowderCharge REAL',
       );
@@ -344,7 +346,9 @@ class AppDatabase {
       await db.execute('ALTER TABLE load_recipes ADD COLUMN shotSize TEXT');
       await db.execute('ALTER TABLE load_recipes ADD COLUMN shotType TEXT');
       await db.execute('ALTER TABLE load_recipes ADD COLUMN crimpType TEXT');
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN dramEquivalent REAL');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN dramEquivalent REAL',
+      );
       await db.execute(
         'ALTER TABLE load_recipes ADD COLUMN muzzleloaderCaliber TEXT',
       );
@@ -358,12 +362,18 @@ class AppDatabase {
       await db.execute(
         'ALTER TABLE load_recipes ADD COLUMN muzzleloaderPowderCharge REAL',
       );
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN projectileType TEXT');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN projectileType TEXT',
+      );
       await db.execute(
         'ALTER TABLE load_recipes ADD COLUMN projectileSizeWeight TEXT',
       );
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN patchMaterial TEXT');
-      await db.execute('ALTER TABLE load_recipes ADD COLUMN patchThickness TEXT');
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN patchMaterial TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE load_recipes ADD COLUMN patchThickness TEXT',
+      );
       await db.execute('ALTER TABLE load_recipes ADD COLUMN patchLube TEXT');
       await db.execute('ALTER TABLE load_recipes ADD COLUMN sabotType TEXT');
       await db.execute(

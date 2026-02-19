@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/data/db/app_database.dart';
+import 'package:loadintel/data/db/app_database.dart';
 import 'package:loadintel/domain/models/firearm.dart';
 import 'package:loadintel/domain/repositories/firearm_repository.dart';
 import 'package:sqflite/sqflite.dart';
@@ -41,4 +41,3 @@ class FirearmRepositorySqlite implements FirearmRepository {
     return rows.map(Firearm.fromMap).toList();
   }
 }
-

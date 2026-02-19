@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/data/db/app_database.dart';
+import 'package:loadintel/data/db/app_database.dart';
 import 'package:loadintel/domain/models/target_photo.dart';
 import 'package:loadintel/domain/repositories/target_photo_repository.dart';
 import 'package:sqflite/sqflite.dart';
@@ -36,4 +36,3 @@ class TargetPhotoRepositorySqlite implements TargetPhotoRepository {
     return rows.map(TargetPhoto.fromMap).toList();
   }
 }
-

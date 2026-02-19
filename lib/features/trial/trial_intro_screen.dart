@@ -22,94 +22,107 @@ class TrialIntroScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-              const Icon(
-                Icons.assessment_outlined,
-                size: 100,
-                color: Colors.blue,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Welcome to Load Intel',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Track your reloading data, test loads at the range, and find the perfect ammunition for your firearms.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 32),
-              const _FeatureTile(
-                icon: Icons.science_outlined,
-                title: 'Build Load Recipes',
-                subtitle: 'Document every component and measurement',
-              ),
-              const SizedBox(height: 16),
-              const _FeatureTile(
-                icon: Icons.speed,
-                title: 'Range Testing',
-                subtitle: 'Track velocity, accuracy, and weather conditions',
-              ),
-              const SizedBox(height: 16),
-              const _FeatureTile(
-                icon: Icons.analytics_outlined,
-                title: 'Data Analysis',
-                subtitle: 'Compare loads and optimize performance',
-              ),
-              const SizedBox(height: 48),
-              ElevatedButton(
-                onPressed: purchaseService.canStartTrial
-                    ? () async {
-                        try {
-                          final success = await purchaseService.startFreeTrial();
-                          if (context.mounted) {
-                            if (success) {
-                              Navigator.of(context).pop(true);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Unable to start trial. Please try again.'),
-                                ),
-                              );
-                            }
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(e.toString().replaceAll('Exception: ', '')),
-                              ),
-                            );
-                          }
-                        }
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text(
-                  'Start Free 14-Day Trial',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(false);
-                },
-                child: const Text('Skip for now'),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'No credit card required • Cancel anytime',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
+                      const Icon(
+                        Icons.assessment_outlined,
+                        size: 100,
+                        color: Colors.blue,
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Welcome to Load Intel',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Track your reloading data, test loads at the range, and find the perfect ammunition for your firearms.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 32),
+                      const _FeatureTile(
+                        icon: Icons.science_outlined,
+                        title: 'Build Load Recipes',
+                        subtitle: 'Document every component and measurement',
+                      ),
+                      const SizedBox(height: 16),
+                      const _FeatureTile(
+                        icon: Icons.speed,
+                        title: 'Range Testing',
+                        subtitle:
+                            'Track velocity, accuracy, and weather conditions',
+                      ),
+                      const SizedBox(height: 16),
+                      const _FeatureTile(
+                        icon: Icons.analytics_outlined,
+                        title: 'Data Analysis',
+                        subtitle: 'Compare loads and optimize performance',
+                      ),
+                      const SizedBox(height: 48),
+                      ElevatedButton(
+                        onPressed: purchaseService.canStartTrial
+                            ? () async {
+                                try {
+                                  final success = await purchaseService
+                                      .startFreeTrial();
+                                  if (context.mounted) {
+                                    if (success) {
+                                      Navigator.of(context).pop(true);
+                                    } else {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Unable to start trial. Please try again.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          e.toString().replaceAll(
+                                            'Exception: ',
+                                            '',
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                }
+                              }
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text(
+                          'Start Free 14-Day Trial',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(false);
+                        },
+                        child: const Text('Skip for now'),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'No credit card required • Cancel anytime',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
                     ],
                   ),
                 ),
@@ -152,10 +165,7 @@ class _FeatureTile extends StatelessWidget {
               ),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ],
           ),

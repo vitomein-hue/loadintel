@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class AppColors {
   static const Color primary = Color(0xFFD4691E);
@@ -9,4 +9,3 @@ class AppColors {
   static const Color border = Color(0xFFB58B5A);
   static const Color danger = Color(0xFFB00020);
 }
-

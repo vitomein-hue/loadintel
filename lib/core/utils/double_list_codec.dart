@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 String? encodeDoubleList(List<double>? values) {
   if (values == null) {
@@ -14,4 +14,3 @@ List<double>? decodeDoubleList(Object? value) {
   final decoded = jsonDecode(value as String) as List<dynamic>;
   return decoded.map((item) => (item as num).toDouble()).toList();
 }
-

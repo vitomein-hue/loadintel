@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'dart:convert';
 
 import 'package:loadintel/core/theme/app_colors.dart';
@@ -190,12 +190,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _patchThicknessController = TextEditingController(
       text: recipe?.patchThickness ?? '',
     );
-    _patchLubeController = TextEditingController(
-      text: recipe?.patchLube ?? '',
-    );
-    _sabotTypeController = TextEditingController(
-      text: recipe?.sabotType ?? '',
-    );
+    _patchLubeController = TextEditingController(text: recipe?.patchLube ?? '');
+    _sabotTypeController = TextEditingController(text: recipe?.sabotType ?? '');
 
     _selectedFirearmId = recipe?.firearmId;
     _selectedBrass = recipe?.brass;
@@ -228,24 +224,19 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _recipeNameController.text = recipe.recipeName;
     _cartridgeController.text = recipe.cartridge;
     _bulletBrandController.text = recipe.bulletBrand ?? '';
-    _bulletWeightController.text =
-        recipe.bulletWeightGr?.toString() ?? '';
-    _bulletDiameterController.text =
-        recipe.bulletDiameter?.toString() ?? '';
+    _bulletWeightController.text = recipe.bulletWeightGr?.toString() ?? '';
+    _bulletDiameterController.text = recipe.bulletDiameter?.toString() ?? '';
     _bulletTypeController.text = recipe.bulletType ?? '';
     _caseResizeController.text = recipe.caseResize ?? '';
     _gasCheckMaterialController.text = recipe.gasCheckMaterial ?? '';
     _gasCheckInstallMethodController.text = recipe.gasCheckInstallMethod ?? '';
     _bulletCoatingController.text = recipe.bulletCoating ?? '';
     _brassController.text = recipe.brass ?? '';
-    _brassTrimLengthController.text =
-        recipe.brassTrimLength?.toString() ?? '';
-    _annealingTimeController.text =
-        recipe.annealingTimeSec?.toString() ?? '';
+    _brassTrimLengthController.text = recipe.brassTrimLength?.toString() ?? '';
+    _annealingTimeController.text = recipe.annealingTimeSec?.toString() ?? '';
     _primerController.text = recipe.primer ?? '';
     _powderController.text = recipe.powder;
-    _powderChargeController.text =
-        recipe.powderChargeGr.toString();
+    _powderChargeController.text = recipe.powderChargeGr.toString();
     _coalController.text = recipe.coal?.toString() ?? '';
     _baseToOgiveController.text = recipe.baseToOgive?.toString() ?? '';
     _seatingDepthController.text = recipe.seatingDepth?.toString() ?? '';
@@ -263,8 +254,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
     _muzzleloaderCaliberController.text = recipe.muzzleloaderCaliber ?? '';
     _muzzleloaderPowderChargeController.text =
         recipe.muzzleloaderPowderCharge?.toString() ?? '';
-    _projectileSizeWeightController.text =
-        recipe.projectileSizeWeight ?? '';
+    _projectileSizeWeightController.text = recipe.projectileSizeWeight ?? '';
     _patchMaterialController.text = recipe.patchMaterial ?? '';
     _patchThicknessController.text = recipe.patchThickness ?? '';
     _patchLubeController.text = recipe.patchLube ?? '';
@@ -395,7 +385,6 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       _selectedFirearmId = created.id;
     });
   }
-
 
   String _displayInventoryValue(String? value, List<InventoryItem> items) {
     if (value == null || value.isEmpty) {
@@ -623,9 +612,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                 builder: (sheetContext, setSheetState) {
                   final filtered = items
                       .where(
-                        (item) => item.name
-                            .toLowerCase()
-                            .contains(query.toLowerCase()),
+                        (item) => item.name.toLowerCase().contains(
+                          query.toLowerCase(),
+                        ),
                       )
                       .toList();
 
@@ -653,7 +642,8 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                             if (allowClear)
                               ListTile(
                                 title: const Text('Clear selection'),
-                                onTap: () => Navigator.of(dialogContext).pop(''),
+                                onTap: () =>
+                                    Navigator.of(dialogContext).pop(''),
                               ),
                             if (filtered.isEmpty)
                               const Padding(
@@ -664,8 +654,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                               ...filtered.map(
                                 (item) => ListTile(
                                   title: Text(item.name),
-                                  onTap: () =>
-                                      Navigator.of(dialogContext).pop(item.name),
+                                  onTap: () => Navigator.of(
+                                    dialogContext,
+                                  ).pop(item.name),
                                 ),
                               ),
                             const Divider(),
@@ -719,9 +710,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                       }
                                     }
                                     if (existing != null) {
-                                      Navigator.of(dialogContext).pop(
-                                        existing.name,
-                                      );
+                                      Navigator.of(
+                                        dialogContext,
+                                      ).pop(existing.name);
                                       return;
                                     }
                                     final now = DateTime.now();
@@ -741,9 +732,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                     if (!context.mounted) {
                                       return;
                                     }
-                                    Navigator.of(dialogContext).pop(
-                                      '$_inventoryAddedPrefix$trimmed',
-                                    );
+                                    Navigator.of(
+                                      dialogContext,
+                                    ).pop('$_inventoryAddedPrefix$trimmed');
                                   },
                                   child: const Text('Add'),
                                 ),
@@ -868,24 +859,25 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       powder: powderValue,
       powderChargeGr: powderChargeValue,
       coal: isRifle ? double.tryParse(_coalController.text.trim()) : null,
-      baseToOgive:
-          isRifle ? double.tryParse(_baseToOgiveController.text.trim()) : null,
-      seatingDepth:
-          isRifle ? double.tryParse(_seatingDepthController.text.trim()) : null,
+      baseToOgive: isRifle
+          ? double.tryParse(_baseToOgiveController.text.trim())
+          : null,
+      seatingDepth: isRifle
+          ? double.tryParse(_seatingDepthController.text.trim())
+          : null,
       notes: notesValue,
       firearmId: _selectedFirearmId,
       loadType: _selectedLoadType,
       gauge: isShotgun ? _selectedGauge : null,
       shellLength: isShotgun ? _selectedShellLength : null,
       hull: isShotgun ? _optionalText(_shotgunHullController) : null,
-      shotgunPrimer:
-          isShotgun ? _optionalText(_shotgunPrimerController) : null,
-      shotgunPowder:
-          isShotgun ? _optionalText(_shotgunPowderController) : null,
+      shotgunPrimer: isShotgun ? _optionalText(_shotgunPrimerController) : null,
+      shotgunPowder: isShotgun ? _optionalText(_shotgunPowderController) : null,
       shotgunPowderCharge: isShotgun ? shotgunPowderCharge : null,
       wad: isShotgun ? _selectedWad : null,
-      shotWeight:
-          isShotgun ? _optionalText(_shotgunShotWeightController) : null,
+      shotWeight: isShotgun
+          ? _optionalText(_shotgunShotWeightController)
+          : null,
       shotSize: isShotgun ? _optionalText(_shotgunShotSizeController) : null,
       shotType: isShotgun ? _selectedShotType : null,
       crimpType: isShotgun ? _selectedCrimpType : null,
@@ -896,12 +888,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
           ? _optionalText(_muzzleloaderCaliberController)
           : null,
       ignitionType: isMuzzleloader ? _selectedIgnitionType : null,
-      muzzleloaderPowderType:
-          isMuzzleloader ? muzzleloaderPowderType : null,
-      powderGranulation:
-          isMuzzleloader ? _selectedPowderGranulation : null,
-      muzzleloaderPowderCharge:
-          isMuzzleloader ? muzzlePowderCharge : null,
+      muzzleloaderPowderType: isMuzzleloader ? muzzleloaderPowderType : null,
+      powderGranulation: isMuzzleloader ? _selectedPowderGranulation : null,
+      muzzleloaderPowderCharge: isMuzzleloader ? muzzlePowderCharge : null,
       projectileType: isMuzzleloader ? _selectedProjectileType : null,
       projectileSizeWeight: isMuzzleloader
           ? _optionalText(_projectileSizeWeightController)
@@ -1439,9 +1428,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                     if (_selectedLoadType == LoadType.shotgun) ...[
                       DropdownButtonFormField<String>(
                         initialValue: _selectedGauge,
-                        decoration: const InputDecoration(
-                          labelText: 'Gauge *',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Gauge *'),
                         items: _shotgunGaugeOptions
                             .map(
                               (value) => DropdownMenuItem(
@@ -1487,9 +1474,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _shotgunHullController,
-                        decoration: const InputDecoration(
-                          labelText: 'Hull *',
-                        ),
+                        decoration: const InputDecoration(labelText: 'Hull *'),
                         textInputAction: TextInputAction.next,
                         validator: (value) =>
                             value == null || value.trim().isEmpty
@@ -1856,8 +1841,7 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                       textCapitalization: TextCapitalization.sentences,
                       maxLines: 3,
                       textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) =>
-                          FocusScope.of(context).unfocus(),
+                      onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
                     ),
                     const SizedBox(height: 12),
                     Column(
@@ -2072,11 +2056,7 @@ const List<String> _shotgunGaugeOptions = [
   '.410',
 ];
 
-const List<String> _shotgunShellLengthOptions = [
-  '2 3/4"',
-  '3"',
-  '3 1/2"',
-];
+const List<String> _shotgunShellLengthOptions = ['2 3/4"', '3"', '3 1/2"'];
 
 const List<String> _shotgunShotTypeOptions = [
   'Lead',
@@ -2085,10 +2065,7 @@ const List<String> _shotgunShotTypeOptions = [
   'Tungsten',
 ];
 
-const List<String> _shotgunCrimpTypeOptions = [
-  'Star',
-  'Roll',
-];
+const List<String> _shotgunCrimpTypeOptions = ['Star', 'Roll'];
 
 const List<String> _muzzleloaderIgnitionOptions = [
   'Flintlock',

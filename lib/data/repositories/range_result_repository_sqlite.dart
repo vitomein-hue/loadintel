@@ -1,4 +1,4 @@
-﻿import 'package:loadintel/core/utils/date_time_codec.dart';
+import 'package:loadintel/core/utils/date_time_codec.dart';
 import 'package:loadintel/core/utils/double_list_codec.dart';
 import 'package:loadintel/data/db/app_database.dart';
 import 'package:loadintel/domain/models/range_result.dart';
@@ -50,7 +50,11 @@ class RangeResultRepositorySqlite implements RangeResultRepository {
   @override
   Future<RangeResult?> getResult(String id) async {
     final db = await _db.database;
-    final rows = await db.query('range_results', where: 'id = ?', whereArgs: [id]);
+    final rows = await db.query(
+      'range_results',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
     if (rows.isEmpty) {
       return null;
     }
@@ -99,4 +103,3 @@ class RangeResultRepositorySqlite implements RangeResultRepository {
     );
   }
 }
-

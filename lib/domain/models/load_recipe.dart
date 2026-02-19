@@ -1,4 +1,4 @@
-﻿enum LoadType { rifle, shotgun, muzzleloader }
+enum LoadType { rifle, shotgun, muzzleloader }
 
 extension LoadTypeX on LoadType {
   String get storageValue {
@@ -38,8 +38,9 @@ extension LoadTypeX on LoadType {
 
 class LoadRecipe {
   static const Object _unset = Object();
-  static final RegExp _duplicateSuffixPattern =
-      RegExp(r'^(.*?)(?:\s*\((\d+)\))$');
+  static final RegExp _duplicateSuffixPattern = RegExp(
+    r'^(.*?)(?:\s*\((\d+)\))$',
+  );
 
   const LoadRecipe({
     required this.id,
@@ -220,7 +221,8 @@ class LoadRecipe {
       primer: primer ?? this.primer,
       caseResize: caseResize ?? this.caseResize,
       gasCheckMaterial: gasCheckMaterial ?? this.gasCheckMaterial,
-      gasCheckInstallMethod: gasCheckInstallMethod ?? this.gasCheckInstallMethod,
+      gasCheckInstallMethod:
+          gasCheckInstallMethod ?? this.gasCheckInstallMethod,
       bulletCoating: bulletCoating ?? this.bulletCoating,
       powder: powder ?? this.powder,
       powderChargeGr: powderChargeGr ?? this.powderChargeGr,
@@ -228,8 +230,9 @@ class LoadRecipe {
       baseToOgive: baseToOgive ?? this.baseToOgive,
       seatingDepth: seatingDepth ?? this.seatingDepth,
       notes: notes ?? this.notes,
-      firearmId:
-          identical(firearmId, _unset) ? this.firearmId : firearmId as String?,
+      firearmId: identical(firearmId, _unset)
+          ? this.firearmId
+          : firearmId as String?,
       loadType: loadType ?? this.loadType,
       gauge: gauge ?? this.gauge,
       shellLength: shellLength ?? this.shellLength,
@@ -245,7 +248,8 @@ class LoadRecipe {
       dramEquivalent: dramEquivalent ?? this.dramEquivalent,
       muzzleloaderCaliber: muzzleloaderCaliber ?? this.muzzleloaderCaliber,
       ignitionType: ignitionType ?? this.ignitionType,
-      muzzleloaderPowderType: muzzleloaderPowderType ?? this.muzzleloaderPowderType,
+      muzzleloaderPowderType:
+          muzzleloaderPowderType ?? this.muzzleloaderPowderType,
       powderGranulation: powderGranulation ?? this.powderGranulation,
       muzzleloaderPowderCharge:
           muzzleloaderPowderCharge ?? this.muzzleloaderPowderCharge,
@@ -388,8 +392,9 @@ class LoadRecipe {
       'patchThickness': patchThickness,
       'patchLube': patchLube,
       'sabotType': sabotType,
-      'cleanedBetweenShots':
-          cleanedBetweenShots == null ? null : (cleanedBetweenShots! ? 1 : 0),
+      'cleanedBetweenShots': cleanedBetweenShots == null
+          ? null
+          : (cleanedBetweenShots! ? 1 : 0),
       'isKeeper': isKeeper ? 1 : 0,
       'isDangerous': isDangerous ? 1 : 0,
       'dangerConfirmedAt': dangerConfirmedAtMillis,
@@ -444,8 +449,8 @@ class LoadRecipe {
       ignitionType: map['ignitionType'] as String?,
       muzzleloaderPowderType: map['muzzleloaderPowderType'] as String?,
       powderGranulation: map['powderGranulation'] as String?,
-      muzzleloaderPowderCharge:
-          (map['muzzleloaderPowderCharge'] as num?)?.toDouble(),
+      muzzleloaderPowderCharge: (map['muzzleloaderPowderCharge'] as num?)
+          ?.toDouble(),
       projectileType: map['projectileType'] as String?,
       projectileSizeWeight: map['projectileSizeWeight'] as String?,
       patchMaterial: map['patchMaterial'] as String?,

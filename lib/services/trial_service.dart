@@ -4,11 +4,11 @@ import 'package:loadintel/services/purchase_service.dart';
 
 enum TrialPhase {
   notStarted,
-  silent,        // Days 1-10
-  reminder,      // Days 11-13
-  lastDay,       // Day 14
-  gracePeriod,   // Day 15
-  expired,       // Day 16+
+  silent, // Days 1-10
+  reminder, // Days 11-13
+  lastDay, // Day 14
+  gracePeriod, // Day 15
+  expired, // Day 16+
 }
 
 class TrialService extends ChangeNotifier {
@@ -16,7 +16,7 @@ class TrialService extends ChangeNotifier {
 
   final SettingsRepository _settingsRepository;
   final PurchaseService _purchaseService;
-  
+
   static const String _trialStartDateKey = 'trial_start_date';
   static const int trialDays = 14;
   static const int graceDays = 1;
@@ -26,7 +26,7 @@ class TrialService extends ChangeNotifier {
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
-  
+
   /// Get trial start date - uses receipt from PurchaseService or debug date
   DateTime? get trialStartDate {
     // In debug mode, allow manual override
@@ -40,12 +40,16 @@ class TrialService extends ChangeNotifier {
   Future<void> init() async {
     // In debug mode, load debug override date if set
     if (kDebugMode) {
-      final dateString = await _settingsRepository.getString(_trialStartDateKey);
+      final dateString = await _settingsRepository.getString(
+        _trialStartDateKey,
+      );
       if (dateString != null && dateString.isNotEmpty) {
         try {
           _debugTrialStartDate = DateTime.parse(dateString);
         } catch (e) {
-          debugPrint('Error parsing debug trial start date: $e');
+          if (kDebugMode) {
+            debugPrint('Error parsing debug trial start date: $e');
+          }
           _debugTrialStartDate = null;
         }
       }
@@ -57,18 +61,28 @@ class TrialService extends ChangeNotifier {
   /// Initiates free trial IAP purchase ($0.00)
   /// Returns true if successful, false if already claimed or failed
   Future<bool> startTrial() async {
-    debugPrint('\ud83d\udfe1 TrialService.startTrial() called');
+    if (kDebugMode) {
+      debugPrint('\ud83d\udfe1 TrialService.startTrial() called');
+    }
     try {
-      debugPrint('\ud83d\udfe1 Calling purchaseService.startFreeTrial()');
+      if (kDebugMode) {
+        debugPrint('\ud83d\udfe1 Calling purchaseService.startFreeTrial()');
+      }
       final success = await _purchaseService.startFreeTrial();
-      debugPrint('\ud83d\udfe1 startFreeTrial() returned: $success');
+      if (kDebugMode) {
+        debugPrint('\ud83d\udfe1 startFreeTrial() returned: $success');
+      }
       if (success) {
         notifyListeners();
       }
       return success;
     } catch (e, stackTrace) {
-      debugPrint('\ud83d\udd34 Error in TrialService.startTrial: $e');
-      debugPrint('\ud83d\udd34 Stack trace: $stackTrace');
+      if (kDebugMode) {
+        debugPrint('\ud83d\udd34 Error in TrialService.startTrial: $e');
+      }
+      if (kDebugMode) {
+        debugPrint('\ud83d\udd34 Stack trace: $stackTrace');
+      }
       rethrow; // Rethrow to let caller handle the error
     }
   }
@@ -76,7 +90,7 @@ class TrialService extends ChangeNotifier {
   /// Debug only - manually set trial date for testing
   Future<void> setTrialStartDate(DateTime date) async {
     if (!kDebugMode) return;
-    
+
     _debugTrialStartDate = date;
     await _settingsRepository.setString(
       _trialStartDateKey,
@@ -88,7 +102,7 @@ class TrialService extends ChangeNotifier {
   /// Debug only - clear debug trial date
   Future<void> clearTrialStartDate() async {
     if (!kDebugMode) return;
-    
+
     _debugTrialStartDate = null;
     await _settingsRepository.setString(_trialStartDateKey, '');
     notifyListeners();
@@ -101,8 +115,8 @@ class TrialService extends ChangeNotifier {
   }
 
   bool hasTrialStarted() {
-    return _purchaseService.hasClaimedFreeTrial() || 
-           (kDebugMode && _debugTrialStartDate != null);
+    return _purchaseService.hasClaimedFreeTrial() ||
+        (kDebugMode && _debugTrialStartDate != null);
   }
 
   int getDaysElapsed() {
@@ -118,14 +132,14 @@ class TrialService extends ChangeNotifier {
     if (_purchaseService.hasLifetimeAccess()) {
       return -1;
     }
-    
+
     final startDate = trialStartDate;
-    
+
     // Trial not started yet
     if (startDate == null) {
       return trialDays;
     }
-    
+
     final elapsed = getDaysElapsed();
     return trialDays - elapsed;
   }
@@ -135,7 +149,7 @@ class TrialService extends ChangeNotifier {
     if (_purchaseService.hasLifetimeAccess()) {
       return true;
     }
-    
+
     final daysRemaining = getDaysRemaining();
     return daysRemaining > 0;
   }
@@ -145,10 +159,10 @@ class TrialService extends ChangeNotifier {
     if (_purchaseService.hasLifetimeAccess()) {
       return false;
     }
-    
+
     final startDate = trialStartDate;
     if (startDate == null) return false;
-    
+
     final elapsed = getDaysElapsed();
     return elapsed >= trialDays && elapsed < totalDays;
   }
@@ -158,10 +172,10 @@ class TrialService extends ChangeNotifier {
     if (_purchaseService.hasLifetimeAccess()) {
       return false;
     }
-    
+
     final startDate = trialStartDate;
     if (startDate == null) return false;
-    
+
     final elapsed = getDaysElapsed();
     return elapsed >= totalDays;
   }
@@ -171,7 +185,7 @@ class TrialService extends ChangeNotifier {
     if (_purchaseService.hasLifetimeAccess()) {
       return TrialPhase.notStarted;
     }
-    
+
     final startDate = trialStartDate;
     if (startDate == null) {
       return TrialPhase.notStarted;
@@ -196,7 +210,7 @@ class TrialService extends ChangeNotifier {
     if (_purchaseService.hasLifetimeAccess()) {
       return 'Lifetime access';
     }
-    
+
     final startDate = trialStartDate;
     if (startDate == null) {
       return 'Trial not started';

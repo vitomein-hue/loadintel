@@ -21,14 +21,14 @@ class _TrialPaywallState extends State<TrialPaywall> {
 
     try {
       final service = context.read<PurchaseService>();
-      
+
       if (!service.canPurchase) {
         _showError('Store unavailable. Please check your connection.');
         return;
       }
 
       final success = await service.buyLifetimeAccess();
-      
+
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -54,14 +54,14 @@ class _TrialPaywallState extends State<TrialPaywall> {
 
     try {
       final service = context.read<PurchaseService>();
-      
+
       if (!service.isAvailable) {
         _showError('Store unavailable. Please check your connection.');
         return;
       }
 
       await service.restorePurchases();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -81,12 +81,9 @@ class _TrialPaywallState extends State<TrialPaywall> {
 
   void _showError(String message) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -109,109 +106,120 @@ class _TrialPaywallState extends State<TrialPaywall> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-              const Icon(
-                Icons.lock_outline,
-                size: 80,
-                color: Colors.grey,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Trial Ended',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Your trial and grace period have expired. Upgrade to continue using Load Intel and keep all your data.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: canInteract && service.canPurchase
-                    ? _handleUpgrade
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: _isUpgrading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                      const Icon(
+                        Icons.lock_outline,
+                        size: 80,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Trial Ended',
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Your trial and grace period have expired. Upgrade to continue using Load Intel and keep all your data.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton(
+                        onPressed: canInteract && service.canPurchase
+                            ? _handleUpgrade
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                      )
-                    : Text(
-                        'Upgrade to Lifetime Access - $priceLabel',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        child: _isUpgrading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Upgrade to Lifetime Access - $priceLabel',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: canInteract && service.isAvailable
-                    ? _handleRestore
-                    : null,
-                child: _isRestoring
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Restore Purchases'),
-              ),
-              if (!service.isAvailable) ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'Store unavailable. Please check your connection.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.red),
-                ),
-              ],
-              const SizedBox(height: 32),
-              const Text(
-                'By purchasing, you agree to our',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  InkWell(
-                    onTap: () => _launchUrl('https://vitomein-hue.github.io/loadintel-privacy/'),
-                    child: const Text(
-                      'Privacy Policy',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: canInteract && service.isAvailable
+                            ? _handleRestore
+                            : null,
+                        child: _isRestoring
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Restore Purchases'),
                       ),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      '|',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => _launchUrl('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'),
-                    child: const Text(
-                      'Terms of Use',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue,
-                        decoration: TextDecoration.underline,
+                      if (!service.isAvailable) ...[
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Store unavailable. Please check your connection.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ],
+                      const SizedBox(height: 32),
+                      const Text(
+                        'By purchasing, you agree to our',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                  ),
-                ],
-              ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          InkWell(
+                            onTap: () => _launchUrl(
+                              'https://vitomein-hue.github.io/loadintel-privacy/',
+                            ),
+                            child: const Text(
+                              'Privacy Policy',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              '|',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => _launchUrl(
+                              'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+                            ),
+                            child: const Text(
+                              'Terms of Use',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.blue,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
