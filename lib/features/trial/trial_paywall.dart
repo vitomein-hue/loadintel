@@ -98,12 +98,17 @@ class _TrialPaywallState extends State<TrialPaywall> {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
               const Icon(
                 Icons.lock_outline,
                 size: 80,
@@ -207,8 +212,12 @@ class _TrialPaywallState extends State<TrialPaywall> {
                   ),
                 ],
               ),
-            ],
-          ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

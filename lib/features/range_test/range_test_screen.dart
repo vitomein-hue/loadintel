@@ -296,10 +296,11 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
             right: 16,
             top: 16,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               Text(
                 'Retrieve Weather',
                 style: Theme.of(sheetContext).textTheme.titleLarge,
@@ -345,7 +346,8 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                 },
               ),
               const SizedBox(height: 8),
-            ],
+              ],
+            ),
           ),
         ),
       ),
