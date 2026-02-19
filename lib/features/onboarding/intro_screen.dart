@@ -202,19 +202,21 @@ class _IntroScreenState extends State<IntroScreen> {
     final purchaseService = context.watch<PurchaseService>();
     final priceLabel = purchaseService.proProduct?.price ?? '\$9.99';
 
-    return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: Scaffold(
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                       const SizedBox(height: 40),
                       // Top Section - App Name and Tagline
                       Column(
@@ -317,12 +319,13 @@ class _IntroScreenState extends State<IntroScreen> {
                           ),
                         ],
                       ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );

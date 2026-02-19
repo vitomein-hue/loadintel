@@ -150,14 +150,18 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
             fullscreenDialog: true,
           ),
         );
-
+        
         // Mark intro as completed
         if (completed == true) {
           await settingsRepo.setBool('intro_completed', true);
-        }
-
-        if (mounted) {
-          _checkTrialStatus();
+          if (mounted) {
+            _checkTrialStatus();
+          }
+        } else if (mounted) {
+          setState(() {
+            _isCheckingIntro = true;
+          });
+          _checkIntroStatus();
         }
       }
     } else {
