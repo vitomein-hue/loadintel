@@ -33,7 +33,9 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Select target photos for range results.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Load Intel needs your location to capture weather data for range testing conditions.</string>
+	<string>Load Intel uses your location to record weather conditions at the range for your load testing data.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Load Intel uses your location to record weather conditions at the range for your load testing data.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
