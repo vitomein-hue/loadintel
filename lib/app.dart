@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:loadintel/core/theme/app_theme.dart';
 import 'package:loadintel/data/db/app_database.dart';
@@ -68,7 +71,16 @@ class LoadIntelApp extends StatelessWidget {
         ChangeNotifierProxyProvider<SettingsRepository, PurchaseService>(
           create: (context) {
             final service = PurchaseService(context.read<SettingsRepository>());
-            service.init();
+            unawaited(
+              service.init().timeout(
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  if (kDebugMode) {
+                    debugPrint('PurchaseService init timeout');
+                  }
+                },
+              ),
+            );
             return service;
           },
           update: (_, settingsRepo, previous) => previous!,
@@ -83,7 +95,16 @@ class LoadIntelApp extends StatelessWidget {
               context.read<SettingsRepository>(),
               context.read<PurchaseService>(),
             );
-            service.init();
+            unawaited(
+              service.init().timeout(
+                const Duration(seconds: 10),
+                onTimeout: () {
+                  if (kDebugMode) {
+                    debugPrint('TrialService init timeout');
+                  }
+                },
+              ),
+            );
             return service;
           },
           update: (_, settingsRepo, purchaseService, previous) => previous!,
@@ -115,7 +136,14 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final purchaseService = context.read<PurchaseService>();
-      await purchaseService.initializationDone;
+      await purchaseService.initializationDone.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          if (kDebugMode) {
+            debugPrint('PurchaseService init timeout');
+          }
+        },
+      );
       if (!mounted) {
         return;
       }
@@ -126,16 +154,34 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
   Future<void> _checkIntroStatus() async {
     final settingsRepo = context.read<SettingsRepository>();
     final purchaseService = context.read<PurchaseService>();
+    final trialService = context.read<TrialService>();
 
-    // Check if intro has been completed
-    final introCompleted =
-        await settingsRepo.getBool('intro_completed') ?? false;
+    // Skip intro only when user has a real entitlement
+    final hasLifetime = purchaseService.hasLifetimeAccess();
+    if (!trialService.isInitialized) {
+      await trialService.init().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          if (kDebugMode) {
+            debugPrint('TrialService init timeout');
+          }
+        },
+      );
+    }
+    final hadTrial = trialService.hasTrialStarted();
 
-    // Skip intro if already completed, or if user has lifetime access, or if trial already claimed
-    final shouldSkip =
-        introCompleted ||
-        purchaseService.hasLifetimeAccess() ||
-        purchaseService.hasClaimedFreeTrial();
+    if (!hasLifetime && !hadTrial) {
+      await trialService.startTrialAutomatically().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          if (kDebugMode) {
+            debugPrint('TrialService auto-start timeout');
+          }
+        },
+      );
+    }
+
+    final shouldSkip = hasLifetime || hadTrial;
 
     setState(() {
       _isCheckingIntro = false;
@@ -150,7 +196,7 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
             fullscreenDialog: true,
           ),
         );
-        
+
         // Mark intro as completed
         if (completed == true) {
           await settingsRepo.setBool('intro_completed', true);
@@ -180,8 +226,7 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
       return;
     }
 
-    // Trial is now automatically tracked via IAP receipts
-    // No need to manually start - receipt validation handles everything
+    // Trial is tracked locally via stored start date
 
     // Show appropriate dialog based on trial phase
     if (!mounted) return;

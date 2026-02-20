@@ -17,31 +17,46 @@ class TrialService extends ChangeNotifier {
   final SettingsRepository _settingsRepository;
   final PurchaseService _purchaseService;
 
-  static const String _trialStartDateKey = 'trial_start_date';
+  static const String _trialReceiptDateKey = 'trial_receipt_date';
+  static const String _debugTrialStartDateKey = 'trial_start_date';
   static const int trialDays = 14;
   static const int graceDays = 1;
   static const int totalDays = trialDays + graceDays;
 
+  DateTime? _trialReceiptDate;
   DateTime? _debugTrialStartDate; // Only used in debug mode
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
 
-  /// Get trial start date - uses receipt from PurchaseService or debug date
+  /// Get trial start date - uses locally stored date or debug override
   DateTime? get trialStartDate {
     // In debug mode, allow manual override
     if (kDebugMode && _debugTrialStartDate != null) {
       return _debugTrialStartDate;
     }
-    // Otherwise use receipt-based date from PurchaseService
-    return _purchaseService.getTrialStartDate();
+    // Otherwise use locally stored trial date
+    return _trialReceiptDate;
   }
 
   Future<void> init() async {
+    final receiptDateString = await _settingsRepository.getString(
+      _trialReceiptDateKey,
+    );
+    if (receiptDateString != null && receiptDateString.isNotEmpty) {
+      try {
+        _trialReceiptDate = DateTime.parse(receiptDateString);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('Error parsing trial receipt date: $e');
+        }
+        _trialReceiptDate = null;
+      }
+    }
     // In debug mode, load debug override date if set
     if (kDebugMode) {
       final dateString = await _settingsRepository.getString(
-        _trialStartDateKey,
+        _debugTrialStartDateKey,
       );
       if (dateString != null && dateString.isNotEmpty) {
         try {
@@ -58,33 +73,21 @@ class TrialService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Initiates free trial IAP purchase ($0.00)
-  /// Returns true if successful, false if already claimed or failed
-  Future<bool> startTrial() async {
-    if (kDebugMode) {
-      debugPrint('\ud83d\udfe1 TrialService.startTrial() called');
+  /// Starts the trial locally on first app use.
+  Future<void> startTrialAutomatically() async {
+    if (!_isInitialized) {
+      await init();
     }
-    try {
-      if (kDebugMode) {
-        debugPrint('\ud83d\udfe1 Calling purchaseService.startFreeTrial()');
-      }
-      final success = await _purchaseService.startFreeTrial();
-      if (kDebugMode) {
-        debugPrint('\ud83d\udfe1 startFreeTrial() returned: $success');
-      }
-      if (success) {
-        notifyListeners();
-      }
-      return success;
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('\ud83d\udd34 Error in TrialService.startTrial: $e');
-      }
-      if (kDebugMode) {
-        debugPrint('\ud83d\udd34 Stack trace: $stackTrace');
-      }
-      rethrow; // Rethrow to let caller handle the error
+    if (trialStartDate != null) {
+      return;
     }
+    final now = DateTime.now();
+    _trialReceiptDate = now;
+    await _settingsRepository.setString(
+      _trialReceiptDateKey,
+      now.toIso8601String(),
+    );
+    notifyListeners();
   }
 
   /// Debug only - manually set trial date for testing
@@ -93,7 +96,7 @@ class TrialService extends ChangeNotifier {
 
     _debugTrialStartDate = date;
     await _settingsRepository.setString(
-      _trialStartDateKey,
+      _debugTrialStartDateKey,
       date.toIso8601String(),
     );
     notifyListeners();
@@ -104,7 +107,7 @@ class TrialService extends ChangeNotifier {
     if (!kDebugMode) return;
 
     _debugTrialStartDate = null;
-    await _settingsRepository.setString(_trialStartDateKey, '');
+    await _settingsRepository.setString(_debugTrialStartDateKey, '');
     notifyListeners();
   }
 
@@ -115,8 +118,7 @@ class TrialService extends ChangeNotifier {
   }
 
   bool hasTrialStarted() {
-    return _purchaseService.hasClaimedFreeTrial() ||
-        (kDebugMode && _debugTrialStartDate != null);
+    return trialStartDate != null;
   }
 
   int getDaysElapsed() {

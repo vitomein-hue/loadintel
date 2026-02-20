@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:loadintel/services/purchase_service.dart';
+import 'package:loadintel/services/trial_service.dart';
 import 'package:provider/provider.dart';
 
 class TrialIntroScreen extends StatelessWidget {
@@ -7,7 +7,8 @@ class TrialIntroScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final purchaseService = context.watch<PurchaseService>();
+    final trialService = context.watch<TrialService>();
+    final canStartTrial = !trialService.hasTrialStarted();
 
     return Scaffold(
       body: SafeArea(
@@ -61,25 +62,12 @@ class TrialIntroScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 48),
                       ElevatedButton(
-                        onPressed: purchaseService.canStartTrial
+                        onPressed: canStartTrial
                             ? () async {
                                 try {
-                                  final success = await purchaseService
-                                      .startFreeTrial();
+                                  await trialService.startTrialAutomatically();
                                   if (context.mounted) {
-                                    if (success) {
-                                      Navigator.of(context).pop(true);
-                                    } else {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Unable to start trial. Please try again.',
-                                          ),
-                                        ),
-                                      );
-                                    }
+                                    Navigator.of(context).pop(true);
                                   }
                                 } catch (e) {
                                   if (context.mounted) {

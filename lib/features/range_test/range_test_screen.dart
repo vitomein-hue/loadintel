@@ -42,7 +42,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   void _safeSetState(String source, VoidCallback update) {
     if (!mounted) {
       if (kDebugMode) {
-        debugPrint('?? $source: Skipping setState because widget is unmounted');
+        debugPrint('⚠️ $source: Skipping setState because widget is unmounted');
       }
       return;
     }
@@ -52,7 +52,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   void _showWeatherSnack(String message) {
     if (!mounted) {
       if (kDebugMode) {
-        debugPrint('?? Weather UI: Cannot show SnackBar, widget unmounted');
+        debugPrint('⚠️ Weather UI: Cannot show SnackBar, widget unmounted');
       }
       return;
     }
@@ -62,7 +62,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       messenger.showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('?? SnackBar failed (context disposed): $e');
+        debugPrint('⚠️ SnackBar failed (context disposed): $e');
       }
     }
   }
@@ -71,7 +71,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
     _weatherRequestId += 1;
     final requestId = _weatherRequestId;
     if (kDebugMode) {
-      debugPrint('??? $source: Starting request #$requestId');
+      debugPrint('🌦️ $source: Starting request #$requestId');
     }
     _safeSetState('$source start', () {
       _isLoadingWeather = true;
@@ -82,13 +82,17 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   bool _isWeatherRequestActive(int requestId, String source) {
     if (!mounted) {
       if (kDebugMode) {
-        debugPrint('?? $source: request #$requestId aborted (widget unmounted)');
+        debugPrint(
+          '⚠️ $source: request #$requestId aborted (widget unmounted)',
+        );
       }
       return false;
     }
     if (requestId != _weatherRequestId) {
       if (kDebugMode) {
-        debugPrint('?? $source: request #$requestId stale; active request is #$_weatherRequestId');
+        debugPrint(
+          '⚠️ $source: request #$requestId stale; active request is #$_weatherRequestId',
+        );
       }
       return false;
     }
@@ -148,7 +152,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Remove load from test'),
-        content: Text('Remove ${entry.recipe.recipeName} from this range test?'),
+        content: Text(
+          'Remove ${entry.recipe.recipeName} from this range test?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -188,9 +194,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         existingIds: _entries.map((e) => e.recipe.id).toSet(),
         loads: available,
         onBuildLoads: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const BuildLoadScreen()),
-          );
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const BuildLoadScreen()));
         },
       ),
     );
@@ -216,9 +222,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Switch entry mode?'),
-        content: const Text(
-          'Switching entry mode clears current FPS inputs.',
-        ),
+        content: const Text('Switching entry mode clears current FPS inputs.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -296,7 +300,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   Future<void> _captureWeather() async {
     if (kDebugMode) {
-      debugPrint('??? Weather UI: Opening weather capture sheet');
+      debugPrint('🌦️ Weather UI: Opening weather capture sheet');
     }
     String zipValue = '';
     final result = await showModalBottomSheet<dynamic>(
@@ -316,51 +320,51 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-              Text(
-                'Retrieve Weather',
-                style: Theme.of(sheetContext).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  Navigator.of(sheetContext).pop(true);
-                },
-                icon: const Icon(Icons.my_location),
-                label: const Text('Use My Location'),
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 16),
-              const Text('Or enter ZIP code:'),
-              const SizedBox(height: 8),
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Zip code',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: TextButton(
-                    onPressed: () {
-                      final cleaned = zipValue.trim();
-                      if (cleaned.length == 5) {
-                        Navigator.of(sheetContext).pop(cleaned);
-                      }
-                    },
-                    child: const Text('Done'),
-                  ),
+                Text(
+                  'Retrieve Weather',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
                 ),
-                keyboardType: TextInputType.number,
-                maxLength: 5,
-                textInputAction: TextInputAction.done,
-                onChanged: (value) {
-                  zipValue = value;
-                },
-                onSubmitted: (zipCode) {
-                  final cleaned = zipCode.trim();
-                  if (cleaned.length == 5) {
-                    Navigator.of(sheetContext).pop(cleaned);
-                  }
-                },
-              ),
-              const SizedBox(height: 8),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.of(sheetContext).pop(true);
+                  },
+                  icon: const Icon(Icons.my_location),
+                  label: const Text('Use My Location'),
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
+                const Text('Or enter ZIP code:'),
+                const SizedBox(height: 8),
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Zip code',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: TextButton(
+                      onPressed: () {
+                        final cleaned = zipValue.trim();
+                        if (cleaned.length == 5) {
+                          Navigator.of(sheetContext).pop(cleaned);
+                        }
+                      },
+                      child: const Text('Done'),
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  maxLength: 5,
+                  textInputAction: TextInputAction.done,
+                  onChanged: (value) {
+                    zipValue = value;
+                  },
+                  onSubmitted: (zipCode) {
+                    final cleaned = zipCode.trim();
+                    if (cleaned.length == 5) {
+                      Navigator.of(sheetContext).pop(cleaned);
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -380,7 +384,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   Future<void> _fetchWeatherFromZip(String zipCode) async {
     if (!mounted) {
       if (kDebugMode) {
-        debugPrint('?? Widget not mounted, aborting ZIP fetch');
+        debugPrint('⚠️ Widget not mounted, aborting ZIP fetch');
       }
       return;
     }
@@ -388,7 +392,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
     final cleaned = zipCode.trim();
     if (cleaned.length != 5) {
       if (kDebugMode) {
-        debugPrint('?? ZIP: Invalid zip code: $zipCode');
+        debugPrint('⚠️ ZIP: Invalid zip code: $zipCode');
       }
       _showWeatherSnack('Enter a valid ZIP code');
       return;
@@ -398,18 +402,18 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
     try {
       if (kDebugMode) {
-        debugPrint('?? Fetching weather for zip: $cleaned');
+        debugPrint('📮 Fetching weather for zip: $cleaned');
       }
 
-      final weather = await _weatherService.fetchWeather(
-        zipCode: cleaned,
-      );
+      final weather = await _weatherService.fetchWeather(zipCode: cleaned);
 
       if (!mounted) return;
       if (!_isWeatherRequestActive(requestId, 'ZIP weather API call')) return;
 
       if (kDebugMode) {
-        debugPrint('?? Weather received: ${weather != null ? "Success" : "Null"}');
+        debugPrint(
+          '📮 Weather received: ${weather != null ? "Success" : "Null"}',
+        );
       }
 
       if (weather == null) {
@@ -437,7 +441,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       });
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('? ZIP error: $e');
+        debugPrint('❌ ZIP error: $e');
       }
       if (mounted) {
         _showWeatherSnack('Weather fetch failed');
@@ -450,28 +454,29 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
 
   Future<void> _fetchWeatherFromGPS() async {
     if (kDebugMode) {
-      debugPrint('?? Starting GPS weather fetch...');
+      debugPrint('🌍 Starting GPS weather fetch...');
     }
-    
+
     if (!mounted) {
       if (kDebugMode) {
-        debugPrint('?? Widget not mounted, aborting GPS fetch');
+        debugPrint('⚠️ Widget not mounted, aborting GPS fetch');
       }
       return;
     }
-    
+
     final requestId = _startWeatherRequest('GPS weather fetch');
 
     try {
       if (kDebugMode) {
-        debugPrint('?? Checking if location services are enabled...');
+        debugPrint('🌍 Checking if location services are enabled...');
       }
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!mounted) return;
       if (kDebugMode) {
-        debugPrint('?? Location services enabled: $serviceEnabled');
+        debugPrint('🌍 Location services enabled: $serviceEnabled');
       }
-      if (!_isWeatherRequestActive(requestId, 'GPS weather services check')) return;
+      if (!_isWeatherRequestActive(requestId, 'GPS weather services check'))
+        return;
       if (!serviceEnabled) {
         _showWeatherSnack('Location services are disabled');
         _safeSetState('GPS weather services disabled #$requestId', () {
@@ -481,25 +486,26 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       }
 
       if (kDebugMode) {
-        debugPrint('?? Checking location permissions...');
+        debugPrint('🌍 Checking location permissions...');
       }
       LocationPermission permission = await Geolocator.checkPermission();
       if (!mounted) return;
       if (kDebugMode) {
-        debugPrint('?? Current permission status: $permission');
+        debugPrint('🌍 Current permission status: $permission');
       }
       if (!_isWeatherRequestActive(requestId, 'GPS permission check')) return;
-      
+
       if (permission == LocationPermission.denied) {
         if (kDebugMode) {
-          debugPrint('?? Permission denied, requesting permission...');
+          debugPrint('🌍 Permission denied, requesting permission...');
         }
         permission = await Geolocator.requestPermission();
         if (!mounted) return;
         if (kDebugMode) {
-          debugPrint('?? Permission after request: $permission');
+          debugPrint('🌍 Permission after request: $permission');
         }
-        if (!_isWeatherRequestActive(requestId, 'GPS permission request')) return;
+        if (!_isWeatherRequestActive(requestId, 'GPS permission request'))
+          return;
         if (permission == LocationPermission.denied) {
           _showWeatherSnack('Location permission denied');
           _safeSetState('GPS permission denied #$requestId', () {
@@ -518,7 +524,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       }
 
       if (kDebugMode) {
-        debugPrint('?? Getting current GPS position...');
+        debugPrint('🌍 Getting current GPS position...');
       }
       Position? position;
       try {
@@ -529,17 +535,17 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         if (!mounted) return;
       } on TimeoutException catch (e, st) {
         if (kDebugMode) {
-          debugPrint('?? GPS: Timed out waiting for current position: $e');
+          debugPrint('⚠️ GPS: Timed out waiting for current position: $e');
         }
         if (kDebugMode) {
-          debugPrint('?? GPS: Timeout stack trace: $st');
+          debugPrint('⚠️ GPS: Timeout stack trace: $st');
         }
       } catch (e, st) {
         if (kDebugMode) {
-          debugPrint('?? GPS: Current position lookup failed: $e');
+          debugPrint('⚠️ GPS: Current position lookup failed: $e');
         }
         if (kDebugMode) {
-          debugPrint('?? GPS: Current position error stack trace: $st');
+          debugPrint('⚠️ GPS: Current position error stack trace: $st');
         }
       }
 
@@ -554,12 +560,14 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       }
 
       if (kDebugMode) {
-        debugPrint('?? Position acquired: ${position.latitude}, ${position.longitude}');
+        debugPrint(
+          '🌍 Position acquired: ${position.latitude}, ${position.longitude}',
+        );
       }
       if (!_isWeatherRequestActive(requestId, 'GPS position lookup')) return;
-      
+
       if (kDebugMode) {
-        debugPrint('?? Fetching weather for location...');
+        debugPrint('🌍 Fetching weather for location...');
       }
       final weather = await _weatherService.fetchWeather(
         latitude: position.latitude.toString(),
@@ -568,12 +576,14 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       if (!mounted) return;
       if (!_isWeatherRequestActive(requestId, 'GPS weather API call')) return;
       if (kDebugMode) {
-        debugPrint('?? Weather data received: ${weather != null ? "Success" : "Null"}');
+        debugPrint(
+          '🌍 Weather data received: ${weather != null ? "Success" : "Null"}',
+        );
       }
 
       if (weather == null) {
         if (kDebugMode) {
-          debugPrint('?? GPS: Weather data is null');
+          debugPrint('⚠️ GPS: Weather data is null');
         }
         _showWeatherSnack('Weather currently not available');
         _safeSetState('GPS weather unavailable #$requestId', () {
@@ -585,12 +595,12 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
       }
 
       if (kDebugMode) {
-        debugPrint('? GPS: Weather data received successfully');
+        debugPrint('✅ GPS: Weather data received successfully');
       }
       final activeEntry = _activeEntry();
       if (activeEntry != null) {
         if (kDebugMode) {
-          debugPrint('? GPS: Applying weather to active entry');
+          debugPrint('✅ GPS: Applying weather to active entry');
         }
         activeEntry.temperatureF = weather.temperatureF;
         activeEntry.humidity = weather.humidity;
@@ -600,7 +610,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         activeEntry.weatherConditions = weather.weatherConditions;
       } else {
         if (kDebugMode) {
-          debugPrint('?? GPS: No active entry found');
+          debugPrint('⚠️ GPS: No active entry found');
         }
       }
       _safeSetState('GPS weather success #$requestId', () {
@@ -609,16 +619,17 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
         _weatherCaptured = true;
       });
       if (kDebugMode) {
-        debugPrint('? GPS: Weather fetch complete');
+        debugPrint('✅ GPS: Weather fetch complete');
       }
     } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('? GPS: Error occurred: $e');
+        debugPrint('❌ GPS: Error occurred: $e');
       }
       if (kDebugMode) {
-        debugPrint('? GPS: Stack trace: $st');
+        debugPrint('❌ GPS: Stack trace: $st');
       }
-      if (!_isWeatherRequestActive(requestId, 'GPS weather error handler')) return;
+      if (!_isWeatherRequestActive(requestId, 'GPS weather error handler'))
+        return;
       _showWeatherSnack('Failed to get location/weather: $e');
       _safeSetState('GPS weather error #$requestId', () {
         _isLoadingWeather = false;
@@ -626,11 +637,10 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
     }
   }
 
-
   void _saveWeather() {
     if (!mounted) {
       if (kDebugMode) {
-        debugPrint('?? Save weather: widget unmounted');
+        debugPrint('⚠️ Save weather: widget unmounted');
       }
       return;
     }
@@ -674,9 +684,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Range Test'),
-      ),
+      appBar: AppBar(title: const Text('Range Test')),
       resizeToAvoidBottomInset: true,
       body: KeyboardSafePage(
         child: FutureBuilder<List<Firearm>>(
@@ -711,7 +719,8 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                       : ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _entries.length,
-                          separatorBuilder: (context, index) => const SizedBox(width: 8),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 8),
                           itemBuilder: (context, index) {
                             final entry = _entries[index];
                             final isActive = entry.recipe.id == _activeLoadId;
@@ -719,10 +728,13 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                               label: Text(
                                 '${entry.recipe.recipeName} (${entry.recipe.powderChargeGr.toStringAsFixed(1)} gr)',
                               ),
-                              labelPadding:
-                                  const EdgeInsets.symmetric(horizontal: 6),
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                              labelPadding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 10,
+                              ),
                               selected: isActive,
                               onSelected: (_) {
                                 setState(() {
@@ -745,19 +757,20 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.cloud),
-                    label: Text(_isLoadingWeather
-                        ? 'Loading Weather...'
-                        : 'Retrieve Weather'),
+                    label: Text(
+                      _isLoadingWeather
+                          ? 'Loading Weather...'
+                          : 'Retrieve Weather',
+                    ),
                   ),
                   const SizedBox(height: 16),
                 ],
-                if (activeEntry != null &&
-                    _weatherCaptured && !_weatherSaved)
+                if (activeEntry != null && _weatherCaptured && !_weatherSaved)
                   Card(
                     child: Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                      ),
+                      data: Theme.of(
+                        context,
+                      ).copyWith(dividerColor: Colors.transparent),
                       child: ExpansionTile(
                         title: const Text('Weather Conditions'),
                         initiallyExpanded: _weatherExpanded,
@@ -774,7 +787,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                                 const SizedBox(height: 16),
                                 ElevatedButton(
                                   onPressed: _saveWeather,
-                                  child: const Text('Save for this range session'),
+                                  child: const Text(
+                                    'Save for this range session',
+                                  ),
                                 ),
                               ],
                             ),
@@ -783,8 +798,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                       ),
                     ),
                   ),
-                if (activeEntry != null &&
-                    _weatherCaptured && !_weatherSaved)
+                if (activeEntry != null && _weatherCaptured && !_weatherSaved)
                   const SizedBox(height: 16),
                 if (activeEntry == null)
                   const Text('Add a load to begin bench data entry.'),
@@ -832,8 +846,7 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                           decoration: const InputDecoration(
                             hintText: 'Shared notes for this range test',
                           ),
-                          onSubmitted: (_) =>
-                              FocusScope.of(context).unfocus(),
+                          onSubmitted: (_) => FocusScope.of(context).unfocus(),
                         ),
                         if (activeEntry != null) ...[
                           const SizedBox(height: 12),
@@ -844,7 +857,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                                 onChanged: (value) =>
                                     _toggleDangerous(activeEntry, value),
                               ),
-                              const Expanded(child: Text('Label load as dangerous')),
+                              const Expanded(
+                                child: Text('Label load as dangerous'),
+                              ),
                             ],
                           ),
                           if (activeEntry.isDangerous) ...[
@@ -857,7 +872,8 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                               textInputAction: TextInputAction.done,
                               decoration: const InputDecoration(
                                 labelText: 'Why is it dangerous?',
-                                hintText: 'Pressure signs, heavy bolt lift, etc.',
+                                hintText:
+                                    'Pressure signs, heavy bolt lift, etc.',
                               ),
                               onChanged: (value) =>
                                   _updateDangerReason(activeEntry, value),
@@ -874,9 +890,9 @@ class _RangeTestScreenState extends State<RangeTestScreen> {
                   const SizedBox(height: 16),
                   Card(
                     child: Theme(
-                      data: Theme.of(context).copyWith(
-                        dividerColor: Colors.transparent,
-                      ),
+                      data: Theme.of(
+                        context,
+                      ).copyWith(dividerColor: Colors.transparent),
                       child: ExpansionTile(
                         title: const Text('Weather Conditions (Saved)'),
                         initiallyExpanded: false,
@@ -959,7 +975,8 @@ class _BenchEntryCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String?>(
-              initialValue: firearms.any((firearm) => firearm.id == entry.firearmId)
+              initialValue:
+                  firearms.any((firearm) => firearm.id == entry.firearmId)
                   ? entry.firearmId
                   : null,
               decoration: const InputDecoration(labelText: 'Firearm'),
@@ -976,10 +993,13 @@ class _BenchEntryCard extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: controller.distanceController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(labelText: 'Distance (yds)'),
-              onChanged: (value) => onDistanceChanged(double.tryParse(value.trim())),
+              onChanged: (value) =>
+                  onDistanceChanged(double.tryParse(value.trim())),
               onSubmitted: (_) => FocusScope.of(context).nextFocus(),
             ),
             const SizedBox(height: 12),
@@ -1031,7 +1051,9 @@ class _BenchEntryCard extends StatelessWidget {
                   TextField(
                     controller: controller.avgController,
                     enabled: !entry.noChronoData,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(labelText: 'Average FPS'),
                     onChanged: (_) => onManualChanged(),
@@ -1040,7 +1062,9 @@ class _BenchEntryCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   TextField(
                     controller: controller.sdController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(labelText: 'SD FPS'),
                     onChanged: (_) => onManualChanged(),
@@ -1049,7 +1073,9 @@ class _BenchEntryCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   TextField(
                     controller: controller.esController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(labelText: 'ES FPS'),
                     onChanged: (_) => onManualChanged(),
@@ -1061,16 +1087,22 @@ class _BenchEntryCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ...controller.shotControllers.asMap().entries.map((entryPair) {
+                  ...controller.shotControllers.asMap().entries.map((
+                    entryPair,
+                  ) {
                     final index = entryPair.key;
                     final shotController = entryPair.value;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: TextField(
                         controller: shotController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.next,
-                        decoration: InputDecoration(labelText: 'Shot ${index + 1}'),
+                        decoration: InputDecoration(
+                          labelText: 'Shot ${index + 1}',
+                        ),
                         onChanged: (_) {
                           if (index == controller.shotControllers.length - 1 &&
                               shotController.text.trim().isNotEmpty) {
@@ -1131,77 +1163,79 @@ class _LoadPickerSheetState extends State<_LoadPickerSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Add Loads',
-                  style: Theme.of(context).textTheme.titleLarge,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Add Loads',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  widget.onBuildLoads();
-                },
-                child: const Text('Build Loads'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (available.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No additional new loads available.'),
-            )
-          else
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: available.length,
-                itemBuilder: (context, index) {
-                  final recipe = available[index];
-                  return CheckboxListTile(
-                    value: _selectedIds.contains(recipe.id),
-                    onChanged: (selected) {
-                      setState(() {
-                        if (selected == true) {
-                          _selectedIds.add(recipe.id);
-                        } else {
-                          _selectedIds.remove(recipe.id);
-                        }
-                      });
-                    },
-                    title: Text(recipe.recipeName),
-                    subtitle: Text(recipe.cartridge),
-                  );
-                },
-              ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    widget.onBuildLoads();
+                  },
+                  child: const Text('Build Loads'),
+                ),
+              ],
             ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+            const SizedBox(height: 8),
+            if (available.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No additional new loads available.'),
+              )
+            else
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: available.length,
+                  itemBuilder: (context, index) {
+                    final recipe = available[index];
+                    return CheckboxListTile(
+                      value: _selectedIds.contains(recipe.id),
+                      onChanged: (selected) {
+                        setState(() {
+                          if (selected == true) {
+                            _selectedIds.add(recipe.id);
+                          } else {
+                            _selectedIds.remove(recipe.id);
+                          }
+                        });
+                      },
+                      title: Text(recipe.recipeName),
+                      subtitle: Text(recipe.cartridge),
+                    );
+                  },
                 ),
               ),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _selectedIds.isEmpty
-                      ? null
-                      : () {
-                          final selected = available
-                              .where((recipe) => _selectedIds.contains(recipe.id))
-                              .toList();
-                          Navigator.of(context).pop(selected);
-                        },
-                  child: const Text('Done'),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
                 ),
-              ),
-            ],
-          ),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _selectedIds.isEmpty
+                        ? null
+                        : () {
+                            final selected = available
+                                .where(
+                                  (recipe) => _selectedIds.contains(recipe.id),
+                                )
+                                .toList();
+                            Navigator.of(context).pop(selected);
+                          },
+                    child: const Text('Done'),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -1211,13 +1245,13 @@ class _LoadPickerSheetState extends State<_LoadPickerSheet> {
 
 class RangeTestEntryController {
   RangeTestEntryController()
-      : distanceController = TextEditingController(),
-        roundsTestedController = TextEditingController(),
-        avgController = TextEditingController(),
-        sdController = TextEditingController(),
-        esController = TextEditingController(),
-        shotControllers = [TextEditingController()],
-        dangerReasonController = TextEditingController();
+    : distanceController = TextEditingController(),
+      roundsTestedController = TextEditingController(),
+      avgController = TextEditingController(),
+      sdController = TextEditingController(),
+      esController = TextEditingController(),
+      shotControllers = [TextEditingController()],
+      dangerReasonController = TextEditingController();
 
   final TextEditingController distanceController;
   final TextEditingController roundsTestedController;
@@ -1257,10 +1291,7 @@ class RangeTestEntryController {
 }
 
 class _WeatherFields extends StatefulWidget {
-  const _WeatherFields({
-    required this.entry,
-    required this.onChanged,
-  });
+  const _WeatherFields({required this.entry, required this.onChanged});
 
   final RangeTestLoadEntry entry;
   final VoidCallback onChanged;
@@ -1350,7 +1381,7 @@ class _WeatherFieldsState extends State<_WeatherFields> {
         TextField(
           controller: _tempController,
           decoration: const InputDecoration(
-            labelText: 'Temperature (�F)',
+            labelText: 'Temperature (°F)',
             hintText: '70',
           ),
           keyboardType: const TextInputType.numberWithOptions(decimal: true),

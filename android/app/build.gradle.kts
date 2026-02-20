@@ -66,6 +66,11 @@ android {
     }
 }
 
+dependencies {
+    // Force Billing Library 8.x for Google Play compliance
+    implementation("com.android.billingclient:billing:8.3.0")
+}
+
 flutter {
     source = "../.."
 }

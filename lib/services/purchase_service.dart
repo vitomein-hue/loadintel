@@ -6,14 +6,15 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:loadintel/domain/repositories/settings_repository.dart';
 
 // Default false to keep billing enabled in production. Override in beta builds.
-const bool androidBetaMode =
-    bool.fromEnvironment('BETA_MODE', defaultValue: false);
+const bool androidBetaMode = bool.fromEnvironment(
+  'BETA_MODE',
+  defaultValue: false,
+);
 
 class PurchaseService extends ChangeNotifier {
   PurchaseService(this._settingsRepository);
 
   static const String proLifetimeProductId = 'com.vitomein.loadintel.lifetime';
-  static const String freeTrialProductId = 'com.vitomein.loadintel.14daytrial';
   static const String _devOverrideRaw = String.fromEnvironment(
     'PRO_OVERRIDE',
     defaultValue: 'auto',
@@ -50,30 +51,15 @@ class PurchaseService extends ChangeNotifier {
 
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   ProductDetails? _proProduct;
-  ProductDetails? _trialProduct;
   bool _isAvailable = false;
   bool _isProEntitled = false;
-  bool _hasTrialReceipt = false;
-  DateTime? _trialReceiptDate;
   bool _isInitialized = false;
 
   bool get isAvailable => _isAvailable;
   bool get isProEntitled => _isProEntitled;
-  bool get hasTrialReceipt => _hasTrialReceipt;
-  DateTime? get trialReceiptDate => _trialReceiptDate;
   ProductDetails? get proProduct => _proProduct;
-  ProductDetails? get trialProduct => _trialProduct;
   bool get canPurchase =>
       _isStoreEnabled && _isAvailable && _proProduct != null;
-  bool get canStartTrial => Platform.isAndroid
-      ? _isInitialized &&
-            !_hasTrialReceipt &&
-            (!androidBetaMode ? _isAvailable && _trialProduct != null : true)
-      : _isStoreEnabled &&
-            _isInitialized &&
-            _isAvailable &&
-            _trialProduct != null &&
-            !_hasTrialReceipt;
   bool get isInitialized => _isInitialized;
   Future<void> get initializationDone => _initCompleter.future;
 
@@ -92,7 +78,6 @@ class PurchaseService extends ChangeNotifier {
             '🟡 Store disabled for this platform. Using local trial tracking.',
           );
         }
-        await _loadTrialReceiptFromLocal();
         _isAvailable = false;
         _isInitialized = true;
         notifyListeners();
@@ -113,12 +98,6 @@ class PurchaseService extends ChangeNotifier {
 
       // Load products
       await _loadProducts();
-
-      // Check for existing trial receipt
-      await _checkForTrialReceipt();
-      if (kDebugMode) {
-        debugPrint('🔵 Trial receipt check: $_hasTrialReceipt');
-      }
 
       _subscription ??= _iap.purchaseStream.listen(_onPurchaseUpdated);
 
@@ -170,151 +149,6 @@ class PurchaseService extends ChangeNotifier {
     await _iap.restorePurchases();
   }
 
-  Future<void> _checkForTrialReceipt() async {
-    try {
-      // Query past purchases to check for trial receipt
-      if (_isStoreEnabled) {
-        await _iap.restorePurchases();
-      }
-      await _loadTrialReceiptFromLocal();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error checking for trial receipt: $e');
-      }
-    }
-  }
-
-  Future<void> _loadTrialReceiptFromLocal() async {
-    final hasReceipt =
-        await _settingsRepository.getBool('has_trial_receipt') ?? false;
-    final receiptDateStr = await _settingsRepository.getString(
-      'trial_receipt_date',
-    );
-
-    _hasTrialReceipt = hasReceipt;
-    if (receiptDateStr != null && receiptDateStr.isNotEmpty) {
-      try {
-        _trialReceiptDate = DateTime.parse(receiptDateStr);
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('Error parsing trial receipt date: $e');
-        }
-      }
-    }
-  }
-
-  Future<bool> _startLocalTrial() async {
-    if (_hasTrialReceipt) {
-      if (kDebugMode) {
-        debugPrint('🔴 Free trial already claimed (local)');
-      }
-      throw Exception('Free trial already claimed');
-    }
-
-    final now = DateTime.now();
-    _hasTrialReceipt = true;
-    _trialReceiptDate = now;
-    await _settingsRepository.setBool('has_trial_receipt', true);
-    await _settingsRepository.setString(
-      'trial_receipt_date',
-      now.toIso8601String(),
-    );
-    notifyListeners();
-    return true;
-  }
-
-  /// Initiates purchase of free 14-day trial IAP
-  /// Returns true if purchase initiated successfully
-  /// Throws exception if user already claimed trial
-  Future<bool> startFreeTrial() async {
-    if (kDebugMode) {
-      debugPrint('🟢 startFreeTrial() called');
-      debugPrint('🟢 Product ID: $freeTrialProductId');
-      debugPrint('🟢 Initialized: $_isInitialized');
-      debugPrint('🟢 Store available: $_isAvailable');
-      debugPrint('🟢 Trial product loaded: ${_trialProduct != null}');
-      debugPrint('🟢 Has trial receipt: $_hasTrialReceipt');
-    }
-
-    // Check if service is initialized
-    if (!_isInitialized) {
-      final error = 'PurchaseService not initialized yet. Please wait.';
-      if (kDebugMode) {
-        debugPrint('🔴 $error');
-      }
-      throw Exception(error);
-    }
-
-    if (Platform.isAndroid && androidBetaMode) {
-      return _startLocalTrial();
-    }
-    if (!_isStoreEnabled) {
-      throw Exception('Free trial is not supported on this platform.');
-    }
-
-    if (!_isAvailable) {
-      final error = 'Store not available. Please check your connection.';
-      if (kDebugMode) {
-        debugPrint('🔴 $error');
-      }
-      throw Exception(error);
-    }
-
-    // If product not loaded, try loading it now
-    if (_trialProduct == null) {
-      if (kDebugMode) {
-        debugPrint('🟡 Trial product not loaded, attempting to load now...');
-      }
-      await _loadProducts();
-
-      // Check again after loading
-      if (_trialProduct == null) {
-        final error =
-            'Trial product ($freeTrialProductId) not found in the store. Please ensure product configuration is set up correctly.';
-        if (kDebugMode) {
-          debugPrint('🔴 $error');
-        }
-        throw Exception(error);
-      }
-      if (kDebugMode) {
-        debugPrint('✅ Trial product loaded successfully');
-      }
-    }
-
-    if (_hasTrialReceipt) {
-      if (kDebugMode) {
-        debugPrint('🔴 Free trial already claimed');
-      }
-      throw Exception('Free trial already claimed');
-    }
-
-    try {
-      if (kDebugMode) {
-        debugPrint('🟢 Creating purchase param for: ${_trialProduct!.id}');
-        debugPrint(
-          '🟢 Product details: ${_trialProduct!.title} - ${_trialProduct!.price}',
-        );
-      }
-      final param = PurchaseParam(productDetails: _trialProduct!);
-
-      if (kDebugMode) {
-        debugPrint('🟢 Initiating purchase...');
-      }
-      final success = await _iap.buyNonConsumable(purchaseParam: param);
-      if (kDebugMode) {
-        debugPrint('🟢 Purchase initiated: $success');
-      }
-      return success;
-    } catch (e, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('🔴 Error starting free trial: $e');
-      }
-      if (kDebugMode) {
-        debugPrint('🔴 Stack trace: $stackTrace');
-      }
-      rethrow;
-    }
-  }
 
   /// Load products from the store
   Future<void> _loadProducts() async {
@@ -325,10 +159,7 @@ class PurchaseService extends ChangeNotifier {
       return;
     }
     try {
-      final response = await _iap.queryProductDetails({
-        proLifetimeProductId,
-        freeTrialProductId,
-      });
+      final response = await _iap.queryProductDetails({proLifetimeProductId});
 
       if (kDebugMode) {
         debugPrint('🔵 Products found: ${response.productDetails.length}');
@@ -345,11 +176,6 @@ class PurchaseService extends ChangeNotifier {
           _proProduct = product;
           if (kDebugMode) {
             debugPrint('✅ Lifetime product loaded');
-          }
-        } else if (product.id == freeTrialProductId) {
-          _trialProduct = product;
-          if (kDebugMode) {
-            debugPrint('✅ Trial product loaded');
           }
         }
       }
@@ -373,16 +199,6 @@ class PurchaseService extends ChangeNotifier {
     }
   }
 
-  /// Checks if user has claimed the free trial
-  bool hasClaimedFreeTrial() {
-    return _hasTrialReceipt;
-  }
-
-  /// Gets the original purchase date of the trial from receipt
-  /// Returns null if trial was never claimed
-  DateTime? getTrialStartDate() {
-    return _trialReceiptDate;
-  }
 
   /// Purchases lifetime access to Load Intel
   /// Renamed from buyPro for clarity
@@ -467,30 +283,6 @@ class PurchaseService extends ChangeNotifier {
           _setProEntitled(true);
         }
 
-        // Handle trial purchase (free)
-        if (purchase.productID == freeTrialProductId) {
-          if (kDebugMode) {
-            debugPrint('\u2705 Trial purchase received');
-          }
-          _hasTrialReceipt = true;
-          final purchaseDate = DateTime.fromMillisecondsSinceEpoch(
-            int.tryParse(purchase.transactionDate ?? '0') ??
-                DateTime.now().millisecondsSinceEpoch,
-          );
-          _trialReceiptDate = purchaseDate;
-          if (kDebugMode) {
-            debugPrint('\u2705 Trial receipt date: $purchaseDate');
-          }
-
-          // Store receipt info
-          await _settingsRepository.setBool('has_trial_receipt', true);
-          await _settingsRepository.setString(
-            'trial_receipt_date',
-            purchaseDate.toIso8601String(),
-          );
-
-          notifyListeners();
-        }
       } else if (purchase.status == PurchaseStatus.error) {
         if (kDebugMode) {
           debugPrint('\u274c Purchase error: ${purchase.error}');

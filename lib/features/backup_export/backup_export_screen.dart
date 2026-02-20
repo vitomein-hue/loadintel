@@ -301,7 +301,9 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
         context,
       ).showSnackBar(const SnackBar(content: Text('Export ready to share')));
     } catch (error) {
-      debugPrint('Export failed: $error');
+      if (kDebugMode) {
+        debugPrint('Export failed: $error');
+      }
       if (!mounted) {
         return;
       }
@@ -613,32 +615,33 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                   ),
                   const Divider(height: 24),
                   const Text(
-                    'Debug: Trial Receipt (IAP)',
+                    'Debug: Trial Start (Local)',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Has Receipt: ${purchaseService.hasTrialReceipt}',
+                    'Trial Started: ${trialService.hasTrialStarted()}',
                     style: const TextStyle(fontSize: 12),
                   ),
-                  if (purchaseService.trialReceiptDate != null)
+                  if (trialService.trialStartDate != null)
                     Text(
-                      'Receipt Date: ${purchaseService.trialReceiptDate}',
+                      'Start Date: ${trialService.trialStartDate}',
                       style: const TextStyle(fontSize: 12),
                     ),
                   const SizedBox(height: 8),
                   ElevatedButton(
-                    onPressed: purchaseService.canStartTrial
-                        ? () async {
+                    onPressed: trialService.hasTrialStarted()
+                        ? null
+                        : () async {
                             try {
-                              await purchaseService.startFreeTrial();
+                              await trialService.startTrialAutomatically();
                               if (!context.mounted) {
                                 return;
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
-                                    'Free trial purchase initiated',
+                                    'Trial started locally',
                                   ),
                                 ),
                               );
@@ -655,9 +658,8 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
                                 ),
                               );
                             }
-                          }
-                        : null,
-                    child: const Text('Start Free Trial (IAP)'),
+                          },
+                    child: const Text('Start Trial (Local)'),
                   ),
                 ],
               ),

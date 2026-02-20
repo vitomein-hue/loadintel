@@ -24,19 +24,19 @@ class _IntroScreenState extends State<IntroScreen> {
 
   Future<void> _waitForInitialization() async {
     if (kDebugMode) {
-      debugPrint('📱 Waiting for PurchaseService initialization...');
+      debugPrint('📱 Waiting for TrialService initialization...');
     }
 
-    // Wait a moment for PurchaseService to initialize
+    // Wait a moment for TrialService to initialize
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (!mounted) return;
 
-    final purchaseService = context.read<PurchaseService>();
+    final trialService = context.read<TrialService>();
 
     // Wait up to 5 seconds for initialization
     int attempts = 0;
-    while (!purchaseService.isInitialized && attempts < 10) {
+    while (!trialService.isInitialized && attempts < 10) {
       if (kDebugMode) {
         debugPrint('📱 Waiting for initialization... attempt ${attempts + 1}');
       }
@@ -51,16 +51,13 @@ class _IntroScreenState extends State<IntroScreen> {
 
       if (kDebugMode) {
         debugPrint(
-          '📱 PurchaseService initialized: ${purchaseService.isInitialized}',
-        );
-        debugPrint(
-          '📱 Trial product loaded: ${purchaseService.trialProduct != null}',
+          '📱 TrialService initialized: ${trialService.isInitialized}',
         );
       }
 
-      if (!purchaseService.isInitialized) {
+      if (!trialService.isInitialized) {
         if (kDebugMode) {
-          debugPrint('⚠️ PurchaseService failed to initialize after 5 seconds');
+          debugPrint('⚠️ TrialService failed to initialize after 5 seconds');
         }
       }
     }
@@ -76,62 +73,29 @@ class _IntroScreenState extends State<IntroScreen> {
 
     try {
       final trialService = context.read<TrialService>();
-      final purchaseService = context.read<PurchaseService>();
 
       if (kDebugMode) {
         debugPrint(
-          '📱 PurchaseService initialized: ${purchaseService.isInitialized}',
+          '📱 TrialService initialized: ${trialService.isInitialized}',
         );
-        debugPrint(
-          '📱 PurchaseService available: ${purchaseService.isAvailable}',
-        );
-        debugPrint(
-          '📱 Trial product available: ${purchaseService.trialProduct != null}',
-        );
-        debugPrint(
-          '📱 Trial already claimed: ${purchaseService.hasClaimedFreeTrial()}',
-        );
+        debugPrint('📱 Trial start date: ${trialService.trialStartDate}');
       }
 
-      // Check if trial already claimed
-      if (purchaseService.hasClaimedFreeTrial()) {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-          await _showAlreadyClaimedDialog();
-        }
-        return;
-      }
-
-      // Attempt to start trial
       if (kDebugMode) {
-        debugPrint('📱 Calling trialService.startTrial()');
+        debugPrint('📱 Calling trialService.startTrialAutomatically()');
       }
-      final success = await trialService.startTrial();
+      await trialService.startTrialAutomatically();
       if (kDebugMode) {
-        debugPrint('📱 Trial start result: $success');
+        debugPrint('📱 Trial started');
       }
 
       if (!mounted) return;
 
-      if (success) {
-        // Mark intro as completed and navigate to main app
-        if (kDebugMode) {
-          debugPrint('✅ Trial started successfully');
-        }
-        Navigator.of(context).pop(true);
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Trial start returned false');
-        }
-        setState(() {
-          _isLoading = false;
-        });
-        _showErrorDialog(
-          'Purchase was not initiated. Please ensure StoreKit is configured and try again.',
-        );
+      // Mark intro as completed and navigate to main app
+      if (kDebugMode) {
+        debugPrint('✅ Trial started successfully');
       }
+      Navigator.of(context).pop(true);
     } catch (e, stackTrace) {
       if (kDebugMode) {
         debugPrint('❌ Error in _startTrial: $e');
@@ -146,39 +110,13 @@ class _IntroScreenState extends State<IntroScreen> {
         _isLoading = false;
       });
 
-      // Check if error is about already claimed trial
-      if (e.toString().contains('already claimed')) {
-        await _showAlreadyClaimedDialog();
-      } else {
-        // Show the actual error message for debugging
-        final errorMsg = e.toString().replaceAll('Exception: ', '');
-        if (kDebugMode) {
-          debugPrint('❌ Showing error dialog: $errorMsg');
-        }
-        _showErrorDialog(errorMsg);
+      // Show the actual error message for debugging
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      if (kDebugMode) {
+        debugPrint('❌ Showing error dialog: $errorMsg');
       }
+      _showErrorDialog(errorMsg);
     }
-  }
-
-  Future<void> _showAlreadyClaimedDialog() async {
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Trial Already Claimed'),
-        content: const Text(
-          'The free trial has already been claimed on this Apple ID.',
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop(false);
-            },
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showErrorDialog(String message) {
@@ -217,108 +155,111 @@ class _IntroScreenState extends State<IntroScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                      const SizedBox(height: 40),
-                      // Top Section - App Name and Tagline
-                      Column(
-                        children: [
-                          Icon(
-                            Icons.assessment_outlined,
-                            size: 80,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Load Intel',
-                            style: Theme.of(context).textTheme.headlineLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Professional load development tracking',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(color: Colors.grey.shade700),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-
-                      // Middle Section - Feature Highlights
-                      Column(
-                        children: const [
-                          _FeatureTile(
-                            icon: Icons.bar_chart,
-                            text: 'Track unlimited loads and components',
-                          ),
-                          SizedBox(height: 20),
-                          _FeatureTile(
-                            icon: Icons.assignment,
-                            text: 'Record range test data with weather',
-                          ),
-                          SizedBox(height: 20),
-                          _FeatureTile(
-                            icon: Icons.analytics_outlined,
-                            text: 'Analyze performance and trends',
-                          ),
-                          SizedBox(height: 20),
-                          _FeatureTile(
-                            icon: Icons.shield,
-                            text: 'Never lose your data',
-                          ),
-                        ],
-                      ),
-
-                      // Bottom Section - CTA Button
-                      Column(
-                        children: [
-                          ElevatedButton(
-                            onPressed: (_isLoading || _isInitializing)
-                                ? null
-                                : _startTrial,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor: Colors.grey,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                        const SizedBox(height: 40),
+                        // Top Section - App Name and Tagline
+                        Column(
+                          children: [
+                            Icon(
+                              Icons.assessment_outlined,
+                              size: 80,
+                              color: AppColors.primary,
                             ),
-                            child: (_isLoading || _isInitializing)
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
+                            const SizedBox(height: 16),
+                            Text(
+                              'Load Intel',
+                              style: Theme.of(context).textTheme.headlineLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Professional load development tracking',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(color: Colors.grey.shade700),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+
+                        // Middle Section - Feature Highlights
+                        Column(
+                          children: const [
+                            _FeatureTile(
+                              icon: Icons.bar_chart,
+                              text: 'Track unlimited loads and components',
+                            ),
+                            SizedBox(height: 20),
+                            _FeatureTile(
+                              icon: Icons.assignment,
+                              text: 'Record range test data with weather',
+                            ),
+                            SizedBox(height: 20),
+                            _FeatureTile(
+                              icon: Icons.analytics_outlined,
+                              text: 'Analyze performance and trends',
+                            ),
+                            SizedBox(height: 20),
+                            _FeatureTile(
+                              icon: Icons.shield,
+                              text: 'Never lose your data',
+                            ),
+                          ],
+                        ),
+
+                        // Bottom Section - CTA Button
+                        Column(
+                          children: [
+                            ElevatedButton(
+                              onPressed: (_isLoading || _isInitializing)
+                                  ? null
+                                  : _startTrial,
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: Colors.grey,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: (_isLoading || _isInitializing)
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Start 14-Day Free Trial',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  )
-                                : const Text(
-                                    'Start 14-Day Free Trial',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _isInitializing
-                                ? 'Loading store...'
-                                : 'After 14 days, unlock lifetime access for just $priceLabel',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _isInitializing
+                                  ? 'Loading store...'
+                                  : 'After 14 days, unlock lifetime access for just $priceLabel',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -361,3 +302,5 @@ class _FeatureTile extends StatelessWidget {
     );
   }
 }
+
+

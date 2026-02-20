@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:loadintel/core/theme/app_colors.dart';
 import 'package:loadintel/core/widgets/keyboard_safe_page.dart';
 import 'package:loadintel/domain/models/firearm.dart';
@@ -574,7 +575,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
         prefsKey,
         jsonEncode(updated),
       );
-      debugPrint('Saved custom option [$prefsKey]: $trimmed');
+      if (kDebugMode) {
+        debugPrint('Saved custom option [$prefsKey]: $trimmed');
+      }
       await _refreshData();
       return trimmed;
     }
@@ -726,9 +729,11 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
                                     await context
                                         .read<InventoryRepository>()
                                         .upsertItem(item);
-                                    debugPrint(
-                                      'Saved inventory item [$type]: $trimmed',
-                                    );
+                                    if (kDebugMode) {
+                                      debugPrint(
+                                        'Saved inventory item [$type]: $trimmed',
+                                      );
+                                    }
                                     if (!context.mounted) {
                                       return;
                                     }
@@ -915,7 +920,9 @@ class _BuildLoadScreenState extends State<BuildLoadScreen> {
       updatedAt: now,
     );
 
-    debugPrint('Saving load recipe ${recipe.id}');
+    if (kDebugMode) {
+      debugPrint('Saving load recipe ${recipe.id}');
+    }
     final repo = context.read<LoadRecipeRepository>();
     await repo.upsertRecipe(recipe);
 
