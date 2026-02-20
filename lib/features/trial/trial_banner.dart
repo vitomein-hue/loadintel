@@ -22,6 +22,7 @@ class _TrialBannerState extends State<TrialBanner> {
 
     try {
       final purchaseService = context.read<PurchaseService>();
+      final priceLabel = purchaseService.proProduct?.price ?? '\$9.99';
 
       if (!purchaseService.canPurchase) {
         if (mounted) {
@@ -38,8 +39,10 @@ class _TrialBannerState extends State<TrialBanner> {
 
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully upgraded to lifetime access!'),
+          SnackBar(
+            content: Text(
+              'Successfully upgraded to lifetime access ($priceLabel)!',
+            ),
             backgroundColor: Colors.green,
           ),
         );

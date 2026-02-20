@@ -57,7 +57,6 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _BetaBanner(),
                 const SizedBox(height: 12),
                 const Spacer(),
                 _HomeNavButton(
@@ -100,55 +99,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _BetaBanner extends StatelessWidget {
-  const _BetaBanner();
-
-  static final Future<PackageInfo> _infoFuture = PackageInfo.fromPlatform();
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<PackageInfo>(
-      future: _infoFuture,
-      builder: (context, snapshot) {
-        final info = snapshot.data;
-        final versionText = info == null
-            ? 'v--'
-            : 'v${info.version} (${info.buildNumber})';
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.danger.withValues(alpha: 0.12),
-            border: Border.all(color: AppColors.danger),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.new_releases, color: AppColors.danger),
-              const SizedBox(width: 8),
-              const Text(
-                'BETA',
-                style: TextStyle(
-                  color: AppColors.danger,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                versionText,
-                style: const TextStyle(
-                  color: AppColors.danger,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

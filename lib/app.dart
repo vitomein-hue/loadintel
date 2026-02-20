@@ -171,14 +171,22 @@ class _TrialAwareHomeState extends State<_TrialAwareHome> {
     final hadTrial = trialService.hasTrialStarted();
 
     if (!hasLifetime && !hadTrial) {
-      await trialService.startTrialAutomatically().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          if (kDebugMode) {
-            debugPrint('TrialService auto-start timeout');
-          }
-        },
-      );
+      final autoStartDone =
+          await settingsRepo.getBool('trial_autostart_done') ?? false;
+      if (!autoStartDone) {
+        try {
+          await trialService.startTrialAutomatically().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              if (kDebugMode) {
+                debugPrint('TrialService auto-start timeout');
+              }
+            },
+          );
+        } finally {
+          await settingsRepo.setBool('trial_autostart_done', true);
+        }
+      }
     }
 
     final shouldSkip = hasLifetime || hadTrial;

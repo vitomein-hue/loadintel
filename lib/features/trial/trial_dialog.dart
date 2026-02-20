@@ -35,7 +35,7 @@ class TrialDialog {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => _UpgradeDialog(
-        title: 'Upgrade to Lifetime Access',
+        title: 'Upgrade to Lifetime Access ({price})',
         message:
             'Get lifetime access to Load Intel for just {price} - a one-time purchase.',
         remindText: 'Not Now',
@@ -76,6 +76,7 @@ class _UpgradeDialogState extends State<_UpgradeDialog> {
 
     try {
       final service = context.read<PurchaseService>();
+      final priceLabel = service.proProduct?.price ?? '\$9.99';
 
       if (!service.canPurchase) {
         _showError('Store unavailable right now. Please try again later.');
@@ -88,8 +89,10 @@ class _UpgradeDialogState extends State<_UpgradeDialog> {
         if (success) {
           Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Successfully upgraded to lifetime access!'),
+            SnackBar(
+              content: Text(
+                'Successfully upgraded to lifetime access ($priceLabel)!',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -149,11 +152,12 @@ class _UpgradeDialogState extends State<_UpgradeDialog> {
   Widget build(BuildContext context) {
     final purchaseService = context.watch<PurchaseService>();
     final priceLabel = purchaseService.proProduct?.price ?? '\$9.99';
+    final title = widget.title.replaceAll('{price}', priceLabel);
     final message = widget.message.replaceAll('{price}', priceLabel);
     final upgradeText = widget.upgradeText.replaceAll('{price}', priceLabel);
 
     return AlertDialog(
-      title: Text(widget.title),
+      title: Text(title),
       content: Text(message),
       actions: [
         if (widget.showRestore)

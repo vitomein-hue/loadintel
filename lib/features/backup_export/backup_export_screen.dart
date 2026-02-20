@@ -491,6 +491,7 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
   Widget _buildTrialStatusCard(BuildContext context) {
     final trialService = context.watch<TrialService>();
     final purchaseService = context.watch<PurchaseService>();
+    final priceLabel = purchaseService.proProduct?.price ?? '\$9.99';
 
     final isPro = purchaseService.isProEntitled;
     final trialStartDate = trialService.trialStartDate;
@@ -501,7 +502,7 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
     IconData icon;
 
     if (isPro) {
-      title = 'Pro: Lifetime Access';
+      title = 'Pro: Lifetime Access ($priceLabel)';
       subtitle = 'Thank you for supporting Load Intel!';
       icon = Icons.verified;
     } else if (trialStartDate == null) {
@@ -680,6 +681,10 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final purchaseService = context.watch<PurchaseService>();
+    final priceLabel = purchaseService.proProduct?.price ?? '\$9.99';
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -702,20 +707,25 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildTrialStatusCard(context),
-          const SizedBox(height: 16),
-          Card(
-            child: ListTile(
-              title: const Text('Get Lifetime Access'),
-              subtitle: const Text('Unlock all features permanently'),
-              trailing: const Icon(Icons.stars),
-              onTap: () => TrialDialog.showUpgradeDialog(context),
-            ),
-          ),
-          const SizedBox(height: 16),
+      body: SafeArea(
+        bottom: true,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
+          children: [
+            _buildTrialStatusCard(context),
+            const SizedBox(height: 16),
+            if (!purchaseService.isProEntitled) ...[
+              Card(
+                child: ListTile(
+                  title: Text('Get Lifetime Access ($priceLabel)'),
+                  subtitle:
+                      Text('Unlock all features permanently for $priceLabel'),
+                  trailing: const Icon(Icons.stars),
+                  onTap: () => TrialDialog.showUpgradeDialog(context),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           Card(
             child: ListTile(
               title: const Text('Backup/Restore'),
@@ -733,7 +743,8 @@ class _BackupExportScreenState extends State<BackupExportScreen> {
               onTap: _showShareLoadDataSheet,
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

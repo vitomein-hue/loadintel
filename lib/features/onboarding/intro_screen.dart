@@ -140,8 +140,8 @@ class _IntroScreenState extends State<IntroScreen> {
     final purchaseService = context.watch<PurchaseService>();
     final priceLabel = purchaseService.proProduct?.price ?? '\$9.99';
 
-    return WillPopScope(
-      onWillPop: () async => false,
+    return PopScope(
+      canPop: false,
       child: Scaffold(
         body: SafeArea(
           child: LayoutBuilder(

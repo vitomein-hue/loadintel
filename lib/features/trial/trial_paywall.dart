@@ -21,6 +21,7 @@ class _TrialPaywallState extends State<TrialPaywall> {
 
     try {
       final service = context.read<PurchaseService>();
+      final priceLabel = service.proProduct?.price ?? '\$9.99';
 
       if (!service.canPurchase) {
         _showError('Store unavailable. Please check your connection.');
@@ -31,8 +32,10 @@ class _TrialPaywallState extends State<TrialPaywall> {
 
       if (mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully upgraded to lifetime access!'),
+          SnackBar(
+            content: Text(
+              'Successfully upgraded to lifetime access ($priceLabel)!',
+            ),
             backgroundColor: Colors.green,
           ),
         );
